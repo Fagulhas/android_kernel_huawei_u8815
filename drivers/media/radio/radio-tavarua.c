@@ -1329,17 +1329,19 @@ static int optimized_search_algorithm(struct tavarua_device *radio,
 			"the 200KHz Enforcer", __func__);
 		break;
 	}
-
 	/* Set channel spacing */
 	switch (region) {
 	case TAVARUA_REGION_US:
-		if (adie_type_bahma) {
+		if ((adie_type_bahma) && (bahama_version == 0x09)) {
 			FMDBG("Adie type : Bahama\n");
 			/*
 			Configuring all 200KHZ spaced regions as 100KHz due to
 			change in the new Bahma FM SoC search algorithm.
 			*/
 			value = FM_CH_SPACE_100KHZ;
+		} else if ((adie_type_bahma) && (bahama_version == 0x0a)) {
+			FMDBG("Adie type : Bahama B1\n");
+			value = FM_CH_SPACE_200KHZ;
 		} else {
 			FMDBG("Adie type : Marimba\n");
 			value = FM_CH_SPACE_200KHZ;
@@ -1347,7 +1349,7 @@ static int optimized_search_algorithm(struct tavarua_device *radio,
 		break;
 	case TAVARUA_REGION_JAPAN:
 	case TAVARUA_REGION_OTHER:
-		if (adie_type_bahma) {
+		if ((adie_type_bahma) && (bahama_version == 0x09)) {
 			FMDBG("Adie type : Bahama\n");
 			FMDBG("%s: Configuring the channel-spacing as 50KHz"
 				"for the Region : %d", __func__, region);
@@ -1356,6 +1358,9 @@ static int optimized_search_algorithm(struct tavarua_device *radio,
 			change in the new Bahma FM SoC search algorithm.
 			*/
 			value = FM_CH_SPACE_50KHZ;
+		} else if ((adie_type_bahma) && (bahama_version == 0x0a)) {
+			FMDBG("Adie type : Bahama B1\n");
+			value = FM_CH_SPACE_100KHZ;
 		} else {
 			FMDBG("Adie type : Marimba\n");
 			value = FM_CH_SPACE_100KHZ;
@@ -1465,50 +1470,109 @@ static int tavarua_set_region(struct tavarua_device *radio,
 	adie_type_bahma = is_bahama();
 
 	/* Set freq band */
-	if (region == TAVARUA_REGION_JAPAN)
-		SET_REG_FIELD(radio->registers[RDCTRL], 1,
-			RDCTRL_BAND_OFFSET, RDCTRL_BAND_MASK);
-	else
+	switch (region) {
+	case TAVARUA_REGION_US:
+	case TAVARUA_REGION_EU:
 		SET_REG_FIELD(radio->registers[RDCTRL], 0,
 			RDCTRL_BAND_OFFSET, RDCTRL_BAND_MASK);
+		break;
+	case TAVARUA_REGION_JAPAN_WIDE:
+	case TAVARUA_REGION_JAPAN:
+
+		retval = sync_read_xfr(radio, RADIO_CONFIG, xfr_buf);
+		if (retval < 0) {
+			FMDERR("failed to get RADIO_CONFIG\n");
+			return retval;
+		}
+		band_low = (radio->region_params.band_low -
+					low_band_limit) / spacing;
+		band_high = (radio->region_params.band_high -
+					low_band_limit) / spacing;
+		FMDBG("low_band: %x, high_band: %x\n", band_low, band_high);
+		xfr_buf[0] = band_low >> 8;
+		xfr_buf[1] = band_low & 0xFF;
+		xfr_buf[2] = band_high >> 8;
+		xfr_buf[3] = band_high & 0xFF;
+		retval = sync_write_xfr(radio, RADIO_CONFIG, xfr_buf);
+		if (retval < 0) {
+			FMDERR("Could not set regional settings\n");
+			return retval;
+		}
+		break;	
+	default:		
+		SET_REG_FIELD(radio->registers[RDCTRL], 0, RDCTRL_BAND_OFFSET, RDCTRL_BAND_MASK);
+		break;				
+	}
 
 	/* Set De-emphasis and soft band range*/
-	SET_REG_FIELD(radio->registers[RDCTRL], radio->region_params.emphasis,
+	switch (region) {
+	case TAVARUA_REGION_US:
+		value = EMP_75;
+		break;
+	case TAVARUA_REGION_JAPAN:
+		value = EMP_50;
+		FMDBG("EMP:JAPAN,EMP_50");
+		break;
+	case TAVARUA_REGION_JAPAN_WIDE:
+		value = EMP_50;
+		break;
+	case TAVARUA_REGION_EU:
+		value = EMP_50;
+		break;
+	default:
+		/*North America uses a Pre-emphasis of 75 ¦Ìs, while the rest of the world uses 50¦Ìs*/
+		printk(KERN_WARNING DRIVER_NAME "%s\n: Set FM Pre-emphasis 50¦Ìs", __func__);
+		value = EMP_50;
+		break;
+	}
+
+	SET_REG_FIELD(radio->registers[RDCTRL], value,
 		RDCTRL_DEEMPHASIS_OFFSET, RDCTRL_DEEMPHASIS_MASK);
 
 	/* set RDS standard */
-	SET_REG_FIELD(radio->registers[RDSCTRL], radio->region_params.rds_std,
+	switch (region) {
+	default:
+		/*North America uses the RBDS standard, while the rest of the world uses the RDS standard*/
+		printk(KERN_WARNING DRIVER_NAME "%s\n: Set FM RDS standard", __func__);
+		value = RDS_STD;
+		break;
+	case TAVARUA_REGION_US:
+		value = RBDS_STD;
+		break;
+	case TAVARUA_REGION_EU:
+		value = RDS_STD;
+		break;
+	}
+	SET_REG_FIELD(radio->registers[RDSCTRL], value,
 		RDSCTRL_STANDARD_OFFSET, RDSCTRL_STANDARD_MASK);
 
 	FMDBG("RDSCTRLL %x\n", radio->registers[RDSCTRL]);
 	retval = tavarua_write_register(radio, RDSCTRL,
 					radio->registers[RDSCTRL]);
-	if (retval < 0) {
-		FMDERR("Failed to set RDS/RBDS standard\n");
+	if (retval < 0)
 		return retval;
-	}
 
-	/* Set the lower and upper band limits*/
-	retval = sync_read_xfr(radio, RADIO_CONFIG, xfr_buf);
-	if (retval < 0) {
-		FMDERR("failed to get RADIO_CONFIG\n");
-		return retval;
-	}
 
-	band_low = (radio->region_params.band_low -
-				low_band_limit) / spacing;
-	band_high = (radio->region_params.band_high -
-				low_band_limit) / spacing;
-
-	xfr_buf[0] = RSH_DATA(band_low, 8);
-	xfr_buf[1] = GET_ABS_VAL(band_low);
-	xfr_buf[2] = RSH_DATA(band_high, 8);
-	xfr_buf[3] = GET_ABS_VAL(band_high);
-	xfr_buf[4] = 0; /* Active LOW */
-	retval = sync_write_xfr(radio, RADIO_CONFIG, xfr_buf);
-	if (retval < 0) {
-		FMDERR("Could not set regional settings\n");
-		return retval;
+	/* setting soft band */
+	switch (region) {
+	case TAVARUA_REGION_US:
+	case TAVARUA_REGION_EU:
+		radio->region_params.band_low = 87.5 * FREQ_MUL;
+		radio->region_params.band_high = 108 * FREQ_MUL;
+		break;
+	case TAVARUA_REGION_JAPAN:
+		radio->region_params.band_low = 76 * FREQ_MUL;
+		radio->region_params.band_high = 90 * FREQ_MUL;
+		break;
+	case TAVARUA_REGION_JAPAN_WIDE:
+		radio->region_params.band_low = 90 * FREQ_MUL;
+		radio->region_params.band_high = 108 * FREQ_MUL;
+		break;
+	default:
+		/*set the rest of the world soft band*/
+		radio->region_params.band_low = 87.5 * FREQ_MUL;
+		radio->region_params.band_high = 108 * FREQ_MUL;
+		break;
 	}
 	radio->region_params.region = region;
 
@@ -1561,7 +1625,8 @@ static int tavarua_set_region(struct tavarua_device *radio,
 		}
 
 		/* Set channel spacing */
-		if (region == TAVARUA_REGION_US) {
+		switch (region) {
+		case TAVARUA_REGION_US:
 			if (adie_type_bahma) {
 				FMDBG("Adie type : Bahama\n");
 				/*
@@ -1574,12 +1639,23 @@ static int tavarua_set_region(struct tavarua_device *radio,
 				FMDBG("Adie type : Marimba\n");
 				value = FM_CH_SPACE_200KHZ;
 			}
-		} else {
+			break;
+		case TAVARUA_REGION_JAPAN:
+			value = FM_CH_SPACE_100KHZ;
+			break;
+		case TAVARUA_REGION_EU:
+		case TAVARUA_REGION_JAPAN_WIDE:
+			value = FM_CH_SPACE_50KHZ;
+			break;
+		default:
 			/*
 			Set the channel spacing as configured from
 			the upper layers.
 			*/
-			value = radio->region_params.spacing;
+			printk(KERN_WARNING DRIVER_NAME "%s\n: Set FM SPACE 100KHz", __func__);
+			value = FM_CH_SPACE_100KHZ;
+
+			break;
 		}
 		SET_REG_FIELD(radio->registers[RDCTRL], value,
 			RDCTRL_CHSPACE_OFFSET, RDCTRL_CHSPACE_MASK);
@@ -1919,7 +1995,7 @@ static int tavarua_fops_open(struct file *file)
 		}
 
 		/* Check for Bahama V2 variant*/
-		if (bahama_version == 0x09)	{
+		if ((bahama_version == 0x09) || (bahama_version == 0x0a)) {
 
 			/* In case of Bahama v2, forcefully enable the
 			 * internal analog and digital voltage controllers
@@ -2158,7 +2234,8 @@ static int tavarua_fops_release(struct file *file)
 	/* Set the index based on the bt status*/
 	index = bt_status ?  1 : 0;
 	/* Check for Bahama's existance and Bahama V2 variant*/
-	if (bahama_present && (bahama_version == 0x09))   {
+	if (bahama_present
+		&& (bahama_version == 0x09 || bahama_version == 0x0a))   {
 		radio->marimba->mod_id = SLAVE_ID_BAHAMA;
 		/* actual value itself used as mask*/
 		retval = marimba_write_bit_mask(radio->marimba,
@@ -3953,7 +4030,7 @@ static int tavarua_setup_interrupts(struct tavarua_device *radio,
 
 	/* use xfr for interrupt setup */
     if (radio->chipID == MARIMBA_2_1 || radio->chipID == BAHAMA_1_0
-		|| radio->chipID == BAHAMA_2_0) {
+		|| radio->chipID == BAHAMA_2_0 || radio->chipID == BAHAMA_2_1) {
 		FMDBG("Setting interrupts\n");
 		retval =  sync_write_xfr(radio, INT_CTRL, int_ctrl);
 	/* use register write to setup interrupts */
@@ -3979,7 +4056,8 @@ static int tavarua_setup_interrupts(struct tavarua_device *radio,
 	*  registers and it is not valid for MBA 2.1
 	*/
 	if ((radio->chipID != MARIMBA_2_1) && (radio->chipID != BAHAMA_1_0)
-		&& (radio->chipID != BAHAMA_2_0))
+		&& (radio->chipID != BAHAMA_2_0)
+		&& (radio->chipID != BAHAMA_2_1))
 		tavarua_handle_interrupts(radio);
 
 	return retval;
@@ -4012,7 +4090,7 @@ static int tavarua_disable_interrupts(struct tavarua_device *radio)
 	/* use xfr for interrupt setup */
 	wait_timeout = 100;
 	if (radio->chipID == MARIMBA_2_1 || radio->chipID == BAHAMA_1_0
-		|| radio->chipID == BAHAMA_2_0)
+		|| radio->chipID == BAHAMA_2_0 || radio->chipID == BAHAMA_2_1)
 		retval = sync_write_xfr(radio, INT_CTRL, lpm_buf);
 	/* use register write to setup interrupts */
 	else
@@ -4126,6 +4204,8 @@ static int tavarua_resume(struct platform_device *pdev)
 					tavarua_resume %d\n", retval);
 				return -EIO;
 			}
+			/*add the QCOMM patch */
+			tavarua_handle_interrupts(radio);
 		}
 	}
 	return 0;
