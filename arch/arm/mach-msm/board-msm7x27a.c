@@ -1284,8 +1284,15 @@ static void __init virtualkeys_init(void)
     struct kobject *properties_kobj;
     int ret=0;
     /*Modify the virtualkeys of touchsreen*/
-    if(machine_is_msm7x27a_U8815()
-        || machine_is_msm8x25_U8825()
+    if(machine_is_msm7x27a_U8815())
+    {
+    	buf_vkey_size = sprintf(buf_virtualkey,
+        			__stringify(EV_KEY) ":" __stringify(KEY_MENU)  ":57:850:100:80"
+        		   ":" __stringify(EV_KEY) ":" __stringify(KEY_HOME)   ":240:850:100:80"
+        		   ":" __stringify(EV_KEY) ":" __stringify(KEY_BACK) ":423:850:100:80"
+        		   "\n"); 
+    }
+    else if(machine_is_msm8x25_U8825()
         || machine_is_msm8x25_U8825D()
         || machine_is_msm8x25_C8825D()
         || machine_is_msm8x25_C8833D()
