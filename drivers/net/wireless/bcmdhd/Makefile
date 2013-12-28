@@ -7,14 +7,14 @@
 #	-DKEEP_ALIVE -DCSCAN -DGET_CUSTOM_MAC_ENABLE -DPKT_FILTER_SUPPORT     \
 #	-DEMBEDDED_PLATFORM -DENABLE_INSMOD_NO_FW_LOAD -DPNO_SUPPORT          \
 
-DHDCFLAGS = -Wall -Wstrict-prototypes -Dlinux -DBCMDRIVER                     \
+DHDCFLAGS = -Wall -Wstrict-prototypes -Dlinux -DBCMDRIVER                 \
 	-DBCMDONGLEHOST -DUNRELEASEDCHIP -DBCMDMA32 -DBCMFILEIMAGE            \
 	-DDHDTHREAD -DDHD_DEBUG -DSDTEST -DBDC -DTOE                          \
 	-DDHD_BCMEVENTS -DSHOW_EVENTS -DPROP_TXSTATUS -DBCMDBG                \
 	-DCUSTOMER_HW2 -DOOB_INTR_ONLY -DHW_OOB                               \
 	-DMMC_SDIO_ABORT -DBCMSDIO -DBCMLXSDMMC -DBCMPLATFORM_BUS -DWLP2P     \
 	-DWIFI_ACT_FRAME -DARP_OFFLOAD_SUPPORT                                \
-	-DKEEP_ALIVE -DGET_CUSTOM_MAC_ENABLE -DPKT_FILTER_SUPPORT             \
+	-DKEEP_ALIVE -DPKT_FILTER_SUPPORT                                     \
 	-DEMBEDDED_PLATFORM -DENABLE_INSMOD_NO_FW_LOAD -DPNO_SUPPORT          \
 	-Idrivers/net/wireless/bcmdhd -Idrivers/net/wireless/bcmdhd/include
 
@@ -23,14 +23,22 @@ DHDOFILES = aiutils.o bcmsdh_sdmmc_linux.o dhd_linux.o siutils.o bcmutils.o   \
 	bcmsdh.o dhd_cdc.o bcmsdh_linux.o dhd_common.o linux_osl.o            \
 	bcmsdh_sdmmc.o dhd_custom_gpio.o sbutils.o wldev_common.o wl_android.o
 
-obj-$(CONFIG_BCMDHD) += bcmdhd.o
-bcmdhd-objs += $(DHDOFILES)
+ifneq ($(CONFIG_HUAWEI_KERNEL),)
+DHDCFLAGS += -DCUSTOM_SDCC_WIFI_SLOT=2	\
+			 -DCUSTOM_OOB_GPIO_NUM=48	\
+			 -DSET_RANDOM_MAC_SOFTAP	\
+			 -DDHD_USE_STATIC_BUF		\
+			 -DCONFIG_WIFI_CONTROL_FUNC	\
+			 -Wno-unused-function
+endif
+obj-$(CONFIG_BCMDHD) += dhd.o
+dhd-objs += $(DHDOFILES)
 ifneq ($(CONFIG_WIRELESS_EXT),)
-bcmdhd-objs += wl_iw.o
+dhd-objs += wl_iw.o
 DHDCFLAGS += -DSOFTAP -DUSE_IW
 endif
 ifneq ($(CONFIG_CFG80211),)
-bcmdhd-objs += wl_cfg80211.o wl_cfgp2p.o wl_linux_mon.o dhd_cfg80211.o
+dhd-objs += wl_cfg80211.o wl_cfgp2p.o wl_linux_mon.o dhd_cfg80211.o
 DHDCFLAGS += -DWL_CFG80211 -DWL_CFG80211_STA_EVENT -DWL_ENABLE_P2P_IF
 endif
 EXTRA_CFLAGS = $(DHDCFLAGS)

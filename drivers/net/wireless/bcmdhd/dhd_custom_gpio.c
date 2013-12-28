@@ -87,8 +87,13 @@ int dhd_customer_oob_irq_map(unsigned long *irq_flags_ptr)
 	int  host_oob_irq = 0;
 
 #ifdef CUSTOMER_HW2
+#ifdef CONFIG_HUAWEI_KERNEL
+	dhd_oob_gpio_num = CUSTOM_OOB_GPIO_NUM;
+	host_oob_irq = MSM_GPIO_TO_INT(dhd_oob_gpio_num);
+#else
 	host_oob_irq = wifi_get_irq_number(irq_flags_ptr);
 
+#endif
 #else
 #if defined(CUSTOM_OOB_GPIO_NUM)
 	if (dhd_oob_gpio_num < 0) {
