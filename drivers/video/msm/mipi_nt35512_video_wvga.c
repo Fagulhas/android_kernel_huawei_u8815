@@ -1251,7 +1251,7 @@ static __init int mipi_video_nt35512_wvga_init(void)
 		pinfo->mipi.dsi_phy_db = &dsi_video_mode_phy_db;
 		pinfo->mipi.tx_eot_append = 0x01;
 
-		pinfo->mipi.dlane_swap = 0x1;
+//		pinfo->mipi.dlane_swap = 0x1;
 
 		ret = platform_device_register(&this_device);
 		if (ret)

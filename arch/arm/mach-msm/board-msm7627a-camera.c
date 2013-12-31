@@ -35,6 +35,8 @@
 #define GPIO_SKU3_CAM_5MP_SHDN_N   5         /* PWDN */
 #define GPIO_SKU3_CAM_5MP_CAMIF_RESET   6    /* (board_is(EVT))?123:121 RESET */
 #define GPIO_SKU3_CAM_5MP_CAM_DRIVER_PWDN 30
+
+
 #define GPIO_SKU7_CAM_VGA_SHDN    91
 #define GPIO_SKU7_CAM_5MP_SHDN_N   93         /* PWDN */
 #define GPIO_SKU7_CAM_5MP_CAMIF_RESET   23   /* (board_is(EVT))?123:121 RESET */
@@ -149,6 +151,7 @@ static struct msm_camera_gpio_conf gpio_conf_ov5647 = {
 #endif
 #endif
 
+
 #ifdef CONFIG_MSM_CAMERA_FLASH
 static struct msm_camera_sensor_flash_src msm_flash_src = {
 	.flash_sr_type = MSM_CAMERA_FLASH_SRC_EXT,
@@ -191,6 +194,7 @@ static struct camera_vreg_t ov8825_gpio_vreg[] = {
 	{"cam_ov8825_avdd", REG_GPIO, 0, 0, 0},
 	{"cam_ov8825_vdd", REG_GPIO, 0, 0, 0},
 };
+
 
 static struct camera_vreg_t ov7692_gpio_vreg[] = {
 	{"cam_ov7692_avdd", REG_GPIO, 0, 0, 0},
@@ -408,6 +412,8 @@ static struct msm_camera_sensor_info msm_camera_sensor_mt9p017_data = {
 	.slave_sensor = 0,
 	.get_camera_vreg = msm_get_camera_vreg,
 	.actuator_info = &msm_act_main_cam_6_info,
+
+
 };
 #endif
 
@@ -1054,6 +1060,8 @@ static struct msm_camera_sensor_info msm_camera_sensor_s5k3h2_data = {
 static struct gpio hi542_cam_req_gpio[] = {
 	{49, GPIOF_DIR_OUT, "CAM_RESET"},
 	{119, GPIOF_DIR_OUT, "CAM_PWD"},
+
+
 };
 
 //gpio 34 as the switch of CAM_DVDD(ldo)
@@ -1215,6 +1223,8 @@ static void __init msm7x27a_init_cam(void)
 			|| machine_is_msm8625_evt()
 			|| machine_is_msm8625_qrd7()) {
 #endif
+
+
 		platform_device_register(&msm8625_device_csic0);
 		platform_device_register(&msm8625_device_csic1);
 	} else {
@@ -1350,8 +1360,10 @@ static struct i2c_board_info i2c_camera_devices[] = {
 	{
 		I2C_BOARD_INFO("sc628a", 0x6E),
 	},
+
 };
 #endif
+
 #else
 static uint32_t camera_off_gpio_table[] = {
 	GPIO_CFG(8, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), /* RESET For mt9v113 */
@@ -1521,6 +1533,7 @@ static void evb_camera_gpio_cfg(void)
 			__func__, msm_camera_sensor_ov7692_data.sensor_pwd);
 #endif
 }
+
 
 #ifndef CONFIG_MSM_CAMERA_V4L2
 
@@ -2305,7 +2318,6 @@ void __init msm7627a_camera_init(void)
 #ifndef CONFIG_MSM_CAMERA_V4L2
 	int rc;
 #endif
-
 	pr_debug("msm7627a_camera_init Entered\n");
 
 	if (machine_is_msm7627a_qrd3() || machine_is_msm8625_qrd7()) {
@@ -2336,6 +2348,7 @@ void __init msm7627a_camera_init(void)
 		evb_camera_gpio_cfg();
 #endif
 	}
+
 
 #ifndef CONFIG_MSM_CAMERA_V4L2
 	if (machine_is_msm7627a_qrd1()) {

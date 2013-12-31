@@ -1,4 +1,4 @@
-/* Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2009-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -487,6 +487,12 @@ static int vfe_7x_config(struct msm_vfe_cfg_cmd *cmd, void *data)
 			rc = -ENOMEM;
 			goto config_failure;
 		}
+		if (vfecmd.length > sizeof(struct vfe_stats_we_cfg)) {
+			pr_err("%s: Invalid command length %d\n", __func__,
+				(vfecmd.length));
+			rc = -EINVAL;
+			goto config_done;
+		}
 
 		if (copy_from_user(scfg,
 					(void __user *)(vfecmd->value),
@@ -536,6 +542,13 @@ static int vfe_7x_config(struct msm_vfe_cfg_cmd *cmd, void *data)
 		if (!sfcfg) {
 			rc = -ENOMEM;
 			goto config_failure;
+		}
+
+		if (vfecmd.length > sizeof(struct vfe_stats_af_cfg)) {
+			pr_err("%s: Invalid command length %d\n", __func__,
+				(vfecmd.length));
+			rc = -EINVAL;
+			goto config_done;
 		}
 
 		if (copy_from_user(sfcfg,

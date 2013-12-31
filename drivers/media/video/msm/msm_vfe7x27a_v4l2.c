@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -625,10 +625,8 @@ static void vfe_7x_ops(void *driver_data, unsigned id, size_t len,
 					msm_adsp_write(vfe_mod,
 							QDSP_CMDQUEUE,
 							cmd_data, len);
-					if (!vfe2x_ctrl->zsl_mode) {
-						kfree(data);
-						return;
-					}
+					kfree(data);
+					return;
 				}
 			} else { /* Live snapshot */
 				spin_unlock_irqrestore(
@@ -801,12 +799,6 @@ static void vfe_7x_ops(void *driver_data, unsigned id, size_t len,
 			vfe2x_ctrl->vfeFrameId++;
 			if (vfe2x_ctrl->vfeFrameId == 0)
 				vfe2x_ctrl->vfeFrameId = 1; /* wrapped back */
-			if ((op_mode & SNAPSHOT_MASK_MODE) && !raw_mode
-				&& (vfe2x_ctrl->num_snap <= 1)) {
-				CDBG("Ignore SOF for snapshot\n");
-				kfree(data);
-				return;
-			}
 			vfe2x_send_isp_msg(vfe2x_ctrl, MSG_ID_SOF_ACK);
 			if (raw_mode)
 				vfe2x_send_isp_msg(vfe2x_ctrl,
@@ -1294,6 +1286,12 @@ static long msm_vfe_subdev_ioctl(struct v4l2_subdev *sd,
 			rc = -ENOMEM;
 			goto config_failure;
 		}
+		if (vfecmd.length > sizeof(struct vfe_stats_we_cfg) - 4) {
+			pr_err("%s: Invalid command length %d\n", __func__,
+				(vfecmd.length));
+			rc = -EINVAL;
+			goto config_done;
+		}
 
 		if (copy_from_user((char *)scfg + 4,
 					(void __user *)(vfecmd.value),
@@ -1350,6 +1348,12 @@ static long msm_vfe_subdev_ioctl(struct v4l2_subdev *sd,
 		if (!sfcfg) {
 			rc = -ENOMEM;
 			goto config_failure;
+		}
+		if (vfecmd.length > sizeof(struct vfe_stats_af_cfg) - 4) {
+			pr_err("%s: Invalid command length %d\n", __func__,
+				(vfecmd.length));
+			rc = -EINVAL;
+			goto config_done;
 		}
 
 		if (copy_from_user((char *)sfcfg + 4,

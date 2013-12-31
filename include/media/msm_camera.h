@@ -1,4 +1,4 @@
-/* Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2009-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -237,7 +237,7 @@ struct msm_mctl_post_proc_cmd {
 #define MAX_ACTUATOR_INIT_SET 12
 #define MAX_ACTUATOR_TYPE_SIZE 32
 #define MAX_ACTUATOR_REG_TBL_SIZE 8
-
+#define MAX_ACTUATOR_AF_TOTAL_STEPS 1024
 
 #define MSM_MAX_CAMERA_CONFIGS 2
 
@@ -245,6 +245,8 @@ struct msm_mctl_post_proc_cmd {
 #define PP_RAW_SNAP ((0x01)<<1)
 #define PP_PREV  ((0x01)<<2)
 #define PP_THUMB ((0x01)<<3)
+#define MSM_ACTUATOR_MOVE_SIGNED_FAR -1
+#define MSM_ACTUATOR_MOVE_SIGNED_NEAR  1
 #define PP_MASK		(PP_SNAP|PP_RAW_SNAP|PP_PREV|PP_THUMB)
 
 #define MSM_CAM_CTRL_CMD_DONE  0
@@ -828,12 +830,16 @@ struct msm_snapshot_pp_status {
 #define CFG_START_STREAM              44
 #define CFG_STOP_STREAM               45
 #define CFG_GET_CSI_PARAMS            46
+#define CFG_SENSOR_PIP_SET_CAM_MODE   47
+#define CFG_SENSOR_PIP_GET_CAM_MODE   48
+#define CFG_MAX			49
 /*lijuan add for AWB OTP*/
 #define CFG_OTP_READING     235
 /* < huawei zhangyu 20120320 begin */
 #define CFG_SET_NR          237
 #define CFG_RESET           236
-#define CFG_MAX			243
+//#define CFG_MAX			243
+
 
 
 #define MOVE_NEAR	0
@@ -870,6 +876,11 @@ struct msm_snapshot_pp_status {
 #define CAMERA_EFFECT_BLUISH	12
 #define CAMERA_EFFECT_REDDISH	13
 #define CAMERA_EFFECT_GREENISH	14
+
+/* PIP working mode */
+#define CAM_WORKING_MODE_NORMAL     0
+#define CAM_WORKING_MODE_PIP        1
+
 
 /* QRD */
 #define CAMERA_ANTIBANDING_OFF		0
@@ -1305,6 +1316,7 @@ struct sensor_cfg_data {
 		uint8_t saturation;
 		uint8_t sharpness;
 		int8_t brightness;
+		int32_t pip_mode;
 		int ae_mode;
 		uint8_t wb_val;
 		int8_t exp_compensation;
@@ -1338,6 +1350,7 @@ enum msm_actuator_addr_type {
 enum msm_actuator_write_type {
 	MSM_ACTUATOR_WRITE_HW_DAMP,
 	MSM_ACTUATOR_WRITE_DAC,
+	MSM_ACTUATOR_WRITE_DAC_AD5823,
 };
 
 struct msm_actuator_reg_params_t {

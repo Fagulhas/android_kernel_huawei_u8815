@@ -928,19 +928,8 @@ static ssize_t fsg_store_file(struct device *dev, struct device_attribute *attr,
 	struct rw_semaphore	*filesem = dev_get_drvdata(dev);
 	int		rc = 0;
 
-#ifdef CONFIG_HUAWEI_KERNEL
-    USB_PR("%s: buf=%s\n", __func__, buf);
-    
-    /* delete 9 lines. do not ignore unshare in normal mode
-     * if we turn on usb mass storage, we never exit to normal mode anymore
-     */
-#endif
-    
-    /* do not include these lines in huawei code.
-     * if the code is included, usb mass storage can't be turned off
-     * when connected with the mac host 
-     */
-#if !defined (CONFIG_USB_ANDROID_MASS_STORAGE) && !defined(CONFIG_HUAWEI_KERNEL)
+
+#if !defined(CONFIG_USB_G_ANDROID)
 	/* disabled in android because we need to allow closing the backing file
 	 * if the media was removed
 	 */

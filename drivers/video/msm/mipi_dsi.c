@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2008-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -248,7 +248,8 @@ static int mipi_dsi_on(struct platform_device *pdev)
 					width + dummy_xres + hfp - 1));
 		} else {
 			/* DSI_LAN_SWAP_CTRL */
-			MIPI_OUTP(MIPI_DSI_BASE + 0x00ac, mipi->dlane_swap);
+			MIPI_OUTP(MIPI_DSI_BASE + 0x00ac,
+						mipi_dsi_pdata->dlane_swap);
 
 			MIPI_OUTP(MIPI_DSI_BASE + 0x20,
 				((hbp + width + dummy_xres) << 16 | (hbp)));
@@ -286,7 +287,7 @@ static int mipi_dsi_on(struct platform_device *pdev)
 		MIPI_OUTP(MIPI_DSI_BASE + 0x58, data);
 	}
 
-	mipi_dsi_host_init(mipi);
+	mipi_dsi_host_init(mipi, mipi_dsi_pdata->dlane_swap);
 
 	if (mipi->force_clk_lane_hs) {
 		u32 tmp;

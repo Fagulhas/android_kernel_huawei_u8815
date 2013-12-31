@@ -118,7 +118,6 @@ static DEFINE_MUTEX(dbs_mutex);
 
 static struct workqueue_struct *input_wq;
 
-/* merge qcom commit c8fc30160f2fcfb2578e13e05202fb387c993a14 */
 struct dbs_work_struct {
 	struct work_struct work;
 	unsigned int cpu;
@@ -882,7 +881,6 @@ static int should_io_be_busy(void)
 	return 0;
 }
 
-/* merge qcom commit c8fc30160f2fcfb2578e13e05202fb387c993a14 */
 static void dbs_refresh_callback(struct work_struct *work)
 {
 	struct cpufreq_policy *policy;
@@ -906,10 +904,14 @@ static void dbs_refresh_callback(struct work_struct *work)
 	}
 
 	if (policy->cur < policy->max) {
-		policy->cur = policy->max;
+		/*
+		 * Arch specific cpufreq driver may fail.
+		 * Don't update governor frequency upon failure.
+		 */
+		if (__cpufreq_driver_target(policy, policy->max,
+					CPUFREQ_RELATION_L) >= 0)
+			policy->cur = policy->max;
 
-		__cpufreq_driver_target(policy, policy->max,
-					CPUFREQ_RELATION_L);
 		this_dbs_info->prev_cpu_idle = get_cpu_idle_time(cpu,
 				&this_dbs_info->prev_cpu_wall);
 	}
@@ -933,7 +935,6 @@ static void dbs_input_event(struct input_handle *handle, unsigned int type,
 		return;
 	}
 
-	/* merge qcom commit c8fc30160f2fcfb2578e13e05202fb387c993a14 */
 	for_each_online_cpu(i)
 		queue_work_on(i, input_wq, &per_cpu(dbs_refresh_work, i).work);
 }
@@ -1076,9 +1077,6 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 			rc = input_register_handler(&dbs_input_handler);
 		mutex_unlock(&dbs_mutex);
 
-		/* merge qcom patch Ie9014407.
-		 * delete 1 line and move it to cpufreq_gov_dbs_init.
-		 */
 
 		if (!ondemand_powersave_bias_setspeed(
 					this_dbs_info->cur_policy,
@@ -1158,10 +1156,6 @@ static int __init cpufreq_gov_dbs_init(void)
 		return -EFAULT;
 	}
 	for_each_possible_cpu(i) {
-		/* merge qcom commit c8fc30160f2fcfb2578e13e05202fb387c993a14 */
-		/* merge qcom patch Ie9014407.
-		* add mutex_init here to make sure it is called before mutex_lock.
-		*/
 		struct cpu_dbs_info_s *this_dbs_info =
 			&per_cpu(od_cpu_dbs_info, i);
 		struct dbs_work_struct *dbs_work =

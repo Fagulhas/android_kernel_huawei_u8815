@@ -2,6 +2,7 @@
    BlueZ - Bluetooth protocol stack for Linux
    Copyright (c) 2000-2001, 2010-2011 Code Aurora Forum.  All rights reserved.
 
+
    Written 2000,2001 by Maxim Krasnyansky <maxk@qualcomm.com>
 
    This program is free software; you can redistribute it and/or modify
@@ -366,6 +367,8 @@ struct hci_conn *hci_conn_add(struct hci_dev *hdev, int type,
 	conn->power_save = 1;
 	conn->disc_timeout = HCI_DISCONN_TIMEOUT;
 
+
+
 	switch (type) {
 	case ACL_LINK:
 		conn->pkt_type = hdev->pkt_type & ACL_PTYPE_MASK;
@@ -431,6 +434,7 @@ int hci_conn_del(struct hci_conn *conn)
 	struct hci_dev *hdev = conn->hdev;
 
 	BT_DBG("%s conn %p handle %d", hdev->name, conn, conn->handle);
+
 
 	del_timer(&conn->idle_timer);
 
@@ -887,9 +891,10 @@ void hci_conn_enter_active_mode(struct hci_conn *conn, __u8 force_active)
 	}
 
 timer:
+
 	if (hdev->idle_timeout > 0)
-		mod_timer(&conn->idle_timer,
-			jiffies + msecs_to_jiffies(hdev->idle_timeout));
+			mod_timer(&conn->idle_timer,
+				jiffies + msecs_to_jiffies(hdev->idle_timeout));
 }
 
 /* Enter sniff mode */

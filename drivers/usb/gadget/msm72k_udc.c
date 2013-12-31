@@ -2,7 +2,7 @@
  * Driver for HighSpeed USB Client Controller in MSM7K
  *
  * Copyright (C) 2008 Google, Inc.
- * Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2009-2013, The Linux Foundation. All rights reserved.
  * Author: Mike Lockwood <lockwood@android.com>
  *         Brian Swetland <swetland@google.com>
  *
@@ -103,6 +103,7 @@ struct msm_request {
 	unsigned busy:1;
 	unsigned live:1;
 	unsigned alloced:1;
+	unsigned completing:1;
 
 	dma_addr_t dma;
 	dma_addr_t item_dma;
@@ -164,6 +165,7 @@ static void usb_do_remote_wakeup(struct work_struct *w);
 #define REMOTE_WAKEUP_DELAY	msecs_to_jiffies(1000)
 #define PHY_STATUS_CHECK_DELAY	(jiffies + msecs_to_jiffies(1000))
 #define EPT_PRIME_CHECK_DELAY	(jiffies + msecs_to_jiffies(1000))
+#define EP_DEQUEUE_WAIT		100 /* wait 1ms */
 
 struct usb_info {
 	/* lock for register/queue/device state changes */
@@ -536,6 +538,15 @@ static void config_ept(struct msm_endpoint *ept)
 {
 	struct usb_info *ui = ept->ui;
 	unsigned cfg = CONFIG_MAX_PKT(ept->ep.maxpacket) | CONFIG_ZLT;
+	const struct usb_endpoint_descriptor *desc = ept->ep.desc;
+	unsigned mult = 0;
+
+	if (desc && ((desc->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK)
+				== USB_ENDPOINT_XFER_ISOC)) {
+		cfg &= ~(CONFIG_MULT);
+		mult = ((ept->ep.maxpacket >> CONFIG_MULT_SHIFT) + 1) & 0x03;
+		cfg |= (mult << (ffs(CONFIG_MULT) - 1));
+	}
 
 	/* ep0 out needs interrupt-on-setup */
 	if (ept->bit == 0)
@@ -1256,12 +1267,14 @@ dequeue:
 		}
 		req->busy = 0;
 		req->live = 0;
+		req->completing = 1;
 
 		if (req->req.complete) {
 			spin_unlock_irqrestore(&ui->lock, flags);
 			req->req.complete(&ept->ep, &req->req);
 			spin_lock_irqsave(&ui->lock, flags);
 		}
+		req->completing = 0;
 	}
 	spin_unlock_irqrestore(&ui->lock, flags);
 }
@@ -1286,6 +1299,9 @@ static void flush_endpoint_sw(struct msm_endpoint *ept)
 	struct usb_info *ui = ept->ui;
 	struct msm_request *req, *next_req = NULL;
 	unsigned long flags;
+
+	if (!ept->req)
+		return;
 
 	/* inactive endpoints have nothing to do here */
 	if (ept->ep.maxpacket == 0)
@@ -1331,8 +1347,12 @@ static void flush_endpoint(struct msm_endpoint *ept)
 static irqreturn_t usb_interrupt(int irq, void *data)
 {
 	struct usb_info *ui = data;
+	struct msm_otg *dev = to_msm_otg(ui->xceiv);
 	unsigned n;
 	unsigned long flags;
+
+	if (atomic_read(&dev->in_lpm))
+		return IRQ_NONE;
 
 	n = readl(USB_USBSTS);
 	writel(n, USB_USBSTS);
@@ -1683,6 +1703,20 @@ static void usb_do_work(struct work_struct *w)
 				usb_phy_set_power(ui->xceiv, 0);
 
 				if (ui->irq) {
+					/* Disable and acknowledge all
+					 * USB interrupts before freeing
+					 * irq, so that no USB spurious
+					 * interrupt occurs during USB cable
+					 * disconnect which may lead to
+					 * IRQ nobody cared error.
+					 */
+					writel_relaxed(0, USB_USBINTR);
+					writel_relaxed(readl_relaxed(USB_USBSTS)
+								, USB_USBSTS);
+					/* Ensure that above STOREs are
+					 * completed before enabling
+					 * interrupts */
+					wmb();
 					free_irq(ui->irq, ui);
 					ui->irq = 0;
 				}
@@ -2242,6 +2276,9 @@ msm72k_queue(struct usb_ep *_ep, struct usb_request *req, gfp_t gfp_flags)
 	struct msm_endpoint *ep = to_msm_endpoint(_ep);
 	struct usb_info *ui = ep->ui;
 
+	if (!atomic_read(&ui->softconnect))
+		return -ENODEV;
+
 	if (ep == &ui->ep0in) {
 		struct msm_request *r = to_msm_request(req);
 		if (!req->length)
@@ -2268,11 +2305,40 @@ static int msm72k_dequeue(struct usb_ep *_ep, struct usb_request *_req)
 
 	struct msm_request *temp_req;
 	unsigned long flags;
-
-	if (!(ui && req && ep->req))
-		return -EINVAL;
+	u8	iter = 0;
 
 	spin_lock_irqsave(&ui->lock, flags);
+
+	/*
+	 * Only ep0 IN is exposed to composite.  When a req is dequeued
+	 * on ep0, check both ep0 IN and ep0 OUT queues.
+	 */
+	if (req == NULL || ui == NULL || (ep->req == NULL
+		&& (ep->num != 0 || ui->ep0out.req == NULL))) {
+		spin_unlock_irqrestore(&ui->lock, flags);
+		return -EINVAL;
+	}
+
+	/* Synchronize handle_endpoint/msm72k_dequeue. Delay 1ms */
+	if (ep->num == 0) {
+		while ((iter < EP_DEQUEUE_WAIT) && req->completing) {
+			iter++;
+			spin_unlock_irqrestore(&ui->lock, flags);
+			udelay(10);
+			spin_lock_irqsave(&ui->lock, flags);
+		}
+	}
+	spin_unlock_irqrestore(&ui->lock, flags);
+
+	if (ep->num == 0) {
+		/* Flush both out and in control endpoints */
+		flush_endpoint(&ui->ep0out);
+		flush_endpoint(&ui->ep0in);
+		return 0;
+	}
+
+	spin_lock_irqsave(&ui->lock, flags);
+
 	if (!req->busy) {
 		dev_dbg(&ui->pdev->dev, "%s: !req->busy\n", __func__);
 		spin_unlock_irqrestore(&ui->lock, flags);

@@ -395,6 +395,7 @@ config ARCH_MSM7X27A
 	select ARCH_MSM_CORTEXMP
 	select MIGHT_HAVE_CACHE_L2X0
 	select ARM_HAS_SG_CHAIN
+	select MSM_FIQ_SUPPORT
 
 config  MSM_VIC
 	bool
@@ -583,6 +584,42 @@ config MACH_MSM8625_EVT
 	bool "MSM8625 EVT"
 	help
 	  Support for the Qualcomm MSM8625 Reference Design.
+
+config MACH_QRD_SKUD_PRIME
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default y
+	bool "MSM8625 SKUD PRIME"
+	help
+	  Support for the Qualcomm MSM8625 SKUD prime Reference Design.
+	  Add support for a SKUD prime reference design based on MSM8x25
+	  chipset. This device is much closer to a phone than regular form
+	  factor devices, with new touch, display panel and other hardware
+	  configurations.
+
+config MACH_MSM8625Q_EVBD
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default y
+	bool "MSM8625Q EVBD"
+	help
+	  Support for the Qualcomm MSM8625Q EVBD Reference Design.
+	  Add support for a EVBD reference design based on MSM8x25Q
+	  chipset. This device is much closer to a phone than regular form
+	  factor devices, with new touch, display panel and other hardware
+	  configurations.
+
+config MACH_MSM8625Q_SKUD
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default y
+	bool "MSM8625Q SKUD"
+	help
+	  Support for the Qualcomm MSM8625Q SKUD Reference Design.
+	  Add support for a SKUD reference design based on MSM8x25Q
+	  chipset. This device is much closer to a phone than regular form
+	  factor devices, with new touch, display panel and other hardware
+	  configurations.
 
 config MACH_MSM7X30_SURF
        depends on ARCH_MSM7X30
@@ -2690,6 +2727,15 @@ config MSM_FIQ
 	  if apps is not responding and holding lock with irqs disabled.
 	  Modem will then generate an raise a FIQ on this line before sending
 	  SMSM reset
+config MSM_PBUS
+	bool "Enable PBUS handler for debugging"
+	depends on ARCH_MSM8625 || ARCH_MSM7X27A
+	default y
+	help
+	  Register PBUS interrupt handler. This will help
+	  in debugging PBUS hang issues. This handler reads
+	  client address which caused PBUS hang and PBUS
+	  master information at the time of hang.
 endif
 
 config HUAWEI_GPIO_KEYPAD

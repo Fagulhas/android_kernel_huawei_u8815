@@ -389,12 +389,11 @@ struct i2c_adapter {
 
 	struct mutex userspace_clients_lock;
 	struct list_head userspace_clients;
-
 #ifdef CONFIG_HUAWEI_I2C_DEBUG_TOOL
     u8 bus_debug_flag;
     unsigned short debug_addr;
 #endif
-
+	int (*recover_bus)(struct i2c_adapter *);
 };
 #define to_i2c_adapter(d) container_of(d, struct i2c_adapter, dev)
 

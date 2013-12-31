@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1520,7 +1520,7 @@ static long audio_mvs_ioctl(struct file *file,
 	switch (cmd) {
 	case AUDIO_GET_MVS_CONFIG: {
 		struct msm_audio_mvs_config config;
-
+		memset(&config, 0, sizeof(config));
 		MM_DBG("GET_MVS_CONFIG mvs_mode %d rate_type %d\n",
 			config.mvs_mode, config.rate_type);
 
@@ -1672,13 +1672,8 @@ static int audio_mvs_open(struct inode *inode, struct file *file)
 
 	mutex_lock(&audio_mvs_info.lock);
 
-//Note: disable the state judgement between state with AUDIO_MVS_CLOSED 
-// according to QC SR 01103475. 
-#if 0
-	if (audio_mvs_info.state == AUDIO_MVS_CLOSED) {
-#endif
 	if (audio_mvs_info.task != NULL ||
-		audio_mvs_info.rpc_endpt != NULL) {
+			audio_mvs_info.rpc_endpt != NULL) {
 		rc = audio_mvs_alloc_buf(&audio_mvs_info);
 
 		if (rc == 0) {
@@ -1690,16 +1685,6 @@ static int audio_mvs_open(struct inode *inode, struct file *file)
 
 		rc = -ENODEV;
 	}
-//Note: disable the state judgement between state with AUDIO_MVS_CLOSED 
-// according to QC SR 01103475.     
-#if 0
-	} else {
-		MM_ERR("MVS driver exists, state %d\n",
-		       audio_mvs_info.state);
-
-		rc = -EBUSY;
-	}
-#endif
 	mutex_unlock(&audio_mvs_info.lock);
 
 done:
