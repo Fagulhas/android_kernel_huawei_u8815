@@ -44,6 +44,8 @@
 #define PMAPP_DISP_BACKLIGHT_SET_PROC		31
 #define PMAPP_DISP_BACKLIGHT_INIT_PROC		32
 #define PMAPP_VREG_LPM_PINCNTRL_VOTE_PROC	34
+#define PMAPP_BUTTON_BACKLIGHT_INIT_PROC	254
+#define PMAPP_BUTTON_BACKLIGHT_SET_PROC	255
 
 /* Clock voter name max length */
 #define PMAPP_CLOCK_VOTER_ID_LEN		4
@@ -387,8 +389,8 @@ static int pmapp_rpc_req_reply(struct pmapp_buf *tbuf, struct pmapp_buf *rbuf,
 
 	if ((pm->endpoint == NULL) || IS_ERR(pm->endpoint)) {
 		for (i = 0; i < ARRAY_SIZE(rpc_vers); i++) {
-			pm->endpoint = msm_rpc_connect_compatible(
-					PMAPP_RPC_PROG,	rpc_vers[i], 0);
+            pm->endpoint = msm_rpc_connect_compatible(             
+                    PMAPP_RPC_PROG, rpc_vers[i], MSM_RPC_UNINTERRUPTIBLE);
 
 			if (IS_ERR(pm->endpoint)) {
 				ans  = PTR_ERR(pm->endpoint);
@@ -424,7 +426,6 @@ static int pmapp_rpc_req_reply(struct pmapp_buf *tbuf, struct pmapp_buf *rbuf,
 
 	if (len <= 0) {
 		printk(KERN_ERR "%s: rpc failed! len = %d\n", __func__, len);
-		pm->endpoint = NULL;	/* re-connect later ? */
 		return len;
 	}
 
@@ -562,6 +563,22 @@ void pmapp_disp_backlight_init(void)
 	pmapp_rpc_set_only(0, 0, 0, 0, 0, PMAPP_DISP_BACKLIGHT_INIT_PROC);
 }
 EXPORT_SYMBOL(pmapp_disp_backlight_init);
+
+void pmapp_button_backlight_init(void)
+{
+	pmapp_rpc_set_only(0, 0, 0, 0, 0, PMAPP_BUTTON_BACKLIGHT_INIT_PROC);
+}
+EXPORT_SYMBOL(pmapp_button_backlight_init);
+
+int pmapp_button_backlight_set_brightness(int value)
+{
+	if (value < 0 || value > 255)
+		return -EINVAL;
+
+	return pmapp_rpc_set_only(value, 0, 0, 0, 1,
+				PMAPP_BUTTON_BACKLIGHT_SET_PROC);
+}
+EXPORT_SYMBOL(pmapp_button_backlight_set_brightness);
 
 int pmapp_vreg_lpm_pincntrl_vote(const char *voter_id, uint vreg_id,
 						uint clock_id, uint vote)

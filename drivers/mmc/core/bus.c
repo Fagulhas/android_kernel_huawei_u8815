@@ -25,6 +25,9 @@
 #include "sdio_cis.h"
 #include "bus.h"
 
+#ifdef CONFIG_HUAWEI_KERNEL
+#include "hw_extern_sdcard.h"
+#endif
 #define to_mmc_driver(d)	container_of(d, struct mmc_driver, drv)
 
 static ssize_t mmc_type_show(struct device *dev,
@@ -121,6 +124,25 @@ static int mmc_bus_remove(struct device *dev)
 
 	return 0;
 }
+#ifdef CONFIG_HUAWEI_KERNEL
+static void mmc_bus_shutdown(struct device *dev)
+{
+	struct mmc_driver *drv = to_mmc_driver(dev->driver);
+	struct mmc_card *card = mmc_dev_to_card(dev);
+
+	if (!drv) {
+		pr_debug("%s: %s: drv is NULL\n", dev_name(dev), __func__);
+		return;
+	}
+
+	if (!card) {
+		pr_debug("%s: %s: card is NULL\n", dev_name(dev), __func__);
+		return;
+	}
+	if (drv->shutdown)
+		drv->shutdown(card);
+}
+#endif
 
 #ifdef CONFIG_PM_SLEEP
 static int mmc_bus_suspend(struct device *dev)
@@ -185,6 +207,9 @@ static struct bus_type mmc_bus_type = {
 	.uevent		= mmc_bus_uevent,
 	.probe		= mmc_bus_probe,
 	.remove		= mmc_bus_remove,
+#ifdef CONFIG_HUAWEI_KERNEL
+	.shutdown        = mmc_bus_shutdown,
+#endif
 	.pm		= &mmc_bus_pm_ops,
 };
 
@@ -276,6 +301,9 @@ int mmc_add_card(struct mmc_card *card)
 	};
 
 
+#ifdef CONFIG_HUAWEI_KERNEL
+	mdelay(100);
+#endif
 	dev_set_name(&card->dev, "%s:%04x", mmc_hostname(card->host), card->rca);
 
 	switch (card->type) {
@@ -324,6 +352,12 @@ int mmc_add_card(struct mmc_card *card)
 			uhs_bus_speed_mode, type, card->rca);
 	}
 
+#ifdef CONFIG_HUAWEI_KERNEL
+    if(MMC_TYPE_SD  == card->type)
+    {
+        hw_extern_sdcard_insert();
+    }
+#endif
 #ifdef CONFIG_DEBUG_FS
 	mmc_add_card_debugfs(card);
 #endif
@@ -355,6 +389,14 @@ void mmc_remove_card(struct mmc_card *card)
 			pr_info("%s: card %04x removed\n",
 				mmc_hostname(card->host), card->rca);
 		}
+        
+        #ifdef CONFIG_HUAWEI_KERNEL
+        if(MMC_TYPE_SD  == card->type)
+        {
+            hw_extern_sdcard_remove();
+        }
+        #endif
+
 		device_del(&card->dev);
 	}
 

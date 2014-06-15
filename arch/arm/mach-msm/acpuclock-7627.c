@@ -229,7 +229,20 @@ static struct clkctl_acpu_speed pll0_960_pll1_245_pll2_1200_pll4_1008[] = {
 	{ 1, 480000, ACPU_PLL_0, 4, 1, 60000, 3, 5, 122880 },
 	{ 0, 504000, ACPU_PLL_4, 6, 1, 63000, 3, 6, 160000 },
 	{ 1, 600000, ACPU_PLL_2, 2, 1, 75000, 3, 6, 160000 },
+#ifdef CONFIG_MSM7X27A_UNDERVOLT 
+	{ 1, 1008000, ACPU_PLL_4, 6, 0, 126000, 3, 6, 200000},
+#else
 	{ 1, 1008000, ACPU_PLL_4, 6, 0, 126000, 3, 7, 200000},
+#endif
+#ifdef CONFIG_MSM7X27A_OVERCLOCK
+	{ 1, 1100000, ACPU_PLL_2, 2, 3, 137500, 3, 7, 200000 },
+	{ 1, 1150000, ACPU_PLL_2, 2, 3, 143750, 3, 7, 200000 },
+	{ 1, 1200000, ACPU_PLL_2, 2, 3, 150000, 3, 7, 200000 },
+	{ 1, 1228800, ACPU_PLL_2, 2, 3, 153600, 3, 7, 200000 },	
+	{ 0, 1250000, ACPU_PLL_2, 2, 3, 156250, 3, 7, 200000 },
+	{ 0, 1267200, ACPU_PLL_2, 2, 3, 158400, 2, 7, 200000 },
+	{ 0, 1300000, ACPU_PLL_2, 2, 3, 162500, 2, 7, 200000 },
+#endif
 	{ 0 }
 };
 
@@ -292,7 +305,11 @@ static struct clkctl_acpu_speed pll0_960_pll1_245_pll2_1200_pll4_1401[] = {
 	{ 1, 700800, ACPU_PLL_4, 6, 0, 87500, 3, 4, 160000, &pll4_cfg_tbl[0]},
 	{ 1, 1008000, ACPU_PLL_4, 6, 0, 126000, 3, 5, 200000, &pll4_cfg_tbl[1]},
 	{ 1, 1209600, ACPU_PLL_4, 6, 0, 151200, 3, 6, 200000, &pll4_cfg_tbl[2]},
+#ifdef CONFIG_HUAWEI_KERNEL
+	{ 0, 1401600, ACPU_PLL_4, 6, 0, 175000, 3, 7, 200000, &pll4_cfg_tbl[3]},
+#else
 	{ 1, 1401600, ACPU_PLL_4, 6, 0, 175000, 3, 7, 200000, &pll4_cfg_tbl[3]},
+#endif
 	{ 0 }
 };
 
@@ -308,7 +325,11 @@ static struct clkctl_acpu_speed pll0_960_pll1_196_pll2_1200_pll4_1401[] = {
 	{ 1, 700800, ACPU_PLL_4, 6, 0, 87500, 3, 4, 160000, &pll4_cfg_tbl[0]},
 	{ 1, 1008000, ACPU_PLL_4, 6, 0, 126000, 3, 5, 200000, &pll4_cfg_tbl[1]},
 	{ 1, 1209600, ACPU_PLL_4, 6, 0, 151200, 3, 6, 200000, &pll4_cfg_tbl[2]},
+#ifdef CONFIG_HUAWEI_KERNEL
+	{ 0, 1401600, ACPU_PLL_4, 6, 0, 175000, 3, 7, 200000, &pll4_cfg_tbl[3]},
+#else
 	{ 1, 1401600, ACPU_PLL_4, 6, 0, 175000, 3, 7, 200000, &pll4_cfg_tbl[3]},
+#endif
 	{ 0 }
 };
 
@@ -615,10 +636,23 @@ static void acpuclk_set_div(const struct clkctl_acpu_speed *hunt_s)
 {
 	uint32_t reg_clkctl, reg_clksel, clk_div, src_sel;
 
+#ifdef CONFIG_MSM7X27A_OVERCLOCK
+	uint32_t a11_div;
+#endif
+
 	reg_clksel = readl_relaxed(A11S_CLK_SEL_ADDR);
 
 	/* AHB_CLK_DIV */
 	clk_div = (reg_clksel >> 1) & 0x03;
+#ifdef CONFIG_MSM7X27A_OVERCLOCK
+	a11_div=hunt_s->a11clk_src_div;
+        if(hunt_s->a11clk_khz>1008000) {
+        a11_div=0;
+        writel(hunt_s->a11clk_khz/19200, MSM_CLK_CTL_BASE+0x33C);
+        cpu_relax();
+        udelay(50);
+	}
+#endif
 	/* CLK_SEL_SRC1NO */
 	src_sel = reg_clksel & 1;
 
@@ -636,7 +670,11 @@ static void acpuclk_set_div(const struct clkctl_acpu_speed *hunt_s)
 	reg_clkctl = readl_relaxed(A11S_CLK_CNTL_ADDR);
 	reg_clkctl &= ~(0xFF << (8 * src_sel));
 	reg_clkctl |= hunt_s->a11clk_src_sel << (4 + 8 * src_sel);
+	#ifdef CONFIG_MSM7X27A_OVERCLOCK  
+	reg_clkctl |= a11_div << (0 + 8 * src_sel);  
+	#else
 	reg_clkctl |= hunt_s->a11clk_src_div << (0 + 8 * src_sel);
+	#endif
 	writel_relaxed(reg_clkctl, A11S_CLK_CNTL_ADDR);
 
 	/* Program clock source selection */
@@ -779,8 +817,10 @@ static int acpuclk_7627_set_rate(int cpu, unsigned long rate,
 			plls_enabled |= 1 << tgt_s->pll;
 		}
 		acpuclk_set_div(tgt_s);
+
 		drv_state.current_speed = tgt_s;
 		/* Re-adjust lpj for the new clock speed. */
+		/* Integrate QC patch to Select proper target frequency row for update_jiffies */
 		update_jiffies(cpu, tgt_s->lpj);
 
 		/* Disable the backup PLL */
@@ -1017,7 +1057,7 @@ static void __devinit select_freq_plan(void)
 	 * are using different clock plan based reprogramming method.
 	 */
 	if (cpu_is_msm8625() &&	pll_mhz[ACPU_PLL_4] == 1008) {
-		if (pll_mhz[ACPU_PLL_2] == 245)
+		if (pll_mhz[ACPU_PLL_1] == 245)
 			acpu_freq_tbl =
 				pll0_960_pll1_245_pll2_1200_pll4_1008_2p0;
 		else

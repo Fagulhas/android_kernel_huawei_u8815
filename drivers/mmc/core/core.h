@@ -49,8 +49,13 @@ void mmc_set_timing(struct mmc_host *host, unsigned int timing);
 void mmc_set_driver_type(struct mmc_host *host, unsigned int drv_type);
 void mmc_power_off(struct mmc_host *host);
 
+ /* we modified the function in order to make the mobile
+ * easier to be waken up after update MMC code to QualComm 2020 kernel */
 static inline void mmc_delay(unsigned int ms)
 {
+#ifdef CONFIG_HUAWEI_KERNEL
+		mdelay(ms);
+#else
 	if (ms < 1000 / HZ) {
 		cond_resched();
 		mdelay(ms);
@@ -59,6 +64,7 @@ static inline void mmc_delay(unsigned int ms)
 	} else {
 		msleep(ms);
 	}
+#endif
 }
 
 void mmc_rescan(struct work_struct *work);

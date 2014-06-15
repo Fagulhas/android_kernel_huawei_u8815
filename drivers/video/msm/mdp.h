@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2008-2013, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -45,6 +45,10 @@ extern int mdp_rev;
 extern int mdp_iommu_split_domain;
 extern struct mdp_csc_cfg mdp_csc_convert[4];
 extern struct workqueue_struct *mdp_hist_wq;
+#ifdef CONFIG_HUAWEI_KERNEL
+/* Extern the mdp_pipe_ctrl_mutex for process_lcd_table function */
+extern struct semaphore mdp_pipe_ctrl_mutex;
+#endif
 
 extern uint32 mdp_intr_mask;
 
@@ -72,6 +76,7 @@ extern uint32 mdp_intr_mask;
 #define MDPOP_SHARPENING	BIT(11) /* enable sharpening */
 #define MDPOP_BLUR		BIT(12) /* enable blur */
 #define MDPOP_FG_PM_ALPHA       BIT(13)
+#define MDPOP_LAYER_IS_FG       BIT(14)
 #define MDP_ALLOC(x)  kmalloc(x, GFP_KERNEL)
 
 struct mdp_buf_type {
@@ -732,7 +737,7 @@ extern struct mdp_hist_mgmt *mdp_hist_mgmt_array[];
 #define MDP_DMA_P_LUT_C2_EN   BIT(2)
 #define MDP_DMA_P_LUT_POST    BIT(4)
 
-void mdp_hw_init(void);
+void mdp_hw_init(int cont_splash);
 int mdp_ppp_pipe_wait(void);
 void mdp_pipe_kickoff(uint32 term, struct msm_fb_data_type *mfd);
 void mdp_clk_ctrl(int on);

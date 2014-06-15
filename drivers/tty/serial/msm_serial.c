@@ -558,10 +558,13 @@ static int msm_startup(struct uart_port *port)
 	if (unlikely(ret))
 		return ret;
 
+	/* disable the wakeup function of UART1_RX */
+#ifndef CONFIG_HUAWEI_KERNEL	
 	if (unlikely(irq_set_irq_wake(port->irq, 1))) {
 		free_irq(port->irq, port);
 		return -ENXIO;
 	}
+#endif	
 
 #ifndef CONFIG_PM_RUNTIME
 	msm_init_clock(port);
@@ -849,8 +852,7 @@ static struct msm_port msm_uart_ports[] = {
 	},
 };
 
-#define UART_NR	ARRAY_SIZE(msm_uart_ports)
-
+#define UART_NR 256
 static inline struct uart_port * get_port_from_line(unsigned int line)
 {
 	return &msm_uart_ports[line].uart;
@@ -1003,9 +1005,7 @@ static int __init msm_serial_probe(struct platform_device *pdev)
 	struct resource *resource;
 	struct uart_port *port;
 	int irq;
-#ifdef CONFIG_SERIAL_MSM_RX_WAKEUP
 	struct msm_serial_platform_data *pdata = pdev->dev.platform_data;
-#endif
 
 	if (unlikely(pdev->id < 0 || pdev->id >= UART_NR))
 		return -ENXIO;
@@ -1058,6 +1058,8 @@ static int __init msm_serial_probe(struct platform_device *pdev)
 #endif
 
 	pm_runtime_enable(port->dev);
+	if (pdata != NULL && pdata->userid && pdata->userid <= UART_NR)
+		port->line = pdata->userid;
 	return uart_add_one_port(&msm_uart_driver, port);
 }
 

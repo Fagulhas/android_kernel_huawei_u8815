@@ -68,6 +68,13 @@ config ARCH_MSM7X30
 	select HOLES_IN_ZONE if SPARSEMEM
 	select MSM_MODEM_RESTART
 
+#huawei modify
+config HUAWEI_MSM_VIBRATOR
+	tristate "Huawei 7x30 vibrator"	
+	default n
+	help
+	  if Y ,select HUAWEI_MSM_VIBRATOR  
+
 config ARCH_QSD8X50
 	bool "QSD8X50"
 	select ARCH_MSM_SCORPION
@@ -302,6 +309,7 @@ config ARCH_MSM8625
 	select MSM_RUN_QUEUE_STATS
 	select MIGHT_HAVE_CACHE_L2X0
 	select ARM_HAS_SG_CHAIN
+	select DONT_MAP_HOLE_AFTER_MEMBANK0
 
 config ARCH_MSM9625
 	bool "MSM9625"
@@ -387,6 +395,7 @@ config ARCH_MSM7X27A
 	select ARCH_MSM_CORTEXMP
 	select MIGHT_HAVE_CACHE_L2X0
 	select ARM_HAS_SG_CHAIN
+	select MSM_FIQ_SUPPORT
 
 config  MSM_VIC
 	bool
@@ -575,6 +584,42 @@ config MACH_MSM8625_EVT
 	bool "MSM8625 EVT"
 	help
 	  Support for the Qualcomm MSM8625 Reference Design.
+
+config MACH_QRD_SKUD_PRIME
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default y
+	bool "MSM8625 SKUD PRIME"
+	help
+	  Support for the Qualcomm MSM8625 SKUD prime Reference Design.
+	  Add support for a SKUD prime reference design based on MSM8x25
+	  chipset. This device is much closer to a phone than regular form
+	  factor devices, with new touch, display panel and other hardware
+	  configurations.
+
+config MACH_MSM8625Q_EVBD
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default y
+	bool "MSM8625Q EVBD"
+	help
+	  Support for the Qualcomm MSM8625Q EVBD Reference Design.
+	  Add support for a EVBD reference design based on MSM8x25Q
+	  chipset. This device is much closer to a phone than regular form
+	  factor devices, with new touch, display panel and other hardware
+	  configurations.
+
+config MACH_MSM8625Q_SKUD
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default y
+	bool "MSM8625Q SKUD"
+	help
+	  Support for the Qualcomm MSM8625Q SKUD Reference Design.
+	  Add support for a SKUD reference design based on MSM8x25Q
+	  chipset. This device is much closer to a phone than regular form
+	  factor devices, with new touch, display panel and other hardware
+	  configurations.
 
 config MACH_MSM7X30_SURF
        depends on ARCH_MSM7X30
@@ -874,6 +919,76 @@ config MACH_FSM9XXX_SURF
 	  chipset based SURF evaluation board and
 	  FFA board.
 
+config  HUAWEI_KERNEL
+	bool "HUAWEI Product"
+	depends on ARCH_MSM7X27A
+	default n
+	help
+	  Support for the HUAWEI board.
+	  
+config FRAMEBUF_SELF_ADAPT
+	tristate "Huawei framebuffer self adapt"	
+	depends on HUAWEI_KERNEL
+	default n
+	help
+	  if Y ,select FRAMEBUF_SELF_ADAPT  
+
+config MACH_MSM7X27A_U8815
+        depends on ARCH_MSM7X27A
+        depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM7X27A_U8815 SURF"
+	help
+	  Support for the HUAWEI 7X27A U8815 board.
+
+
+config MACH_MSM8X25_U8951
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM8X25_U8951 SURF"
+	help
+	  Support for the HUAWEI 8x25 U8951 board.
+	  
+config MACH_MSM8X25_G520U
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM8X25_G520U SURF"
+	help
+	  Support for the HUAWEI 8x25 G520U board.
+
+config MACH_MSM8X25_C8813Q
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM8X25_C8813Q SURF"
+	help
+	  Support for the HUAWEI 8x25 C8813Q board.	
+
+config MACH_MSM8X25_G610C
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM8X25_G610C SURF"
+	help
+	  Support for the HUAWEI 8x25 G610C board.	
+
+config MACH_MSM8X25_C8950D
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM8X25_C8950D SURF"
+	help
+	  Support for the HUAWEI 8x25 C8950D board.	  
+config MACH_MSM8X25_C8813
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM8X25_C8813 SURF"
+	help
+	  Support for the HUAWEI 8x25 C8813 board.
+
 endmenu
 
 config MSM_STACKED_MEMORY
@@ -996,6 +1111,7 @@ choice
 		  Say Y here if you want the debug print routines to direct
 		  their output to the serial port on MSM 8660 devices.
 
+	#fix recursive dependency detected!
 	config DEBUG_MSM8960_UART
 		bool "Kernel low-level debugging messages via MSM 8960 UART"
 		depends on ARCH_MSM8960 && DEBUG_LL
@@ -1562,6 +1678,22 @@ config MSM_CPU_FREQ_MIN
 	int "Min CPU Frequency"
 	depends on MSM_CPU_FREQ_SET_MIN_MAX
 	default 245760
+
+config MSM7X27A_OVERCLOCK
+	bool "Enable SoC overclocking for MSM7x27A"
+	depends on MSM_CPU_FREQ_SET_MIN_MAX
+        depends on ARCH_MSM7X27A
+	default n
+	help
+	  Enable support for non-standard msm7x27A acpuclock frequencies.
+
+config MSM7X27A_UNDERVOLT
+	bool "Enable SoC undervolting for MSM7x27A"
+	depends on MSM_CPU_FREQ_SET_MIN_MAX
+        depends on ARCH_MSM7X27A
+	default n
+	help
+	  Enable support for non-standard msm7x27A acpuclock voltages.
 
 endif # CPU_FREQ_MSM
 
@@ -2481,4 +2613,100 @@ config MSM_FIQ
 	  if apps is not responding and holding lock with irqs disabled.
 	  Modem will then generate an raise a FIQ on this line before sending
 	  SMSM reset
+config MSM_PBUS
+	bool "Enable PBUS handler for debugging"
+	depends on ARCH_MSM8625 || ARCH_MSM7X27A
+	default y
+	help
+	  Register PBUS interrupt handler. This will help
+	  in debugging PBUS hang issues. This handler reads
+	  client address which caused PBUS hang and PBUS
+	  master information at the time of hang.
 endif
+
+config HUAWEI_GPIO_KEYPAD
+	bool "MSM HUAWEI GPIO keypad"
+	depends on INPUT_GPIO = "y"
+	default n
+	help
+	  Select if the GPIO keypad is attached.
+
+config HUAWEI_FEATURE_VIBRATOR
+	depends on HUAWEI_KERNEL
+	tristate "Huawei 8800 vibrator"	
+	default n
+	help
+	  if Y ,select HUAWEI_FEATURE_VIBRATOR 
+
+config HUAWEI_SETTING_TIMER_FOR_VIBRATOR_OFF
+	depends on HUAWEI_FEATURE_VIBRATOR
+	tristate "Huawei stop vibratting with timer"	
+	default n
+	help
+	  if Y ,select HUAWEI_SETTING_TIMER_FOR_VIBRATOR_OFF 
+
+config HUAWEI_U8800PP1_WIFI_LOW_CONSUME
+	depends on MACH_MSM7X30_U8800
+	tristate "Huawei config wifi for low consume at PP1 version"	
+	default y
+	help
+	  if Y ,select HUAWEI_U8800PP1_CONFIG_WIFI_LOW_CONSUME 
+
+config  HUAWEI_FEATURE_OEMINFO
+	depends on HUAWEI_KERNEL
+	default y
+	tristate "OEMINFO"
+
+config HUAWEI_MTK6252_MODEM
+	depends on HUAWEI_KERNEL
+	tristate "mtk6252 modem"
+	default n
+	help
+	  Support mtk6252 as modem.
+
+config HUAWEI_POWER_DOWN_CHARGE
+	default y
+	tristate "huawei_power_down_charge"
+	help
+	  Say Y here if you want to support huawei_power_down_charge.
+
+config HUAWEI_RPC_CRASH_DEBUG
+	bool "HUAWEI rpc crash debug"
+        select OPROFILE
+	depends on HUAWEI_KERNEL
+	default n
+	help
+	  Select Y if use rpc related logs.
+
+config HUAWEI_KEY_TEST
+	bool "HUAWEI auto key test driver"
+	depends on HUAWEI_KERNEL
+	default y
+	help
+	  Select Y if use auto key test.
+
+config HUAWEI_SMEM_SLEEP_LOG
+	bool "HUAWEI smem sleep log driver"
+	depends on HUAWEI_KERNEL
+	default n
+	help
+	  Select Y if use smem sleep log driver.
+
+config HUAWEI_KERNEL_DEBUG
+	bool "HUAWEI kernel debug"
+	depends on HUAWEI_KERNEL
+	default n
+	help
+	  Select Y if print HUAWEI log
+
+config HUAWEI_BT_BCM43XX
+	bool "Huawei BCM43XX Bluetooth"
+	default n
+	help
+	  Select Y to use Broadcom's BTLA stack. Used by BCM4330 and BCM4329.
+
+config HUAWEI_BT_WCN2243
+	bool "Qualcomm WCN2243 Bluetooth"
+	default n
+	help
+	  Select Y to use Qualcomm's BlueZ stack. Used by WCN2243. Not used in Huawei devices.

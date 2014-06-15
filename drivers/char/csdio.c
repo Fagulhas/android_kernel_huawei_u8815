@@ -1068,7 +1068,7 @@ module_param(host_name, charp, S_IRUGO);
 module_init(csdio_init);
 module_exit(csdio_exit);
 
-MODULE_AUTHOR("Code Aurora Forum");
+MODULE_AUTHOR("The Linux Foundation");
 MODULE_DESCRIPTION("CSDIO device driver version " VERSION);
 MODULE_VERSION(VERSION);
 MODULE_LICENSE("GPL v2");

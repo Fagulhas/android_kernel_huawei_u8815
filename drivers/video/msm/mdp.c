@@ -2,7 +2,7 @@
  *
  * MSM MDP Interface (used by framebuffer core)
  *
- * Copyright (c) 2007-2012, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2007-2013, The Linux Foundation. All rights reserved.
  * Copyright (C) 2007 Google Incorporated
  *
  * This software is licensed under the terms of the GNU General Public
@@ -862,7 +862,7 @@ static int mdp_histogram_disable(struct mdp_hist_mgmt *mgmt)
 	outp32(MDP_INTR_CLEAR, mgmt->intr);
 	mdp_intr_mask &= ~mgmt->intr;
 	outp32(MDP_INTR_ENABLE, mdp_intr_mask);
-	mdp_disable_irq(mgmt->irq_term);
+	mdp_disable_irq_nosync(mgmt->irq_term);
 	spin_unlock_irqrestore(&mdp_spin_lock, flag);
 
 	if (mdp_rev >= MDP_REV_42)
@@ -888,12 +888,10 @@ int _mdp_histogram_ctrl(boolean en, struct mdp_hist_mgmt *mgmt)
 	int ret = 0;
 
 	mutex_lock(&mgmt->mdp_hist_mutex);
-	if (mgmt->mdp_is_hist_start == TRUE) {
-		if (en)
-			ret = mdp_histogram_enable(mgmt);
-		else
-			ret = mdp_histogram_disable(mgmt);
-	}
+	if (mgmt->mdp_is_hist_start && !mgmt->mdp_is_hist_data && en)
+		ret = mdp_histogram_enable(mgmt);
+	else if (mgmt->mdp_is_hist_data && !en)
+		ret = mdp_histogram_disable(mgmt);
 	mutex_unlock(&mgmt->mdp_hist_mutex);
 
 	if (en == false)
@@ -991,7 +989,6 @@ int mdp_histogram_stop(struct fb_info *info, uint32_t block)
 	mgmt->mdp_is_hist_start = FALSE;
 
 	if (!mfd->panel_power_on) {
-		mgmt->mdp_is_hist_data = FALSE;
 		if (mgmt->hist != NULL) {
 			mgmt->hist = NULL;
 			complete(&mgmt->mdp_hist_comp);
@@ -1316,7 +1313,9 @@ static ssize_t vsync_show_event(struct device *dev,
 
 	INIT_COMPLETION(vsync_cntrl.vsync_wait);
 
-	wait_for_completion(&vsync_cntrl.vsync_wait);
+	/* add qcom patch to work around lcd esd issue */
+	if (!wait_for_completion_timeout(&vsync_cntrl.vsync_wait, HZ/10))
+		pr_err("Timedout Vsync: %s %d", __func__, __LINE__);
 	ret = snprintf(buf, PAGE_SIZE, "VSYNC=%llu",
 	ktime_to_ns(vsync_cntrl.vsync_time));
 	buf[strlen(buf) + 1] = '\0';
@@ -1346,6 +1345,28 @@ int mdp_ppp_pipe_wait(void)
 	}
 
 	return ret;
+}
+
+/* add qcom patch to work around lcd esd issue */
+void cmd_wait4dmap(struct msm_fb_data_type *mfd)
+{
+	int need_wait = 0;
+	unsigned long flag;
+
+	spin_lock_irqsave(&mdp_spin_lock, flag);
+	if (mfd->dma->busy == TRUE)
+		need_wait = 1;
+	spin_unlock_irqrestore(&mdp_spin_lock, flag);
+
+	if (need_wait) {
+		if (!wait_for_completion_timeout(&mfd->dma->comp, HZ/10)) {
+			mfd->dma->busy = FALSE;
+			mdp_pipe_ctrl(MDP_DMA2_BLOCK, MDP_BLOCK_POWER_OFF,
+								FALSE);
+			mdp_disable_irq(MDP_DMA2_TERM);
+			pr_err("DMA timedout: %s %i", __func__, __LINE__);
+		}
+	}
 }
 
 static DEFINE_SPINLOCK(mdp_lock);
@@ -1430,7 +1451,10 @@ void mdp_pipe_kickoff(uint32 term, struct msm_fb_data_type *mfd)
 		mdp_ppp_waiting = TRUE;
 		spin_unlock_irqrestore(&mdp_spin_lock, flag);
 		outpdw(MDP_BASE + 0x30, 0x1000);
-		wait_for_completion_killable(&mdp_ppp_comp);
+		/* add qcom patch to work around lcd esd issue */
+		if (wait_for_completion_killable_timeout(&mdp_ppp_comp,
+								HZ/10) <= 0)
+			pr_err("Timedout PPP: %s %d", __func__, __LINE__);
 		mdp_disable_irq(term);
 
 		if (mdp_debug[MDP_PPP_BLOCK]) {
@@ -1766,6 +1790,7 @@ void mdp_histogram_handle_isr(struct mdp_hist_mgmt *mgmt)
 }
 
 #ifndef CONFIG_FB_MSM_MDP40
+/* merge qcom patch to solve blue screen when power on */
 irqreturn_t mdp_isr(int irq, void *ptr)
 {
 	uint32 mdp_interrupt = 0;
@@ -1858,13 +1883,14 @@ irqreturn_t mdp_isr(int irq, void *ptr)
 			dma = &dma2_data;
 			spin_lock_irqsave(&mdp_spin_lock, flag);
 			vsync_isr = vsync_cntrl.vsync_irq_enabled;
+			disabled_clocks = vsync_cntrl.disabled_clocks;
 			/* let's disable LCDC interrupt */
 			if (dma->waiting) {
 				dma->waiting = FALSE;
 				complete(&dma->comp);
 			}
 
-			if (!vsync_isr) {
+			if (!vsync_isr && !vsync_cntrl.disabled_clocks) {
 				mdp_intr_mask &= ~LCDC_FRAME_START;
 				outp32(MDP_INTR_ENABLE, mdp_intr_mask);
 				mdp_disable_irq_nosync(MDP_VSYNC_TERM);
@@ -1874,7 +1900,7 @@ irqreturn_t mdp_isr(int irq, void *ptr)
 			}
 			spin_unlock_irqrestore(&mdp_spin_lock, flag);
 
-			if (!vsync_isr)
+			if (!vsync_isr && !disabled_clocks)
 				mdp_pipe_ctrl(MDP_CMD_BLOCK,
 					MDP_BLOCK_POWER_OFF, TRUE);
 
@@ -1927,7 +1953,8 @@ irqreturn_t mdp_isr(int irq, void *ptr)
 			mdp_pipe_ctrl(MDP_DMA2_BLOCK, MDP_BLOCK_POWER_OFF,
 				TRUE);
 			mdp_disable_irq_nosync(MDP_DMA2_TERM);
-			complete(&dma->comp);
+			/* add qcom patch to work around lcd esd issue */
+			complete_all(&dma->comp);
 		}
 #endif
 	}
@@ -2371,6 +2398,7 @@ static int mdp_irq_clk_setup(struct platform_device *pdev,
 	return 0;
 }
 
+/* add qcom patch to work around lcd esd issue */
 static int mdp_probe(struct platform_device *pdev)
 {
 	struct platform_device *msm_fb_dev = NULL;
@@ -2386,6 +2414,13 @@ static int mdp_probe(struct platform_device *pdev)
 	struct mipi_panel_info *mipi;
 #endif
 	static int contSplash_update_done;
+
+/* modem side generate an interrupt,we should clear this interrupt before mdp work */
+#ifdef CONFIG_HUAWEI_KERNEL
+	#ifndef CONFIG_FB_MSM_MDP40
+		uint32 mdp_interrupt = 0;
+	#endif
+#endif
 
 	if ((pdev->id == 0) && (pdev->num_resources > 0)) {
 		mdp_init_pdev = pdev;
@@ -2423,7 +2458,7 @@ static int mdp_probe(struct platform_device *pdev)
 		if (!(mdp_pdata->cont_splash_enabled))
 			mdp4_hw_init();
 #else
-		mdp_hw_init();
+		mdp_hw_init(mdp_pdata->cont_splash_enabled);
 #endif
 
 #ifdef CONFIG_FB_MSM_OVERLAY
@@ -2438,6 +2473,13 @@ static int mdp_probe(struct platform_device *pdev)
 	if (!mdp_resource_initialized)
 		return -EPERM;
 
+/* modem side generate an interrupt,we should clear this interrupt before mdp work */
+#ifdef CONFIG_HUAWEI_KERNEL
+	#ifndef CONFIG_FB_MSM_MDP40
+		mdp_interrupt = inp32(MDP_INTR_STATUS);
+		outp32(MDP_INTR_CLEAR, mdp_interrupt);
+	#endif
+#endif
 	mfd = platform_get_drvdata(pdev);
 
 	if (!mfd)
@@ -2516,6 +2558,7 @@ static int mdp_probe(struct platform_device *pdev)
 		INIT_WORK(&mfd->vsync_resync_worker,
 			  mdp_vsync_resync_workqueue_handler);
 		mfd->hw_refresh = FALSE;
+		mfd->wait4dmap = NULL;
 
 		if (mfd->panel.type == EXT_MDDI_PANEL) {
 			/* 15 fps -> 66 msec */
@@ -2620,12 +2663,14 @@ static int mdp_probe(struct platform_device *pdev)
 			mfd->cursor_update = mdp_hw_cursor_sync_update;
 		else
 			mfd->cursor_update = mdp_hw_cursor_update;
+		mfd->wait4dmap = NULL;
 		break;
 
 	case MIPI_CMD_PANEL:
 #ifndef CONFIG_FB_MSM_MDP303
 		mfd->dma_fnc = mdp4_dsi_cmd_overlay;
 		mipi = &mfd->panel_info.mipi;
+		mfd->wait4dmap = NULL;
 		mdp4_dsi_rdptr_init(0);
 		if (mfd->panel_info.pdest == DISPLAY_1) {
 			if_no = PRIMARY_INTF_SEL;
@@ -2648,6 +2693,7 @@ static int mdp_probe(struct platform_device *pdev)
 		mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_OFF, FALSE);
 #else
 
+		mfd->wait4dmap = cmd_wait4dmap;
 		mfd->dma_fnc = mdp_dma2_update;
 		mfd->do_histogram = mdp_do_histogram;
 		mfd->start_histogram = mdp_histogram_start;
@@ -2671,6 +2717,7 @@ static int mdp_probe(struct platform_device *pdev)
 #ifdef CONFIG_FB_MSM_DTV
 	case DTV_PANEL:
 		mdp4_dtv_vsync_init(0);
+		mfd->wait4dmap = NULL;
 		pdata->on = mdp4_dtv_on;
 		pdata->off = mdp4_dtv_off;
 		mfd->hw_refresh = TRUE;
@@ -2687,6 +2734,7 @@ static int mdp_probe(struct platform_device *pdev)
 		pdata->on = mdp_lcdc_on;
 		pdata->off = mdp_lcdc_off;
 #endif
+		mfd->wait4dmap = NULL;
 		mfd->hw_refresh = TRUE;
 #if	defined(CONFIG_FB_MSM_OVERLAY) && defined(CONFIG_FB_MSM_MDP40)
 		mfd->cursor_update = mdp_hw_cursor_sync_update;
@@ -2728,12 +2776,14 @@ static int mdp_probe(struct platform_device *pdev)
 #if defined(CONFIG_FB_MSM_OVERLAY) && defined(CONFIG_FB_MSM_TVOUT)
 		pdata->on = mdp4_atv_on;
 		pdata->off = mdp4_atv_off;
+		mfd->wait4dmap = NULL;
 		mfd->dma_fnc = mdp4_atv_overlay;
 		mfd->dma = &dma_e_data;
 		mdp4_display_intf_sel(EXTERNAL_INTF_SEL, TV_INTF);
 #else
 		pdata->on = mdp_dma3_on;
 		pdata->off = mdp_dma3_off;
+		mfd->wait4dmap = NULL;
 		mfd->hw_refresh = TRUE;
 		mfd->dma_fnc = mdp_dma3_update;
 		mfd->dma = &dma3_data;
@@ -2744,6 +2794,7 @@ static int mdp_probe(struct platform_device *pdev)
 	case WRITEBACK_PANEL:
 		{
 			unsigned int mdp_version;
+			mfd->wait4dmap = NULL;
 			mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_ON,
 						 FALSE);
 			mdp_version = inpdw(MDP_BASE + 0x0);

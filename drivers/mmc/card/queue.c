@@ -357,18 +357,21 @@ void mmc_cleanup_queue(struct mmc_queue *mq)
 }
 EXPORT_SYMBOL(mmc_cleanup_queue);
 
+#ifdef CONFIG_HUAWEI_KERNEL
 /**
  * mmc_queue_suspend - suspend a MMC request queue
  * @mq: MMC queue to suspend
+ * @wait: Wait till MMC request queue is empty
  *
  * Stop the block request queue, and wait for our thread to
  * complete any outstanding requests.  This ensures that we
  * won't suspend while a request is being processed.
  */
-void mmc_queue_suspend(struct mmc_queue *mq)
+int mmc_queue_suspend(struct mmc_queue *mq, int wait)
 {
 	struct request_queue *q = mq->queue;
 	unsigned long flags;
+	int rc = 0;
 
 	if (!(mq->flags & MMC_QUEUE_SUSPENDED)) {
 		mq->flags |= MMC_QUEUE_SUSPENDED;
@@ -377,9 +380,66 @@ void mmc_queue_suspend(struct mmc_queue *mq)
 		blk_stop_queue(q);
 		spin_unlock_irqrestore(q->queue_lock, flags);
 
-		down(&mq->thread_sem);
+		rc = down_trylock(&mq->thread_sem);
+		if (rc && !wait) {
+			/*
+			 * Failed to take the lock so better to abort the
+			 * suspend because mmcqd thread is processing requests.
+			 */
+			mq->flags &= ~MMC_QUEUE_SUSPENDED;
+			spin_lock_irqsave(q->queue_lock, flags);
+			blk_start_queue(q);
+			spin_unlock_irqrestore(q->queue_lock, flags);
+			rc = -EBUSY;
+		} else if (rc && wait) {
+			down(&mq->thread_sem);
+			rc = 0;
+		}
+		
 	}
+	
+	return rc;
 }
+#else
+/**
+ * mmc_queue_suspend - suspend a MMC request queue
+ * @mq: MMC queue to suspend
+ *
+ * Stop the block request queue, and wait for our thread to
+ * complete any outstanding requests.  This ensures that we
+ * won't suspend while a request is being processed.
+ */
+int mmc_queue_suspend(struct mmc_queue *mq)
+{
+	struct request_queue *q = mq->queue;
+	unsigned long flags;
+	int rc = 0;
+
+	if (!(mq->flags & MMC_QUEUE_SUSPENDED)) {
+		mq->flags |= MMC_QUEUE_SUSPENDED;
+
+		spin_lock_irqsave(q->queue_lock, flags);
+		blk_stop_queue(q);
+		spin_unlock_irqrestore(q->queue_lock, flags);
+
+		rc = down_trylock(&mq->thread_sem);
+		if (rc) {
+			/*
+			 * Failed to take the lock so better to abort the
+			 * suspend because mmcqd thread is processing requests.
+			 */
+			mq->flags &= ~MMC_QUEUE_SUSPENDED;
+			spin_lock_irqsave(q->queue_lock, flags);
+			blk_start_queue(q);
+			spin_unlock_irqrestore(q->queue_lock, flags);
+			rc = -EBUSY;
+		}
+		
+	}
+	
+	return rc;
+}
+#endif
 
 /**
  * mmc_queue_resume - resume a previously suspended MMC request queue
