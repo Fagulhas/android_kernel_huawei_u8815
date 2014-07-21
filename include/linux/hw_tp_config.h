@@ -13,10 +13,9 @@
 
 
 #define SYN_CONFIG_SIZE 32 * 16
-#define CURRENT_PR_VERSION  1191601
-
-#define TP_ID0  112
-#define TP_ID1  121
+#define CURRENT_PR_VERSION  1294018
+#define TP_ID0  127
+#define TP_ID1  128
 
 #define IC_TYPE_2202 2202
 #define IC_TYPE_3200 3200

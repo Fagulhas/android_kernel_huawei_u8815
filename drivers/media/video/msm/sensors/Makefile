@@ -16,10 +16,7 @@ obj-$(CONFIG_MT9M114) += mt9m114_v4l2.o
 obj-$(CONFIG_HUAWEI_SENSOR_S5K4E1) += s5k4e1_v4l2.o
 obj-$(CONFIG_HUAWEI_SENSOR_MT9E013) += mt9e013_v4l2.o
 obj-$(CONFIG_WEBCAM_OV9726) += ov9726_v4l2.o
-obj-$(CONFIG_OV5648) += ov5648_v4l2.o
 obj-$(CONFIG_OV7692) += ov7692_v4l2.o
-obj-$(CONFIG_OV7695) += ov7695_v4l2.o
-obj-$(CONFIG_OV7695_RAW) += ov7695_raw_v4l2.o
 obj-$(CONFIG_VX6953) += vx6953.o
 obj-$(CONFIG_HUAWEI_SENSOR_MT9P017) += mt9p017_v4l2.o
 #/* the front camera must be probe last */

@@ -828,8 +828,6 @@ struct msm_snapshot_pp_status {
 #define CFG_START_STREAM              44
 #define CFG_STOP_STREAM               45
 #define CFG_GET_CSI_PARAMS            46
-#define CFG_SENSOR_PIP_SET_CAM_MODE   47
-#define CFG_SENSOR_PIP_GET_CAM_MODE   48
 /*lijuan add for AWB OTP*/
 #define CFG_OTP_READING     235
 /* < huawei zhangyu 20120320 begin */
@@ -872,11 +870,6 @@ struct msm_snapshot_pp_status {
 #define CAMERA_EFFECT_BLUISH	12
 #define CAMERA_EFFECT_REDDISH	13
 #define CAMERA_EFFECT_GREENISH	14
-
-/* PIP working mode */
-#define CAM_WORKING_MODE_NORMAL     0
-#define CAM_WORKING_MODE_PIP        1
-
 
 /* QRD */
 #define CAMERA_ANTIBANDING_OFF		0
@@ -1312,7 +1305,6 @@ struct sensor_cfg_data {
 		uint8_t saturation;
 		uint8_t sharpness;
 		int8_t brightness;
-		int32_t pip_mode;
 		int ae_mode;
 		uint8_t wb_val;
 		int8_t exp_compensation;
@@ -1346,7 +1338,6 @@ enum msm_actuator_addr_type {
 enum msm_actuator_write_type {
 	MSM_ACTUATOR_WRITE_HW_DAMP,
 	MSM_ACTUATOR_WRITE_DAC,
-	MSM_ACTUATOR_WRITE_DAC_AD5823,
 };
 
 struct msm_actuator_reg_params_t {

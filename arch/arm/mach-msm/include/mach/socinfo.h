@@ -80,8 +80,7 @@ enum msm_cpu {
 	MSM_CPU_8974,
 	MSM_CPU_8627,
 	MSM_CPU_8625,
-	MSM_CPU_9625,
-	MSM_CPU_8625Q,
+	MSM_CPU_9625
 };
 
 enum pmic_model {
@@ -343,18 +342,6 @@ static inline int cpu_is_msm8625(void)
 
 	BUG_ON(cpu == MSM_CPU_UNKNOWN);
 	return cpu == MSM_CPU_8625;
-#else
-	return 0;
-#endif
-}
-
-static inline int cpu_is_msm8625q(void)
-{
-#ifdef CONFIG_ARCH_MSM8625
-	enum msm_cpu cpu = socinfo_get_msm_cpu();
-
-	BUG_ON(cpu == MSM_CPU_UNKNOWN);
-	return cpu == MSM_CPU_8625Q;
 #else
 	return 0;
 #endif

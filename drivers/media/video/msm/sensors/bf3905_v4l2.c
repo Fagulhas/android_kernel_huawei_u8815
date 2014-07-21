@@ -36,8 +36,8 @@ static struct msm_camera_i2c_reg_conf bf3905_init_settings[] =
 	{0x1b,0x0e},
 	{0x2a,0x00},
 	{0x2b,0x10},
-	{0x92,0x60},//9 de c6
-	{0x93,0x06},//0 3 7
+	{0x92,0xde},//9
+	{0x93,0x03},//0
 	{0x8a,0x96},
 	{0x8b,0x7d},
 	{0x13,0x00},
@@ -55,15 +55,11 @@ static struct msm_camera_i2c_reg_conf bf3905_init_settings[] =
 	{0x63,0x00},
 	{0xb9,0x00},
 	{0x64,0x00},
-	{0x0e,0x10},
-	{0x22,0x12},
 	{0xbb,0x10},
 	{0x08,0x02},
 	{0x20,0x09},
 	{0x21,0x4f},
 	{0x2f,0x84},
-	{0x71,0x0f},   //0x3f  wl 5.3
-	{0x7e,0x84},
 	{0x7e,0x84},
 	{0x7f,0x3c},
 	{0x60,0xe5},
@@ -72,13 +68,13 @@ static struct msm_camera_i2c_reg_conf bf3905_init_settings[] =
 	{0x1e,0x70},
 	{0xd9,0x25},
 	{0xdf,0x26},
-	{0x16,0xa1},   //0xaf  wl 5.3
-	{0x6c,0xc2},
+	{0x71,0x3f},
+	{0x16,0xaf},
 	{0x17,0x00},
 	{0x18,0xa0},
 	{0x19,0x00},
 	{0x1a,0x78},
-	{0x03,0xa0},
+	{0x03,0x00},
 	{0x4a,0x0c},
 	{0xda,0x00},
 	{0xdb,0xa2},
@@ -90,52 +86,52 @@ static struct msm_camera_i2c_reg_conf bf3905_init_settings[] =
 	{0x36,0xc5},
 	{0x6e,0x20},
 	{0xbc,0x0d},
-	{0x35,0x8f}, //0x82   0x8f 92    
-	{0x65,0x7f}, //84    7f
-	{0x66,0x7a}, //80  7a    
-	{0xbd,0xec}, //0xe8
+	{0x35,0x82}, 
+	{0x65,0x84}, 
+	{0x66,0x80}, 
+	{0xbd,0xe8}, 
 	{0xbe,0x49}, 
 	{0x9b,0xe4},
 	{0x9c,0x4c},
 	{0x37,0xe4},
 	{0x38,0x50}, 
 	{0x70,0x0b},
-	{0x71,0x0f},// 0e  yzx 4.17   0x3f  wl 5.3
+	{0x71,0x0e},
 	{0x72,0x4c},
 	{0x73,0x28},
 	{0x74,0x6d},
-	{0x75,0xaa},  //8a yzx  4.17
-	{0x76,0x28}, //  98  yzx  4.17
+	{0x75,0x8a},
+	{0x76,0x98},
 	{0x77,0x2a},
 	{0x78,0xff},
 	{0x79,0x24},
-	{0x7a,0x23},// 12   yzx  4.18
+	{0x7a,0x12},
 	{0x7b,0x58},
 	{0x7c,0x55},
 	{0x7d,0x00},
 	{0x13,0x07},
-	{0x24,0x4c},//0x4a    //  48   yzx  4.18
+	{0x24,0x4a},
 	{0x25,0x88},
-	{0x80,0x9a},//0x92 wl 5.7
+	{0x80,0x92},
 	{0x81,0x00},
 	{0x82,0x2a},
 	{0x83,0x54},
 	{0x84,0x39},
 	{0x85,0x5d},
 	{0x86,0x88},
-	{0x89,0x73},  //63     //73   yzx  4/18  0x70  wl 5.3
+	{0x89,0x63},
 	{0x8e,0x2c},
 	{0x8f,0x82},
 	{0x94,0x22},
 	{0x95,0x84},
 	{0x96,0xb3},
 	{0x97,0x3c},
-	{0x98,0xbf},  //  0x8a  wl 5.3 //bb wl 5.7
+	{0x98,0x8a}, 
 	{0x99,0x10},
-	{0x9a,0x20},  // 50  yzx 4.18
+	{0x9a,0x50},
 	{0x9f,0x64},
-	{0x39,0x90}, //98  yzx 4.17
-	{0x3f,0x90}, //98  yzx 4.17
+	{0x39,0x98}, 
+	{0x3f,0x98}, 
 	{0x90,0x20},
 	{0x91,0x70},
 	{0x40,0x36}, 
@@ -180,20 +176,20 @@ static struct msm_camera_i2c_reg_conf bf3905_init_settings[] =
 	{0xa5,0x27},
 	{0xa6,0x04},
 	{0xa7,0x1a}, 
-	{0xa8,0x15}, //16  15
+	{0xa8,0x16}, 
 	{0xa9,0x13}, 
-	{0xaa,0x13},
+	{0xaa,0x18}, 
 	{0xab,0x1c}, 
 	{0xac,0x3c},
 	{0xad,0xe8}, 
-	{0xae,0x7b},//7c   0x7b  0x7c 0x7b
-	{0xc5,0x55},//0xaa
+	{0xae,0x7c},   
+	{0xc5,0xaa},
 	{0xc6,0x88},
-	{0xc7,0x30},  //  yzx 10 4.17
+	{0xc7,0x10},
 	{0xc8,0x0d},
 	{0xc9,0x10},
-	{0xd0,0x69}, //0xb7
-	{0xd1,0x00},//00
+	{0xd0,0xb7}, 
+	{0xd1,0x00},
 	{0xd2,0x58},
 	{0xd3,0x09},
 	{0xd4,0x24},
@@ -201,11 +197,11 @@ static struct msm_camera_i2c_reg_conf bf3905_init_settings[] =
 	{0xb0,0xe0},
 	{0xb3,0x48},
 	{0xb4,0xa3}, 
-	{0xb1,0xff}, 
-	{0xb2,0xa0},
+	{0xb1,0xff},
+	{0xb2,0xff}, 
 	{0xb4,0x63}, 
-	{0xb1,0xce}, //0xba  c0 c8   ///ca    yzx 4.17
-	{0xb2,0xbe},  //0xa8  //aa   yzx 4.17
+	{0xb1,0xba}, 
+	{0xb2,0xae}, 
 	{0x55,0x00},
 	{0x56,0x40},
 };
@@ -218,36 +214,36 @@ static struct msm_camera_i2c_reg_conf bf3905_wb_auto_reg_config[] =
 };
 static struct msm_camera_i2c_reg_conf bf3905_wb_incandescent_reg_config[] =
 {
-	{0x13,0x05},
-	{0x6a,0x81},
-	{0x23,0x55},
-	{0x01,0x25},
-	{0x02,0x0d},
+    {0x13,0x05},
+    {0x6a,0x81},
+	{0x23,0x33},
+	{0x01,0x1f},
+	{0x02,0x15},
 };
 static struct msm_camera_i2c_reg_conf bf3905_wb_fluorescent_reg_config[] =
 {
         
-	{0x13,0x05},
-	{0x6a,0x81},
-	{0x23,0x55},
-	{0x01,0x1c},
-	{0x02,0x1a},
+    {0x13,0x05},
+    {0x6a,0x81},
+	{0x23,0x33},
+	{0x01,0x1a},
+	{0x02,0x1e},
 };
 static struct msm_camera_i2c_reg_conf bf3905_wb_daylight_reg_config[] =
 {
-	{0x13,0x05},
-	{0x6a,0x81},
-	{0x23,0x55},
-	{0x01,0x14},
-	{0x02,0x1a},
+    {0x13,0x05},
+    {0x6a,0x81},
+	{0x23,0x33},
+	{0x01,0x11},
+	{0x02,0x26},
 };
 static struct msm_camera_i2c_reg_conf bf3905_wb_cloudy_reg_config[] =
 {
-	{0x13,0x05},
-	{0x6a,0x81},
-	{0x23,0x55},
+    {0x13,0x05},
+    {0x6a,0x81},
+	{0x23,0x33},
 	{0x01,0x10},
-	{0x02,0x22},
+	{0x02,0x28},
 };
 
 static struct msm_camera_i2c_reg_conf bf3905_effect_off_reg_config[] =
@@ -522,102 +518,6 @@ int32_t bf3905_sensor_set_wb(struct msm_sensor_ctrl_t *s_ctrl, int wb)
 	return rc;
 }
 
-int32_t bf3905_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
-{
-	int32_t rc = 0;
-	static struct msm_cam_clk_info clk_info[] = {
-	{"cam_clk", MSM_SENSOR_MCLK_24HZ},
-	};
-	struct msm_camera_sensor_info *data = s_ctrl->sensordata;
-	CDBG("%s: %d\n", __func__, __LINE__);
-	s_ctrl->reg_ptr = kzalloc(sizeof(struct regulator *)
-			* data->sensor_platform_info->num_vreg, GFP_KERNEL);
-	if (!s_ctrl->reg_ptr) {
-		pr_err("%s: could not allocate mem for regulators\n",
-			__func__);
-		return -ENOMEM;
-	}
-
-	rc = msm_camera_request_gpio_table(data, 1);
-	if (rc < 0) {
-		pr_err("%s: request gpio failed\n", __func__);
-		goto request_gpio_failed;
-	}
-
-      if (s_ctrl->clk_rate != 0)
-		clk_info->clk_rate = s_ctrl->clk_rate;
-
-	rc = msm_cam_clk_enable(&s_ctrl->sensor_i2c_client->client->dev,
-		clk_info, &s_ctrl->cam_clk, ARRAY_SIZE(clk_info), 1);
-	if (rc < 0) {
-		pr_err("%s: clk enable failed\n", __func__);
-		goto enable_clk_failed;
-	}
-
-      if(data->standby_is_supported)
-      {
-           csi_config = 0;
-      }
-	/* power up one time in standby mode */
-      if((false == data->standby_is_supported)
-         || (0 == strcmp(data->sensor_name, ""))
-         || (false == standby_mode))
-      {
-           rc = msm_camera_config_vreg(&s_ctrl->sensor_i2c_client->client->dev,
-    			s_ctrl->sensordata->sensor_platform_info->cam_vreg,
-    			s_ctrl->sensordata->sensor_platform_info->num_vreg,
-    			s_ctrl->reg_ptr, 1);
-    	    if (rc < 0) {
-    		pr_err("%s: regulator on failed\n", __func__);
-    		goto config_vreg_failed;
-    	    }
-
-    	    rc = msm_camera_enable_vreg(&s_ctrl->sensor_i2c_client->client->dev,
-    			s_ctrl->sensordata->sensor_platform_info->cam_vreg,
-    			s_ctrl->sensordata->sensor_platform_info->num_vreg,
-    			s_ctrl->reg_ptr, 1);
-    	    if (rc < 0) {
-    		pr_err("%s: enable regulator failed\n", __func__);
-    		goto enable_vreg_failed;
-    	    }
-       }
-
-	usleep_range(5000, 6000);
-	rc = msm_camera_config_gpio_table(data, 1);
-	if (rc < 0) {
-		pr_err("%s: config gpio failed\n", __func__);
-		goto config_gpio_failed;
-	}
-	usleep_range(2000,3000);
-	if (data->sensor_platform_info->ext_power_ctrl != NULL)
-		data->sensor_platform_info->ext_power_ctrl(1);
-
-	if (data->sensor_platform_info->i2c_conf &&
-		data->sensor_platform_info->i2c_conf->use_i2c_mux)
-		msm_sensor_enable_i2c_mux(data->sensor_platform_info->i2c_conf);
-
-	return rc;
-
-config_gpio_failed:
-	msm_camera_enable_vreg(&s_ctrl->sensor_i2c_client->client->dev,
-			s_ctrl->sensordata->sensor_platform_info->cam_vreg,
-			s_ctrl->sensordata->sensor_platform_info->num_vreg,
-			s_ctrl->reg_ptr, 0);
-enable_vreg_failed:
-	msm_camera_config_vreg(&s_ctrl->sensor_i2c_client->client->dev,
-		s_ctrl->sensordata->sensor_platform_info->cam_vreg,
-		s_ctrl->sensordata->sensor_platform_info->num_vreg,
-		s_ctrl->reg_ptr, 0);
-config_vreg_failed:
-	msm_cam_clk_enable(&s_ctrl->sensor_i2c_client->client->dev,
-		clk_info, &s_ctrl->cam_clk, ARRAY_SIZE(clk_info), 0);
-enable_clk_failed:
-	msm_camera_request_gpio_table(data, 0);
-request_gpio_failed:
-	kfree(s_ctrl->reg_ptr);
-	return rc;
-}
-
 static struct v4l2_subdev_core_ops bf3905_subdev_core_ops = {
 	.ioctl = msm_sensor_subdev_ioctl,
 	.s_power = msm_sensor_power,
@@ -640,7 +540,7 @@ static struct msm_sensor_fn_t bf3905_func_tbl = {
 	.sensor_mode_init = msm_sensor_mode_init,
 	.sensor_get_output_info = msm_sensor_get_output_info,
 	.sensor_config = msm_sensor_config,
-	.sensor_power_up = bf3905_sensor_power_up,
+	.sensor_power_up = msm_sensor_power_up,
 	.sensor_power_down = msm_sensor_power_down,
 	.sensor_write_init_settings = bf3905_write_init_settings,
 	.sensor_match_id = bf3905_match_id,

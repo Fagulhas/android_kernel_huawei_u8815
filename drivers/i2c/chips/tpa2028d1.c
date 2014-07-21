@@ -51,7 +51,59 @@ static char en_data_4voice[] =
     0x07, 0x82,
     0x01, 0xc3
 };
+static char en_data_4voice_u8800[] = 
+{
+    /* 26dB open agc */
+    /* reg  val  */
+    0x01, 0x83,
+    0x02, 0x05,
+    0x03, 0x0a,
+    0x04, 0x00,
+    0x05, 0x1a,
+    0x06, 0x3c,
+    0x07, 0x82,
+    0x01, 0xc3
+};
+static char en_data_4voice_u8820[] = 
+{
+    /* 2010.12.31 renyanhui tuning for U8820 */
+    /* reg  val  */
+    0x01, 0x83,
+    0x02, 0x05,
+    0x03, 0x04,
+    0x04, 0x00,
+    0x05, 0x16,
+    0x06, 0x7e,
+    0x07, 0x30,
+    0x01, 0xc3
+};
+static char en_data_4voice_u8800_51[] = 
+{
+    /* 26dB open agc */
+    /* reg  val  */
+    0x01, 0x83,
+    0x02, 0x05,
+    0x03, 0x0a,
+    0x04, 0x00,
+    0x05, 0x1a,
+    0x06, 0x3c,
+    0x07, 0x82,
+    0x01, 0xc3
+};
 
+static char en_data_4voice_u8860[] = 
+{
+    /* close AGC, 18dB */
+    /* reg  val  */
+    0x01, 0x83,
+    0x02, 0x05,
+    0x03, 0x09,
+    0x04, 0x00,
+    0x05, 0x12,
+    0x06, 0xfc,
+    0x07, 0x00,
+    0x01, 0xc3
+};
 
 /* for music */
 /* set default value same as U8860 */
@@ -68,6 +120,79 @@ static char en_data_4music[] =
     0x01, 0xc3
 };
 
+static char en_data_4music_u8800[] = 
+{
+    /* open AGC 30db for playing music only */
+    /* accordingly, need to check if iir filter need modify and volume percentage in hwVolumeFactor.cfg */
+    /* reg  val  */
+    0x01, 0x83,
+    0x02, 0x05,
+    0x03, 0x0a,
+    0x04, 0x00,
+    0x05, 0x1e,
+    0x06, 0x5c,
+    0x07, 0xc2,
+    0x01, 0xc3
+};
+
+static char en_data_4music_u8820[] = 
+{
+    /* 2010.12.31 renyanhui tuning for U8820 */
+    /* reg  val  */
+    0x01, 0x83,
+    0x02, 0x05,
+    0x03, 0x04,
+    0x04, 0x00,
+    0x05, 0x16,
+    0x06, 0x7e,
+    0x07, 0x30,
+    0x01, 0xc3
+};
+
+static char en_data_4music_u8800_51[] = 
+{
+    /* open AGC 30db for playing music only */
+    /* accordingly, need to check if iir filter need modify and volume percentage in hwVolumeFactor.cfg */
+    /* reg  val  */
+    0x01, 0x83,
+    0x02, 0x05,
+    0x03, 0x0a,
+    0x04, 0x00,
+    0x05, 0x1e,
+    0x06, 0x5c,
+    0x07, 0xc2,
+    0x01, 0xc3
+};
+
+/* 2011.9.23 renyanhui tuning */
+/* 2011.8.31 renyanhui tuning */
+/* 2011.8.23 renyanhui tuning */
+static char en_data_4music_u8860[] = 
+{
+    /* reg  val  */
+    0x01, 0x83,
+    0x02, 0x05,
+    0x03, 0x0a,
+    0x04, 0x00,
+    0x05, 0x14,
+    0x06, 0x7c,
+    0x07, 0x22,
+    0x01, 0xc3
+};
+
+/* 2011.9.28 renyanhui tuning */
+static char en_data_4music_c8860[] = 
+{
+    /* reg  val  */
+    0x01, 0x83,
+    0x02, 0x05,
+    0x03, 0x0a,
+    0x04, 0x00,
+    0x05, 0x14,
+    0x06, 0x7c,
+    0x07, 0x22,
+    0x01, 0xc3
+};
 
 /* data  pointer */
 static char* pen_data_4voice = &(en_data_4voice[0]);
@@ -210,14 +335,78 @@ static int tpa2028d1_probe(struct i2c_client *client,const struct i2c_device_id 
 	TPA_DEBUG_TPA("tpa2028d1_probe\n");
 	
 	g_client = client;
-    pen_data_4voice = &(en_data_4voice[0]);
-    pen_data_4voice_size = ARRAY_SIZE(en_data_4voice);
-    pen_data_4music = &(en_data_4music[0]);
-    pen_data_4music_size = ARRAY_SIZE(en_data_4music);
 
-    TPA_DEBUG_TPA("tpa2028d1_probe default.\n");
+    /* power on tpa2028d1 amplifier by type */
+    if (machine_is_msm7x30_u8800())
+    {
+        pen_data_4voice = &(en_data_4voice_u8800[0]);
+        pen_data_4voice_size = ARRAY_SIZE(en_data_4voice_u8800);
+        pen_data_4music = &(en_data_4music_u8800[0]);
+        pen_data_4music_size = ARRAY_SIZE(en_data_4music_u8800);
 
+        TPA_DEBUG_TPA("tpa2028d1_probe machine_is_msm7x30_u8800\n");
+    }
+    else if (machine_is_msm7x30_u8820())
+    {
+        pen_data_4voice = &(en_data_4voice_u8820[0]);
+        pen_data_4voice_size = ARRAY_SIZE(en_data_4voice_u8820);
+        pen_data_4music = &(en_data_4music_u8820[0]);
+        pen_data_4music_size = ARRAY_SIZE(en_data_4music_u8820);
 
+        TPA_DEBUG_TPA("tpa2028d1_probe machine_is_msm7x30_u8820\n");
+    }
+    else if (machine_is_msm7x30_u8800_51())
+    {
+        pen_data_4voice = &(en_data_4voice_u8800_51[0]);
+        pen_data_4voice_size = ARRAY_SIZE(en_data_4voice_u8800_51);
+        pen_data_4music = &(en_data_4music_u8800_51[0]);
+        pen_data_4music_size = ARRAY_SIZE(en_data_4music_u8800_51);
+
+        TPA_DEBUG_TPA("tpa2028d1_probe machine_is_msm7x30_u8800_51\n");
+    }
+	 else if (machine_is_msm8255_u8800_pro())
+    {
+        pen_data_4voice = &(en_data_4voice_u8800_51[0]);
+        pen_data_4voice_size = ARRAY_SIZE(en_data_4voice_u8800_51);
+        pen_data_4music = &(en_data_4music_u8800_51[0]);
+        pen_data_4music_size = ARRAY_SIZE(en_data_4music_u8800_51);
+
+        TPA_DEBUG_TPA("tpa2028d1_probe machine_is_msm8255_u8800_pro\n");
+    }
+    else if (machine_is_msm8255_u8860() 
+            || machine_is_msm8255_u8860lp()
+            || machine_is_msm8255_u8860_r()
+            || machine_is_msm8255_u8860_92()
+            || machine_is_msm8255_u8680()
+            || machine_is_msm8255_u8667()
+	 		|| machine_is_msm8255_u8860_51()
+			|| machine_is_msm8255_u8730())
+    {
+        pen_data_4voice = &(en_data_4voice_u8860[0]);
+        pen_data_4voice_size = ARRAY_SIZE(en_data_4voice_u8860);
+        pen_data_4music = &(en_data_4music_u8860[0]);
+        pen_data_4music_size = ARRAY_SIZE(en_data_4music_u8860);
+
+        TPA_DEBUG_TPA("tpa2028d1_probe machine_is_msm8255_u8860\n");
+    }
+    else if (machine_is_msm8255_c8860())
+    {
+        pen_data_4voice = &(en_data_4voice_u8860[0]);
+        pen_data_4voice_size = ARRAY_SIZE(en_data_4voice_u8860);
+        pen_data_4music = &(en_data_4music_c8860[0]);
+        pen_data_4music_size = ARRAY_SIZE(en_data_4music_c8860);
+        
+        TPA_DEBUG_TPA("tpa2028d1_probe machine_is_msm8255_c8860\n");
+    }
+    else
+    {
+        pen_data_4voice = &(en_data_4voice[0]);
+        pen_data_4voice_size = ARRAY_SIZE(en_data_4voice);
+        pen_data_4music = &(en_data_4music[0]);
+        pen_data_4music_size = ARRAY_SIZE(en_data_4music);
+
+        TPA_DEBUG_TPA("tpa2028d1_probe default.\n");
+    }
 
     gpio_set_value(82, 1);	/* enable spkr poweramp */
     msleep(10);

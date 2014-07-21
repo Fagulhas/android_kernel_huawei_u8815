@@ -80,7 +80,7 @@ DEVICE_ATTR(_pre##_##_name,_mode,_pre##_##_name##_show,_pre##_##_name##_store)
 #define SYN_I2C_RETRY_TIMES 10
 
 /* upgrade fw file path */
-#define TP_FW_COB_FILE_NAME  "/tp/1191601.img"
+#define TP_FW_COB_FILE_NAME  "/tp/1294018.img"
 #define TP_FW_FILE_NAME "/sdcard/update/synaptics.img"
 /*syn_version init */
 struct syn_version_config syn_version = 
@@ -548,9 +548,31 @@ static void synaptics_rmi4_work_func(struct work_struct *work)
                 	wx = finger_reg[3] % 0x10;
                 	wy = finger_reg[3] / 0x10;
                 	z = finger_reg[4];
-                    /* delete some lines */
+
+                    if(machine_is_msm7x30_u8820())
+                    {
+					    /* don't read the interrupt again  */
+                        if(interrupt[ts->f11.interrupt_offset] & 0x02)
+                        {
+                            ret = i2c_smbus_read_byte_data(ts->client, fd_01.dataBase);
+                            if(ret & 0x03)
+                            {
+                                
+                                ret = i2c_smbus_write_byte_data(ts->client, fd_01.commandBase, 0x01);
+                                printk("the touchscreen is reset yet!\n");
+                            }
+                        }
+                    }
                     x = x * lcd_x / ts_x_max;
-                    y = ( y * lcd_all ) / ts_y_max;
+					/*Coordinates is the opposite in S2000 IC for U8661*/
+					if (machine_is_msm7x27a_U8661())
+                    {
+                        y = ((ts_y_max - y) * lcd_all ) / ts_y_max;
+                   	}
+                    else
+                    {
+                        y = ( y * lcd_all ) / ts_y_max;
+                    }
 					/*check the scope of X  axes*/
                     x = check_scope_X(x);
 

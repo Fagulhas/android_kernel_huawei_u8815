@@ -395,7 +395,6 @@ config ARCH_MSM7X27A
 	select ARCH_MSM_CORTEXMP
 	select MIGHT_HAVE_CACHE_L2X0
 	select ARM_HAS_SG_CHAIN
-	select MSM_FIQ_SUPPORT
 
 config  MSM_VIC
 	bool
@@ -584,42 +583,6 @@ config MACH_MSM8625_EVT
 	bool "MSM8625 EVT"
 	help
 	  Support for the Qualcomm MSM8625 Reference Design.
-
-config MACH_QRD_SKUD_PRIME
-	depends on ARCH_MSM8625
-	depends on !MSM_STACKED_MEMORY
-	default y
-	bool "MSM8625 SKUD PRIME"
-	help
-	  Support for the Qualcomm MSM8625 SKUD prime Reference Design.
-	  Add support for a SKUD prime reference design based on MSM8x25
-	  chipset. This device is much closer to a phone than regular form
-	  factor devices, with new touch, display panel and other hardware
-	  configurations.
-
-config MACH_MSM8625Q_EVBD
-	depends on ARCH_MSM8625
-	depends on !MSM_STACKED_MEMORY
-	default y
-	bool "MSM8625Q EVBD"
-	help
-	  Support for the Qualcomm MSM8625Q EVBD Reference Design.
-	  Add support for a EVBD reference design based on MSM8x25Q
-	  chipset. This device is much closer to a phone than regular form
-	  factor devices, with new touch, display panel and other hardware
-	  configurations.
-
-config MACH_MSM8625Q_SKUD
-	depends on ARCH_MSM8625
-	depends on !MSM_STACKED_MEMORY
-	default y
-	bool "MSM8625Q SKUD"
-	help
-	  Support for the Qualcomm MSM8625Q SKUD Reference Design.
-	  Add support for a SKUD reference design based on MSM8x25Q
-	  chipset. This device is much closer to a phone than regular form
-	  factor devices, with new touch, display panel and other hardware
-	  configurations.
 
 config MACH_MSM7X30_SURF
        depends on ARCH_MSM7X30
@@ -942,6 +905,76 @@ config MACH_MSM7X27A_U8815
 	  Support for the HUAWEI 7X27A U8815 board.
 
 
+config MACH_MSM7X27A_U8655_EMMC
+        depends on ARCH_MSM7X27A
+        depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM7X27A_U8655Pro SURF"
+	help
+	  Support for the HUAWEI 7X27A U8655Pro board.
+config MACH_MSM7X27A_M660
+	depends on ARCH_MSM7X27A
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM7X27A_M660 SURF"
+	help
+	  Support for the HUAWEI 7X27A M660 board.
+config MACH_MSM7X27A_C8820
+	depends on ARCH_MSM7X27A
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM7X27A_C8820 SURF"
+	help
+	  Support for the HUAWEI 7X27A C8820 board.
+
+config MACH_MSM7X27A_H867G
+        depends on ARCH_MSM7X27A
+        depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM7X27A_H867G SURF"
+	help
+	  Support for the HUAWEI 7X27A H867G board.
+
+
+config MACH_MSM7X27A_H868C
+        depends on ARCH_MSM7X27A
+        depends on !MSM_STACKED_MEMORY
+    default n
+    bool "MSM7X27A_H868C SURF"
+    help
+      Support for the HUAWEI 7X27A H868C board.
+
+config MACH_MSM8X25_C8825D
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM8X25_C8825D SURF"
+	help
+	  Support for the HUAWEI 8x25 C8825D board.	  
+
+config MACH_MSM8X25_U8825
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM8X25_U8825 SURF"
+	help
+	  Support for the HUAWEI 8x25 U8825 board.	  
+
+config MACH_MSM8X25_U8825D
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM8X25_U8825D SURF"
+	help
+	  Support for the HUAWEI 8x25 U8825D board.
+config MACH_MSM8X25_U8951D
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM8X25_U8951D SURF"
+	help
+	  Support for the HUAWEI 8x25 U8951D board.
+
 config MACH_MSM8X25_U8951
 	depends on ARCH_MSM8625
 	depends on !MSM_STACKED_MEMORY
@@ -949,31 +982,22 @@ config MACH_MSM8X25_U8951
 	bool "MSM8X25_U8951 SURF"
 	help
 	  Support for the HUAWEI 8x25 U8951 board.
-	  
-config MACH_MSM8X25_G520U
+
+config MACH_MSM8X25_U8833D
 	depends on ARCH_MSM8625
 	depends on !MSM_STACKED_MEMORY
 	default n
-	bool "MSM8X25_G520U SURF"
+	bool "MSM8X25_U8833D SURF"
 	help
-	  Support for the HUAWEI 8x25 G520U board.
+	  Support for the HUAWEI 8x25 U8833D board.
 
-config MACH_MSM8X25_C8813Q
+config MACH_MSM8X25_U8833
 	depends on ARCH_MSM8625
 	depends on !MSM_STACKED_MEMORY
 	default n
-	bool "MSM8X25_C8813Q SURF"
+	bool "MSM8X25_U8833 SURF"
 	help
-	  Support for the HUAWEI 8x25 C8813Q board.	
-
-config MACH_MSM8X25_G610C
-	depends on ARCH_MSM8625
-	depends on !MSM_STACKED_MEMORY
-	default n
-	bool "MSM8X25_G610C SURF"
-	help
-	  Support for the HUAWEI 8x25 G610C board.	
-
+	  Support for the HUAWEI 8x25 U8833 board.
 config MACH_MSM8X25_C8950D
 	depends on ARCH_MSM8625
 	depends on !MSM_STACKED_MEMORY
@@ -981,6 +1005,38 @@ config MACH_MSM8X25_C8950D
 	bool "MSM8X25_C8950D SURF"
 	help
 	  Support for the HUAWEI 8x25 C8950D board.	  
+
+config MACH_MSM8X25_U8950D
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM8X25_U8950D SURF"
+	help
+	  Support for the HUAWEI 8x25 U8950D board.
+
+config MACH_MSM8X25_U8950
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM8X25_U8950 SURF"
+	help
+	  Support for the HUAWEI 8x25 U8950 board.
+config MACH_MSM8X25_C8812P
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM8X25_C8812P SURF"
+	help
+	  Support for the HUAWEI 8x25 C8812P board.
+    
+config MACH_MSM8X25_C8833D
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM8X25_C8833D SURF"
+	help
+	  Support for the HUAWEI 8x25 C8833D board.
+    
 config MACH_MSM8X25_C8813
 	depends on ARCH_MSM8625
 	depends on !MSM_STACKED_MEMORY
@@ -988,6 +1044,14 @@ config MACH_MSM8X25_C8813
 	bool "MSM8X25_C8813 SURF"
 	help
 	  Support for the HUAWEI 8x25 C8813 board.
+
+config MACH_MSM8X25_H881C
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "MSM8X25_H881C SURF"
+	help
+	  Support for the HUAWEI 8x25 H881C board.
 
 endmenu
 
@@ -1678,22 +1742,6 @@ config MSM_CPU_FREQ_MIN
 	int "Min CPU Frequency"
 	depends on MSM_CPU_FREQ_SET_MIN_MAX
 	default 245760
-
-config MSM7X27A_OVERCLOCK
-	bool "Enable SoC overclocking for MSM7x27A"
-	depends on MSM_CPU_FREQ_SET_MIN_MAX
-        depends on ARCH_MSM7X27A
-	default n
-	help
-	  Enable support for non-standard msm7x27A acpuclock frequencies.
-
-config MSM7X27A_UNDERVOLT
-	bool "Enable SoC undervolting for MSM7x27A"
-	depends on MSM_CPU_FREQ_SET_MIN_MAX
-        depends on ARCH_MSM7X27A
-	default n
-	help
-	  Enable support for non-standard msm7x27A acpuclock voltages.
 
 endif # CPU_FREQ_MSM
 
@@ -2613,15 +2661,6 @@ config MSM_FIQ
 	  if apps is not responding and holding lock with irqs disabled.
 	  Modem will then generate an raise a FIQ on this line before sending
 	  SMSM reset
-config MSM_PBUS
-	bool "Enable PBUS handler for debugging"
-	depends on ARCH_MSM8625 || ARCH_MSM7X27A
-	default y
-	help
-	  Register PBUS interrupt handler. This will help
-	  in debugging PBUS hang issues. This handler reads
-	  client address which caused PBUS hang and PBUS
-	  master information at the time of hang.
 endif
 
 config HUAWEI_GPIO_KEYPAD
@@ -2698,15 +2737,3 @@ config HUAWEI_KERNEL_DEBUG
 	default n
 	help
 	  Select Y if print HUAWEI log
-
-config HUAWEI_BT_BCM43XX
-	bool "Huawei BCM43XX Bluetooth"
-	default n
-	help
-	  Select Y to use Broadcom's BTLA stack. Used by BCM4330 and BCM4329.
-
-config HUAWEI_BT_WCN2243
-	bool "Qualcomm WCN2243 Bluetooth"
-	default n
-	help
-	  Select Y to use Qualcomm's BlueZ stack. Used by WCN2243. Not used in Huawei devices.

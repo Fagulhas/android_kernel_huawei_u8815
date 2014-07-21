@@ -974,7 +974,8 @@ static int convert_num2char(char *pbuf, int buf_len, unsigned long num2convert)
     
     return 0;
 }
-/*remove 3 lines*/
+#endif /* CONFIG_SRECORDER_MSM */
+
 struct resource srecorder_res = 
 {
 	.name  = "SRecorder",
@@ -982,8 +983,6 @@ struct resource srecorder_res =
 	.end   = 0,
 	.flags = IORESOURCE_BUSY | IORESOURCE_MEM
 };
-#endif /* CONFIG_SRECORDER_MSM */
-
 
 void __init setup_arch(char **cmdline_p)
 {
@@ -995,7 +994,7 @@ void __init setup_arch(char **cmdline_p)
     char start_addr_temp_buf[NUM_LEN];
     unsigned long srecorder_reserved_mem_phys_start_addr = 0x0;
     unsigned long srecorder_reserved_mem_size = 0x0;
-/*remove 3 lines*/
+    int try_reserve_mem_count = 20; /* try 20 times to reserve memory for srecorder */
 #endif /* CONFIG_SRECORDER_MSM */
 	
 	setup_processor();
@@ -1027,24 +1026,8 @@ void __init setup_arch(char **cmdline_p)
 	sort(&meminfo.bank, meminfo.nr_banks, sizeof(meminfo.bank[0]), meminfo_cmp, NULL);
 	sanity_check_meminfo();
 	arm_memblock_init(&meminfo, mdesc);
-/*transplant code from 8930 platform.*/
-#ifdef CONFIG_SRECORDER_MSM
-    /* Notes: this code should be executed after arm_memblock_init, because of the action operated by arm_memblock_init */
-    srecorder_reserved_mem_phys_start_addr = get_srecorder_reserved_mem_phys_start_addr();
-    srecorder_reserved_mem_size = get_srecorder_reserved_mem_size();
-    if (0L != srecorder_reserved_mem_phys_start_addr)
-    {
-        convert_num2char(size_temp_buf, NUM_LEN, srecorder_reserved_mem_size);
-        convert_num2char(start_addr_temp_buf, NUM_LEN, srecorder_reserved_mem_phys_start_addr);
 
-        snprintf(memmap_tag, sizeof(memmap_tag), " %s=%s$%s", SRECORDER_RESERVED_MEM_TAG, size_temp_buf, start_addr_temp_buf);
-        strcat(boot_command_line, memmap_tag);
-    }
-    else
-    {
-        printk(KERN_ERR ">>>> Can't allocate memory for S-Recorder\n");
-    }
-#endif /* CONFIG_SRECORDER_MSM */
+/* Delete content of this Macro */
 
 	paging_init(mdesc);
 	request_standard_resources(mdesc);
@@ -1059,7 +1042,48 @@ void __init setup_arch(char **cmdline_p)
 		smp_init_cpus();
 #endif
 	reserve_crashkernel();
-/*remove defect code in SRecorder module*/
+	
+#ifdef CONFIG_SRECORDER_MSM
+    /* Notes: this code should be executed after arm_memblock_init, because of the action operated by arm_memblock_init */
+    srecorder_reserved_mem_phys_start_addr = get_srecorder_reserved_mem_phys_start_addr();
+    srecorder_reserved_mem_size = get_srecorder_reserved_mem_size();
+    if (0x0 != srecorder_reserved_mem_phys_start_addr)
+    {
+        while (try_reserve_mem_count-- > 0)
+        {
+            int ret = -1;
+
+            srecorder_reserved_mem_phys_start_addr -= srecorder_reserved_mem_size;
+            ret = reserve_bootmem(srecorder_reserved_mem_phys_start_addr, srecorder_reserved_mem_size, BOOTMEM_EXCLUSIVE);
+            if (ret < 0)
+            {
+                printk(KERN_WARNING "SRecorder reservation failed - memory is in use (0x%lx) ret = %d \n", 
+                    srecorder_reserved_mem_phys_start_addr, ret);
+                continue;
+            }
+            else
+            {
+                printk(KERN_INFO "Reserving %ldKB of memory at %ldKB for SRecorder\n", 
+                    (srecorder_reserved_mem_size >> 10), (srecorder_reserved_mem_phys_start_addr >> 10));
+
+                convert_num2char(size_temp_buf, NUM_LEN, srecorder_reserved_mem_size);
+                convert_num2char(start_addr_temp_buf, NUM_LEN, srecorder_reserved_mem_phys_start_addr);
+
+                srecorder_res.start = srecorder_reserved_mem_phys_start_addr;
+                srecorder_res.end = srecorder_reserved_mem_phys_start_addr + srecorder_reserved_mem_size - 1;
+                insert_resource(&iomem_resource, &srecorder_res);
+                
+                snprintf(memmap_tag, sizeof(memmap_tag), " %s=%s$%s", SRECORDER_RESERVED_MEM_TAG, size_temp_buf, start_addr_temp_buf);
+                strcat(boot_command_line, memmap_tag);
+                break;
+            }
+        }
+    }
+    else
+    {
+        printk(KERN_ERR ">>>> Can't allocate memory for S-Recorder\n");
+    }
+#endif /* CONFIG_SRECORDER_MSM */
 
 	tcm_init();
 

@@ -485,7 +485,6 @@ struct mipi_dsi_platform_data {
 	int (*get_lane_config)(void);
 	char (*splash_is_enabled)(void);
 	int target_type;
-	char dlane_swap;
 };
 
 enum mipi_dsi_3d_ctrl {
@@ -631,13 +630,6 @@ void vic_handle_irq(struct pt_regs *regs);
 void msm_8974_reserve(void);
 void msm_8974_very_early(void);
 void msm_8974_init_gpiomux(void);
-
-/* Dump debug info (states, rate, etc) of clocks */
-#if defined(CONFIG_ARCH_MSM7X27)
-void msm_clk_dump_debug_info(void);
-#else
-static inline void msm_clk_dump_debug_info(void) {}
-#endif
 
 struct mmc_platform_data;
 int msm_add_sdcc(unsigned int controller,

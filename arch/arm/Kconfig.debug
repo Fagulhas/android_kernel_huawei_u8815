@@ -20,7 +20,11 @@ config SRECORDER_MSM
 	default y
 	help
 	   Reserve 1M memory for Srecorder in MSM platform
-#/* delete 6 lines */
+config SRECORDER_POWERCOLLAPS
+	bool "Enable Function of catch log when system power down"
+	default y
+	help
+	   Enable Function of catch log when system power down
 config DEVICE_CHECK
 	bool "Enable Device Check for FreezeScreem"
 	default y

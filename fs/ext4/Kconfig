@@ -92,12 +92,3 @@ config EXT4_HUAWEI_DEBUG
 
 	  If you select Y here, then you will be able to turn on saving
 	  kernel log to internal sd card when ext4 filesystem happens error
-
-config EXT4_HUAWEI_READ_ONLY_RECOVERY
-	bool "EXT4 huawei read only recovery function support"
-	depends on EXT4_FS
-	default n
-	help
-	  Enables recovery function when ext4 filesystem found error and partition change to read only.
-
-	  If you select Y here, then you will be able to turn on recovery function. 

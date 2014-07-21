@@ -314,29 +314,26 @@ static unsigned int msm7627a_sdcc_slot_status(struct device *dev)
 	} else {
 		status = gpio_direction_input(gpio_sdc1_hw_det);
 		if (!status) {
-            /* Set C8813Q sd card detection voltage */
-			/* add G520U board id and adjust the indentation */
 #ifdef CONFIG_HUAWEI_KERNEL
-			if ( machine_is_msm8x25_U8951() ||
-				machine_is_msm8x25_C8813() ||
-				machine_is_msm8x25_G520U() ||
-				machine_is_msm8x25_C8813Q()||
-				machine_is_msm8x25_G610C()
-				)
-			{
-				//u8185 is different from other products.
-				status = gpio_get_value(gpio_sdc1_hw_det);
-			}
-			else
-			{
-				status = !gpio_get_value(gpio_sdc1_hw_det);
-			}
+            if (machine_is_msm7x27a_U8185() ||
+                    machine_is_msm8x25_U8951D() ||
+                    machine_is_msm8x25_U8951() ||
+                    machine_is_msm8x25_C8813()
+                    )
+            {
+                //u8185 is different from other products.
+                status = gpio_get_value(gpio_sdc1_hw_det);
+            }
+            else
+            {
+                status = !gpio_get_value(gpio_sdc1_hw_det);
+            }
 #else
 			if (machine_is_msm7627a_qrd1() ||
-				machine_is_msm7627a_evb() ||
-				machine_is_msm8625_evb()  ||
-				machine_is_msm7627a_qrd3() ||
-				machine_is_msm8625_qrd7())
+					machine_is_msm7627a_evb() ||
+					machine_is_msm8625_evb()  ||
+					machine_is_msm7627a_qrd3() ||
+					machine_is_msm8625_qrd7())
 				status = !gpio_get_value(gpio_sdc1_hw_det);
 			else
 				status = gpio_get_value(gpio_sdc1_hw_det);
@@ -594,7 +591,7 @@ static struct wifi_platform_data bcm_wifi_control = {
 };
 
 static struct platform_device bcm_wifi_device = {
-        .name           = "bcmdhd_wlan",	/*bcm4330 wlan device*/
+        .name           = "bcm4330_wlan",	/*bcm4330 wlan device*/
         .id             = 1,
         .num_resources  = 0,
         .resource       = NULL,
@@ -650,21 +647,12 @@ void __init msm7627a_init_mmc(void)
 	if (!(machine_is_msm7627a_qrd3() || machine_is_msm8625_qrd7())) {
 /* "S3" is always on for emmc,so don't configure the "emmc" in the linux */
 #ifdef CONFIG_HUAWEI_KERNEL
-        if (mmc_regulator_init(3, "smps3", 1800000))
-            return;       
+    if (mmc_regulator_init(3, "smps3", 1800000))
+        return;       
 #else
-	    if (mmc_regulator_init(3, "emmc", 3000000))
-		    return;
+	if (mmc_regulator_init(3, "emmc", 3000000))
+		return;
 #endif	
-
-		/*
-		 * On 7x25A FFA data CRC errors are seen, which are
-		 * probably due to the proximity of SIM card and eMMC.
-		 * Hence, reducing the clock to 24.7Mhz from 49Mhz.
-		 */
-		if (machine_is_msm7625a_ffa())
-			sdc3_plat_data.msmsdcc_fmax =
-				sdc3_plat_data.msmsdcc_fmid;
 		msm_add_sdcc(3, &sdc3_plat_data);
 	}
 #endif
@@ -674,11 +662,9 @@ void __init msm7627a_init_mmc(void)
 	if (mmc_regulator_init(1, "mmc", 2850000))
 		return;
 	/* 8x25 EVT do not use hw detector */
-	if (!((machine_is_msm8625_evt() || machine_is_qrd_skud_prime() ||
-				machine_is_msm8625q_evbd() || machine_is_msm8625q_skud())))
+	if (!(machine_is_msm8625_evt()))
 		sdc1_plat_data.status_irq = MSM_GPIO_TO_INT(gpio_sdc1_hw_det);
-	if (machine_is_msm8625_evt() || machine_is_qrd_skud_prime() ||
-				machine_is_msm8625q_evbd() || machine_is_msm8625q_skud())
+	if (machine_is_msm8625_evt())
 		sdc1_plat_data.status = NULL;
 
 	msm_add_sdcc(1, &sdc1_plat_data);

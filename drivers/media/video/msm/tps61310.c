@@ -188,7 +188,8 @@ int tps61310_set_flash(unsigned led_state)
          break;
 
     default:
-		/* Deal with nothing here. */
+        tps61310_i2c_write( tps61310_client, 0x00, 0x80 );
+        gpio_set_value(tps61310_strb0, 0);
         break;
     }
 
@@ -265,12 +266,8 @@ static int tps61310_probe(struct i2c_client *client,
 	tempvalue = tps61310_i2c_read(tps61310_client, 0x07);
 	if ((tempvalue & 0x07) == 0x06) {
 		printk("tps61310 read chip id ok!\n");
-		register_led_set_state(tps61310_set_flash);
 	} else {
 		printk("tps61310 read chip id error!\n");
-		/*if probe failed,  free the gpio*/
-		gpio_free(tps61310_nreset);
-		gpio_free(tps61310_strb0);
 		return -ENODEV;
 	}
 

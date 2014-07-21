@@ -92,7 +92,6 @@ struct gs_data {
 static struct gs_data  *this_gs_data;
 static int accel_delay = GS_KX_TIMRER;     /*1s*/
 static atomic_t a_flag;
-static atomic_t kxtik_status_flag;
 static compass_gs_position_type  compass_gs_position=COMPASS_TOP_GS_TOP;
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -180,7 +179,6 @@ static int gs_init_reg(struct gs_data  *gs)
 static int gs_kxtik_open(struct inode *inode, struct file *file)
 {	
 	gs_init_reg(this_gs_data);
-	atomic_set(&kxtik_status_flag, GS_RESUME);
 	if (this_gs_data->use_irq)
 		enable_irq(this_gs_data->client->irq);
 	else
@@ -192,7 +190,6 @@ static int gs_kxtik_release(struct inode *inode, struct file *file)
 {
 	int ret;
 	ret  = reg_write(this_gs_data, CTRL_REG1, 0x00);
-	atomic_set(&kxtik_status_flag, GS_SUSPEND);
 	if (this_gs_data->use_irq)
 		disable_irq(this_gs_data->client->irq);
 	else
@@ -352,9 +349,11 @@ static void gs_work_func(struct work_struct *work)
     }
     else
     {
-        if(GS_RESUME == atomic_read(&kxtik_status_flag))
-            if (0 != hrtimer_start(&gs->timer, ktime_set(sesc, nsesc), HRTIMER_MODE_REL) )
-                printk(KERN_ERR "%s, line %d: hrtimer_start fail! sec=%d, nsec=%d\n", __func__, __LINE__, sesc, nsesc);
+        /* hrtimer_start fail */
+        if (0 != hrtimer_start(&gs->timer, ktime_set(sesc, nsesc), HRTIMER_MODE_REL) )
+        {
+            printk(KERN_ERR "%s, line %d: hrtimer_start fail! sec=%d, nsec=%d\n", __func__, __LINE__, sesc, nsesc);
+        }
     }
 }
 
@@ -475,7 +474,6 @@ static int gs_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	{
 		printk("ret is %d\n",ret);
 	}
-	atomic_set(&kxtik_status_flag, GS_SUSPEND);
 	#ifdef CONFIG_HUAWEI_HW_DEV_DCT
 	/* detect current device successful, set the flag as present */
 	set_hw_dev_flag(DEV_I2C_G_SENSOR);
@@ -622,7 +620,6 @@ static int gs_suspend(struct i2c_client *client, pm_message_t mesg)
 		printk("register write failed \n ");
 		return ret;
 	}
-	atomic_set(&kxtik_status_flag, GS_SUSPEND);
 	if (gs->use_irq)
 		disable_irq(client->irq);
 	else
@@ -642,7 +639,6 @@ static int gs_resume(struct i2c_client *client)
 {
 	struct gs_data *gs = i2c_get_clientdata(client);
 	gs_init_reg(gs);
-	atomic_set(&kxtik_status_flag, GS_RESUME);
 	if (!gs->use_irq)
 		hrtimer_start(&gs->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
 	else

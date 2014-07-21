@@ -53,7 +53,6 @@ extern uint32 mdp_intr_mask;
 int first_pixel_start_x;
 int first_pixel_start_y;
 
-/* add qcom patch to work around lcd esd issue */
 static ssize_t vsync_show_event(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -65,8 +64,7 @@ static ssize_t vsync_show_event(struct device *dev,
 
 	INIT_COMPLETION(vsync_cntrl.vsync_wait);
 
-	if (!wait_for_completion_timeout(&vsync_cntrl.vsync_wait, HZ/10))
-		pr_err("Timedout DMA %s %d", __func__, __LINE__);
+	wait_for_completion(&vsync_cntrl.vsync_wait);
 	ret = snprintf(buf, PAGE_SIZE, "VSYNC=%llu",
 	ktime_to_ns(vsync_cntrl.vsync_time));
 	buf[strlen(buf) + 1] = '\0';
@@ -372,7 +370,6 @@ int mdp_lcdc_on(struct platform_device *pdev)
 		pr_debug("%s: kobject_uevent(KOBJ_ADD)\n", __func__);
 		vsync_cntrl.sysfs_created = 1;
 	}
-	mdp_histogram_ctrl_all(TRUE);
 
 	return ret;
 }
@@ -392,7 +389,6 @@ int mdp_lcdc_off(struct platform_device *pdev)
 		timer_base = DTV_BASE;
 	}
 #endif
-	mdp_histogram_ctrl_all(FALSE);
 
 /*still need to send 2 frame data after sending sleep in command*/
 #ifdef CONFIG_HUAWEI_KERNEL
@@ -431,12 +427,14 @@ void mdp_dma_lcdc_vsync_ctrl(int enable)
 	/* delete two lines */
 
 	vsync_cntrl.vsync_irq_enabled = enable;
+	if (!enable)
+		vsync_cntrl.disabled_clocks = 0;
 	disabled_clocks = vsync_cntrl.disabled_clocks;
 	spin_unlock_irqrestore(&mdp_spin_lock, flag);
 
-	if (enable && disabled_clocks)
+	if (enable && disabled_clocks) 
 		mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_ON, FALSE);
-
+		
 	spin_lock_irqsave(&mdp_spin_lock, flag);
 	if (enable && vsync_cntrl.disabled_clocks) {
 		outp32(MDP_INTR_CLEAR, LCDC_FRAME_START);
@@ -452,7 +450,6 @@ void mdp_dma_lcdc_vsync_ctrl(int enable)
 		atomic_set(&vsync_cntrl.vsync_resume, 1);
 }
 
-/* add qcom patch to work around lcd esd issue */
 void mdp_lcdc_update(struct msm_fb_data_type *mfd)
 {
 	struct fb_info *fbi = mfd->fbi;
@@ -503,8 +500,7 @@ void mdp_lcdc_update(struct msm_fb_data_type *mfd)
 	outp32(MDP_INTR_ENABLE, mdp_intr_mask);
 #endif
 	spin_unlock_irqrestore(&mdp_spin_lock, flag);
-	if (wait_for_completion_killable_timeout(&mfd->dma->comp, HZ/10) <= 0)
-		pr_err("DMA_P timedout: %s %i", __func__, __LINE__);
+	wait_for_completion_killable(&mfd->dma->comp);
 	mdp_disable_irq(irq_block);
 	up(&mfd->dma->mutex);
 }

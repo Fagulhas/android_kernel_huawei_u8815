@@ -24,20 +24,15 @@
 #define FALSE 0
 #endif
 
-#define LCD_ESD_CHECK_IGNORE_CNT    (10)
-
 struct sequence{
     uint32_t reg;
     uint32_t value;
     uint32_t time; //unit is ms
 };
-/* close tianma and cmi esd */
-#define LCD_HX8369A_TIANMA_ESD_SIGN		0
-/* open cmi otm8009a ESD control macro */
-#define LCD_OTM8009A_CMI_ESD_SIGN    (1)
-#define LCD_OTM9608A_TIANMA_ESD_SIGN    (1)
+#define LCD_HX8369A_TIANMA_ESD_SIGN		1
+#define LCD_OTM8009A_CMI_ESD_SIGN	1
 
-#if (LCD_HX8369A_TIANMA_ESD_SIGN || LCD_OTM8009A_CMI_ESD_SIGN || LCD_OTM9608A_TIANMA_ESD_SIGN)
+#if (LCD_HX8369A_TIANMA_ESD_SIGN || LCD_OTM8009A_CMI_ESD_SIGN)
 struct read_sequence{
 	uint32_t reg;  //register
 	uint32_t value; //register's type

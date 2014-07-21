@@ -155,7 +155,7 @@ enum {
 #define FILTER_SAMPLE_NUMBER	256		/* 256 = 1g */
 #define	GPIO_INT1		19
 #define GPIO_INT2		20
-#define GS_ST_TIMRER		(1000*1000000)		/*1000000s*/
+#define GS_ST_TIMRER		(1000)		/*1000ms*/
 
 #define ECS_IOCTL_READ_ACCEL_XYZ			_IOR(0xA1, 0x06, char[3])
 #define ECS_IOCTL_APP_SET_DELAY 			_IOW(0xA1, 0x18, short)
@@ -188,7 +188,7 @@ struct input_dev *sensor_dev = NULL;
 static int accel_delay = GS_ST_TIMRER;     /*1s*/
 
 static atomic_t a_flag;
-static atomic_t adi_status_flag;
+
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void gs_early_suspend(struct early_suspend *h);
 static void gs_late_resume(struct early_suspend *h);
@@ -322,7 +322,7 @@ static int gs_st_open(struct inode *inode, struct file *file)
 	reg_write(this_gs_data,GS_ADI_REG_BW,0x0b);    /* Rate: 200Hz, IDD: 130uA */
 	reg_write(this_gs_data,GS_ADI_REG_DATA_FORMAT,0x0B);/* Data Format: 16g right justified  256=1g*/
 	reg_write(this_gs_data, GS_ADI_REG_POWER_CTL, 0x08);  
-	atomic_set(&adi_status_flag, GS_RESUME);
+
 	if (this_gs_data->use_irq)
 		enable_irq(this_gs_data->client->irq);
 	else
@@ -335,7 +335,8 @@ static int gs_st_release(struct inode *inode, struct file *file)
 {
 	/*gs standby mode*/
 	reg_write(this_gs_data, GS_ADI_REG_POWER_CTL, 0);
-	atomic_set(&adi_status_flag, GS_SUSPEND);
+	
+
 	if (this_gs_data->use_irq)
 		disable_irq(this_gs_data->client->irq);
 	else
@@ -521,9 +522,11 @@ static void gs_work_func(struct work_struct *work)
     }
     else
     {
-        if(GS_RESUME == atomic_read(&adi_status_flag))
-            if (0 != hrtimer_start(&gs->timer, ktime_set(sesc, nsesc), HRTIMER_MODE_REL) )
-                printk(KERN_ERR "%s, line %d: hrtimer_start fail! sec=%d, nsec=%d\n", __func__, __LINE__, sesc, nsesc);
+        /* hrtimer_start fail */
+        if (0 != hrtimer_start(&gs->timer, ktime_set(sesc, nsesc), HRTIMER_MODE_REL) )
+        {
+            printk(KERN_ERR "%s, line %d: hrtimer_start fail! sec=%d, nsec=%d\n", __func__, __LINE__, sesc, nsesc);
+        }
     }
 }
 
@@ -688,11 +691,11 @@ static int gs_probe(
 		/* fail? */
 		goto err_detect_failed;
 	}
-	atomic_set(&adi_status_flag, GS_SUSPEND);
-	#ifdef CONFIG_HUAWEI_HW_DEV_DCT
-	/* detect current device successful, set the flag as present */
-	set_hw_dev_flag(DEV_I2C_G_SENSOR);
-	#endif
+
+    #ifdef CONFIG_HUAWEI_HW_DEV_DCT
+    /* detect current device successful, set the flag as present */
+    set_hw_dev_flag(DEV_I2C_G_SENSOR);
+    #endif
 
 	if (sensor_dev == NULL)
 	{
@@ -845,7 +848,7 @@ static int gs_suspend(struct i2c_client *client, pm_message_t mesg)
 {
 	int ret;
 	struct gs_data *gs = i2c_get_clientdata(client);
-	atomic_set(&adi_status_flag, GS_SUSPEND);
+
 	if (gs->use_irq)
 		disable_irq(client->irq);
 	else
@@ -868,7 +871,7 @@ static int gs_resume(struct i2c_client *client)
 	reg_write(this_gs_data,GS_ADI_REG_BW,0x0b);    /* Rate: 200Hz, IDD: 130uA */
 	 reg_write(this_gs_data,GS_ADI_REG_DATA_FORMAT,0x0B);/* Data Format: 16g right justified  256=1g*/
 	reg_write(this_gs_data, GS_ADI_REG_POWER_CTL, 0x08);
-	atomic_set(&adi_status_flag, GS_RESUME);
+	
 	if (!gs->use_irq)
 		hrtimer_start(&gs->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
 	else

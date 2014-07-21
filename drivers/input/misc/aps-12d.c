@@ -706,7 +706,14 @@ static int aps_12d_probe(
         goto err_check_functionality_failed;
     }
 
-    /* delete some lines */
+	/* if querry the board is T1 or T2 turn off the proximity */
+    /* This modification for version A&B of U8800,only */
+	if((machine_is_msm7x30_u8800())&&((get_hw_sub_board_id() == HW_VER_SUB_VA) || ((get_hw_sub_board_id() == HW_VER_SUB_VB))))
+	{
+		printk(KERN_ERR "aps_12d_probe: aps is not supported in U8800 and U8800 T1 board!\n");
+		ret = -ENODEV;
+		goto err_check_functionality_failed; 
+	}    
 
 	aps = kzalloc(sizeof(*aps), GFP_KERNEL);
 	if (aps == NULL) {

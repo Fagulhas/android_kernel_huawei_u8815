@@ -49,6 +49,20 @@ static char en_data_4voice[] =
     0x07, 0x82,
     0x01, 0xc3
 };
+static char en_data_4voice_u8820[] = 
+{
+    /* 2010.12.31 renyanhui tuning for U8820 */
+    /* reg  val  */
+    0x01, 0x83,
+    0x02, 0x05,
+    0x03, 0x04,
+    0x04, 0x00,
+    0x05, 0x16,
+    0x06, 0x7e,
+    0x07, 0x30,
+    0x01, 0xc3
+};
+
 /* for music */
 static char en_data_4music[] = 
 {
@@ -64,6 +78,21 @@ static char en_data_4music[] =
     0x07, 0xc2,
     0x01, 0xc3
 };
+
+static char en_data_4music_u8820[] = 
+{
+    /* 2010.12.31 renyanhui tuning for U8820 */
+    /* reg  val  */
+    0x01, 0x83,
+    0x02, 0x05,
+    0x03, 0x04,
+    0x04, 0x00,
+    0x05, 0x16,
+    0x06, 0x7e,
+    0x07, 0x30,
+    0x01, 0xc3
+};
+
 /* data  pointer */
 static char* pen_data_4voice = &(en_data_4voice[0]);
 static int     pen_data_4voice_size = 0;
@@ -247,14 +276,24 @@ static int tpa2028d1_probe(struct i2c_client *client,const struct i2c_device_id 
 	g_client = client;
 
     /* power on tpa2028d1 amplifier by type */
-    /* delete some lines */
-    pen_data_4voice = &(en_data_4voice[0]);
-    pen_data_4voice_size = ARRAY_SIZE(en_data_4voice);
-    pen_data_4music = &(en_data_4music[0]);
-    pen_data_4music_size = ARRAY_SIZE(en_data_4music);
+    if (machine_is_msm7x30_u8820())
+    {
+        pen_data_4voice = &(en_data_4voice_u8820[0]);
+        pen_data_4voice_size = ARRAY_SIZE(en_data_4voice_u8820);
+        pen_data_4music = &(en_data_4music_u8820[0]);
+        pen_data_4music_size = ARRAY_SIZE(en_data_4music_u8820);
 
-    TPA_DEBUG_TPA("tpa2028d1_probe default.\n");
+        TPA_DEBUG_TPA("tpa2028d1_probe machine_is_msm7x30_u8820\n");
+    }
+    else
+    {
+        pen_data_4voice = &(en_data_4voice[0]);
+        pen_data_4voice_size = ARRAY_SIZE(en_data_4voice);
+        pen_data_4music = &(en_data_4music[0]);
+        pen_data_4music_size = ARRAY_SIZE(en_data_4music);
 
+        TPA_DEBUG_TPA("tpa2028d1_probe default.\n");
+    }
 
 
 	gpio_tlmm_config(GPIO_CFG(125, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),GPIO_CFG_ENABLE);

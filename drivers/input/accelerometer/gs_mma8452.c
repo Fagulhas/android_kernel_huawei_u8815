@@ -115,7 +115,7 @@ enum {
 #define FILTER_SAMPLE_NUMBER		4096           /*256LSB =1g*/  
 #define	GPIO_INT1                   19
 #define GPIO_INT2                   20
-#define GS_TIMRER                    (1000*1000000)           /*1000000s*/
+#define GS_TIMRER                    (1000)           /*1000ms*/
 
 #define ECS_IOCTL_READ_ACCEL_XYZ			_IOR(0xA1, 0x06, char[3])
 #define ECS_IOCTL_APP_SET_DELAY 			_IOW(0xA1, 0x18, short)
@@ -174,7 +174,7 @@ static signed short compass_sensor_data[3];
 static char gs_device_id[] = MMA8452_DRV_NAME;
 
 extern struct input_dev *sensor_dev;
-static atomic_t mma_status_flag;
+
 #ifdef CONFIG_MELFAS_UPDATE_TS_FIRMWARE
 extern struct gs_data *TS_updateFW_gs_data;
 #endif
@@ -284,7 +284,6 @@ static int gs_mma8452_open(struct inode *inode, struct file *file)
 {	
 	/*gs active mode, modify the adc frequency to 50HZ*/
 	reg_write(this_gs_data, MMA8452_CTRL_REG1, 0x21);
-	atomic_set(&mma_status_flag, GS_RESUME);
 	if (this_gs_data->use_irq)
 		enable_irq(this_gs_data->client->irq);
 	else
@@ -297,7 +296,7 @@ static int gs_mma8452_release(struct inode *inode, struct file *file)
 {
 	/*gs standby mode*/
 	reg_write(this_gs_data, MMA8452_CTRL_REG1, 0x20); 
-	atomic_set(&mma_status_flag, GS_SUSPEND);
+
 	if (this_gs_data->use_irq)
 		disable_irq(this_gs_data->client->irq);
 	else
@@ -497,7 +496,8 @@ static void gs_work_func(struct work_struct *work)
     }
     else
     {
-        printk(KERN_ERR"%s, line %d:MMA8452_CTRL_REG1 is 0x%x ,status=0x%x\n",__func__, __LINE__,reg_read(gs, MMA8452_CTRL_REG1),status);
+        printk("MMA8452_CTRL_REG1 is %d \n",reg_read(gs, MMA8452_CTRL_REG1));
+        printk(KERN_ERR "%s, line %d: status=0x%x\n", __func__, __LINE__, status);
     }
     if(mma8452_debug_mask)
     {
@@ -517,9 +517,11 @@ static void gs_work_func(struct work_struct *work)
     }
     else
     {
-        if(GS_RESUME == atomic_read(&mma_status_flag))
-            if (0 != hrtimer_start(&gs->timer, ktime_set(sesc, nsesc), HRTIMER_MODE_REL) )
-                printk(KERN_ERR "%s, line %d: hrtimer_start fail! sec=%d, nsec=%d\n", __func__, __LINE__, sesc, nsesc);
+        /* hrtimer_start fail */
+        if (0 != hrtimer_start(&gs->timer, ktime_set(sesc, nsesc), HRTIMER_MODE_REL) )
+        {
+            printk(KERN_ERR "%s, line %d: hrtimer_start fail! sec=%d, nsec=%d\n", __func__, __LINE__, sesc, nsesc);
+        }
     }
 }
 
@@ -668,11 +670,12 @@ static int gs_probe(
 		/* fail? */
 		goto err_detect_failed;
 	}
-	atomic_set(&mma_status_flag, GS_SUSPEND);
-	#ifdef CONFIG_HUAWEI_HW_DEV_DCT
-	/* detect current device successful, set the flag as present */
-	set_hw_dev_flag(DEV_I2C_G_SENSOR);
-	#endif
+
+    #ifdef CONFIG_HUAWEI_HW_DEV_DCT
+    /* detect current device successful, set the flag as present */
+    set_hw_dev_flag(DEV_I2C_G_SENSOR);
+    #endif
+
 	if (sensor_dev == NULL)
 	{
 		gs->input_dev = input_allocate_device();
@@ -822,7 +825,7 @@ static int gs_suspend(struct i2c_client *client, pm_message_t mesg)
 {
 	int ret;
 	struct gs_data *gs = i2c_get_clientdata(client);
-	atomic_set(&mma_status_flag, GS_SUSPEND);
+
 	if (gs->use_irq)
 		disable_irq(client->irq);
 	else
@@ -838,9 +841,10 @@ static int gs_suspend(struct i2c_client *client, pm_message_t mesg)
 static int gs_resume(struct i2c_client *client)
 {
 	struct gs_data *gs = i2c_get_clientdata(client);
-	/*gs active mode, modify the adc frequency to 200HZ until update ODR*/
-	reg_write(gs, MMA8452_CTRL_REG1, ODR200F | ACTIVE);
-	atomic_set(&mma_status_flag, GS_RESUME);
+
+	/*gs active mode, modify the adc frequency to 50HZ*/
+	reg_write(gs, MMA8452_CTRL_REG1, 0x21);
+	
 	if (!gs->use_irq)
 		hrtimer_start(&gs->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
 	else

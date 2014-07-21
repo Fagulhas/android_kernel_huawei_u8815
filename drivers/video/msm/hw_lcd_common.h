@@ -112,7 +112,7 @@ void process_mipi_table(struct msm_fb_data_type *mfd,struct dsi_buf *tp,
 #endif
 int process_mddi_table(struct sequence *table, size_t count, lcd_panel_type lcd_panel);
 
-#if (LCD_HX8369A_TIANMA_ESD_SIGN || LCD_OTM8009A_CMI_ESD_SIGN || LCD_OTM9608A_TIANMA_ESD_SIGN)
+#if (LCD_HX8369A_TIANMA_ESD_SIGN || LCD_OTM8009A_CMI_ESD_SIGN)
 int process_mipi_read_table(struct msm_fb_data_type *mfd,struct dsi_buf *tp,
 					struct dsi_buf *rp,struct read_sequence *table);
 #endif

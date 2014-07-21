@@ -154,10 +154,7 @@ typedef enum
 	MIPI_CMD_NT35310_BYD_HVGA,
 	MIPI_CMD_NT35310_BOE_HVGA,
 	MIPI_CMD_OTM8009A_CHIMEI_FWVGA,
-	MIPI_CMD_OTM8009A_TIANMA_FWVGA,
 	MIPI_CMD_NT35510_CHIMEI_WVGA,
-	MIPI_CMD_OTM9608A_TIANMA_QHD,
-	MIPI_CMD_NT35516_TRULY_QHD,
 	LCD_MAX_NUM,
 	LCD_NONE =0xFF
 }lcd_panel_type;
@@ -185,27 +182,17 @@ typedef enum
 
 typedef enum
 {
-    HW_VER_SUB_V0            = 0,
-    HW_VER_SUB_V1            ,
-    HW_VER_SUB_V2            ,
-    HW_VER_SUB_V3            ,
-    HW_VER_SUB_V4            ,
-    HW_VER_SUB_V5            ,
-    HW_VER_SUB_V6            ,
-    HW_VER_SUB_V7            ,
-    HW_VER_SUB_V8            ,
-    HW_VER_SUB_V9            ,
-    HW_VER_SUB_VA            ,
-    HW_VER_SUB_VB            ,
-    HW_VER_SUB_VC            ,
-    HW_VER_SUB_VD            ,
-    HW_VER_SUB_VE            ,
-    HW_VER_SUB_VF            ,
-    HW_VER_SUB_SURF          =0xFF,
-    HW_VER_SUB_MAX           =0xFF
-}hw_product_sub_type;
-#define GS_SUSPEND  0
-#define GS_RESUME   1
+    HW_VER_SUB_VA            = 0x0,
+    HW_VER_SUB_VB            = 0x1,
+    HW_VER_SUB_VC            = 0x2,
+    HW_VER_SUB_VD            = 0x3,
+    HW_VER_SUB_VE            = 0x4,
+    HW_VER_SUB_VF            = 0x5,
+    HW_VER_SUB_VG            = 0x6,
+    HW_VER_SUB_SURF          = 0xF,
+    HW_VER_SUB_MAX           = 0xF
+}hw_ver_sub_type;
+
 /*add new g-sensor*/
 typedef enum
 {
@@ -280,11 +267,11 @@ typedef enum
    BT_WCN2243,
    BT_UNKNOWN,	
 } hw_bt_device_model;
+
 struct bt_device
 {
     hw_bt_device_model dev_model;
     char *dev_name;
-    char *fw_ver;
 };
 
 typedef enum
@@ -332,11 +319,11 @@ typedef enum
     SPK_MAIN_MIC = 0x10000,
     SPK_SUB_MIC = 0x20000,
     DTS_ENABLE = 0x100000,
-    DTS_SOUND_ENABLE = 0x200000,
     DTS_DISABLE = 0x0,
     
     AUDIO_TYPE_MAX = 0xffffffff
 }audio_property_type;
+
 audio_property_type get_audio_dts_enable(void);
 audio_property_type get_audio_spkmic_type(void);
 audio_property_type get_audio_speaker_type(void);
@@ -374,13 +361,9 @@ struct gyro_platform_data {
 	int (*gyro_power)(int on);
 };
 compass_gs_position_type  get_compass_gs_position(void);
-#define HW_VER_MAIN_MASK (0xFF00)
-#define HW_VER_SUB_MASK  (0x00FF)
-#define HW_VER_PRODUCT_MASK (0x00FC)
-#define IS_8X25Q_UMTS(mach_type)     ( (0x2000 == (mach_type&0xF000)) || (0x3000 == (mach_type&0xF000)) )
-#define IS_8X25Q_CDMA(mach_type)     ( (0x4000 == (mach_type&0xF000)) || (0x5000 == (mach_type&0xF000)) )
-#define IS_UMTS_DOUBLE_SIM(sub_type) ( HW_VER_SUB_V0 == (sub_type&HW_VER_PRODUCT_MASK) )
-#define MACH_ID_START_NUM            (2000000)
+
+#define HW_VER_MAIN_MASK (0xFFF0)
+#define HW_VER_SUB_MASK  (0x000F)
 
 bool st303_gs_is_supported(void);
 void set_st303_gs_support(bool status);
@@ -394,7 +377,7 @@ bool camera_is_supported(void);
 void set_camera_support(bool status);
 void set_sensors_list(int sensor);
 bool board_support_flash(void);
-void set_board_support_flash(bool support_flash);
+
 /*
  *  return: 0 ----not support bcm wifi
  *          1 ----support bcm wifi
@@ -409,25 +392,19 @@ int board_support_ofn(bool * ofn_support);
 char *get_compass_gs_position_name(void);
 char *get_sensors_list_name(void);
 char *get_wifi_device_name(void);
-char *get_wifi_fw_ver(void);
 hw_bt_device_model get_hw_bt_device_model(void);
 char *get_bt_device_name(void);
-char *get_bt_fw_ver(void);
 lcd_panel_type get_lcd_panel_type(void);
 hw_lcd_ctrl_bl_type get_hw_lcd_ctrl_bl_type(void);
 lcd_type get_hw_lcd_resolution_type(void);
 /*Add 4 framebuffer and delete the mem adapter strategy*/	
 unsigned int get_framebuffer_size(void);
-
-unsigned int get_mdp_pmem_size(void);
-
-
 lcd_align_type get_lcd_align_type(void);
 char *get_lcd_panel_name(void);
 int board_surport_fingers(bool * is_surport_fingers);
 
 hw_lcd_interface_type get_hw_lcd_interface_type(void); 
-hw_product_sub_type get_hw_sub_board_id(void);
+hw_ver_sub_type get_hw_sub_board_id(void);
 #ifdef CONFIG_HUAWEI_POWER_DOWN_CHARGE
 unsigned int get_charge_flag(void);
 #endif
@@ -455,7 +432,6 @@ bool qwerty_is_supported(void);
  */
 char *get_touch_info(void);
 char *get_synaptics_touch_info(void);
-char * get_cyttsp4_touch_info(void);
 #ifdef CONFIG_HUAWEI_MELFAS_TOUCHSCREEN
 char *get_melfas_touch_info(void);
 #else
@@ -502,7 +478,4 @@ typedef enum
 hw_battery_id_mv get_battery_resistance_id(void);
 char* get_battery_manufacturer_info(void);
 #endif
-#define CAMERA_VER_LEN  10
-void set_camera_version(char *camera_ver, int slave_sensor);
-void get_camera_version(char *version);
 

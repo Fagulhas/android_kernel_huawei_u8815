@@ -20,7 +20,6 @@
 #include<asm/atomic.h>
 #include<mach/camera.h>
 #include <asm/mach-types.h>
-#include <linux/hardware_self_adapt.h>
 
 #define PRINT_BUG
 
@@ -81,11 +80,11 @@ static int hw_camera_led_open(struct inode *inode,struct file *file)
 
 	return ret;
 }
+
 static long hw_camera_led_ioctl(struct file *filep ,unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
 	unsigned int camera_led_state;
-    hw_product_sub_type product_sub_type = get_hw_sub_board_id();
 	
 	CDBG("function %s enterence\n",__func__);
 	switch(cmd)
@@ -107,17 +106,21 @@ static long hw_camera_led_ioctl(struct file *filep ,unsigned int cmd, unsigned l
 			}
 			else
 			{
-				/*C8813Q support torch */
-				if( machine_is_msm7x27a_U8815()
+				/*these handset use tps61310 as flash*/
+				if( machine_is_msm8x25_U8825()
+				|| machine_is_msm8x25_U8825D()
+                || machine_is_msm8x25_U8833D()
+                || machine_is_msm8x25_U8833()                
+				|| machine_is_msm8x25_C8825D()
 				|| machine_is_msm8x25_C8950D()
-				|| machine_is_msm8x25_C8813()
-				|| machine_is_msm8x25_C8813Q()
-				|| machine_is_msm8x25_G610C()
-				|| ( ( machine_is_msm8x25_U8951()
-                       || machine_is_msm8x25_G520U()) 
-					   && ( !IS_UMTS_DOUBLE_SIM(product_sub_type) ) ) )
+				|| machine_is_msm8x25_U8950D()
+				|| machine_is_msm8x25_U8951()
+                || machine_is_msm8x25_C8813()
+                || machine_is_msm8x25_H881C()
+				||machine_is_msm8x25_U8950())
 				{
-					ret = call_led_set_state(camera_led_state);
+			
+					tps61310_set_flash(camera_led_state);
 				}
 				else
 				{
@@ -138,6 +141,7 @@ static long hw_camera_led_ioctl(struct file *filep ,unsigned int cmd, unsigned l
 	
 	return ret;
 }
+
 static int hw_camera_led_release(struct inode *inode,struct file *file)
 {
 	int ret = 0;

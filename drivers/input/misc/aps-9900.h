@@ -87,8 +87,8 @@
 
 #define U8655_WAVE  35
 #define U8655_WINDOW  115
-#define U8815_WAVE  90
-#define U8815_WINDOW 200
+#define U8815_WAVE  150
+#define U8815_WINDOW 150
 #define C8655_WAVE  40
 #define C8655_WINDOW 225
 
@@ -112,12 +112,41 @@
 #define G510C_WINDOW 290
 #define H867G_WAVE 74
 #define H867G_WINDOW 221
-/* the values below are all experience value */
-#define G610C_WAVE 90
-#define G610C_WINDOW 200
 /* delete this part */
-/* delete some lines */
 
+static uint16_t lsensor_adc_table_u8655[LSENSOR_MAX_LEVEL] = {
+	30, 48, 72, 134, 245, 360, 500
+};
+static uint16_t lsensor_adc_table_u8815[LSENSOR_MAX_LEVEL] = {
+	50, 125, 200, 134, 503, 650, 838
+};
+static uint16_t lsensor_adc_table_c8655[LSENSOR_MAX_LEVEL] = {
+	36, 120, 200, 356, 430, 490, 593
+};
+static uint16_t lsensor_adc_table_m660[LSENSOR_MAX_LEVEL] = {
+	33, 100, 150, 332, 400, 480, 553
+};
+/* the values below are all experience value */
+static uint16_t lsensor_adc_table_c8812[LSENSOR_MAX_LEVEL] = {
+	39, 52, 170, 389, 475, 561, 648
+};
+static uint16_t lsensor_adc_table_u8680[LSENSOR_MAX_LEVEL] = {
+	10, 26, 210, 560, 860, 1200, 1500
+};
+/*u8730's value,provided by wenjuan*/
+static uint16_t lsensor_adc_table_u8730[LSENSOR_MAX_LEVEL] = {
+	25, 55, 210, 600, 860, 1000, 1300
+};
+static uint16_t lsensor_adc_table_u8667[LSENSOR_MAX_LEVEL] = {
+	25, 55, 210, 600, 860, 1000, 1300
+};
+/* the values below are all experience value */
+static uint16_t lsensor_adc_table_cu8825[LSENSOR_MAX_LEVEL] = {
+	37, 64, 300, 794, 1200, 2079, 3000
+};
+static uint16_t lsensor_adc_table_c8812e[LSENSOR_MAX_LEVEL] = {
+	37, 64, 300, 794, 1200, 2079, 3000
+};
 /* the values below are all experience value */
 static uint16_t lsensor_adc_table_cu8950[LSENSOR_MAX_LEVEL] = {
 	29, 56, 260, 625, 795, 965, 1300
@@ -130,12 +159,10 @@ static uint16_t lsensor_adc_table_g510[LSENSOR_MAX_LEVEL] = {
 static uint16_t lsensor_adc_table_g510c[LSENSOR_MAX_LEVEL] = {
 	12,	30,	210, 560, 860, 1200, 1500
 };
-/* the values below are all experience value */
-static uint16_t lsensor_adc_table_g610c[LSENSOR_MAX_LEVEL] = {
-	29, 56, 260, 625, 795, 965, 1300
+static uint16_t lsensor_adc_table_y300[LSENSOR_MAX_LEVEL] = {
+	14,	32,	218, 576, 880, 1250, 1600
 };
-static uint16_t lsensor_adc_table_u8815[LSENSOR_MAX_LEVEL] = {
-	29, 56, 260, 625, 795, 965, 1300
+static uint16_t lsensor_adc_table_H867G[LSENSOR_MAX_LEVEL] = {
+	14, 40, 400, 740, 950, 1355, 3000
 };
-/* delete some lines */
 #endif /* _LINUX_APS_9900_H */

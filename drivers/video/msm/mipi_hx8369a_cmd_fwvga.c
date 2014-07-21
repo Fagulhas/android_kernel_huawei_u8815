@@ -16,9 +16,6 @@
 
 #define LCD_DEVICE_NAME "mipi_cmd_hx8369a_fwvga"
 
-#define TM_HX8369A_PANEL_ALIVE    (1)
-#define TM_HX8369A_PANEL_DEAD     (-1)
-
 static lcd_panel_type lcd_panel_wvga = LCD_NONE;
 
 /* increase the DSI bit clock to 490 MHz */
@@ -42,13 +39,6 @@ static struct mipi_dsi_phy_ctrl dsi_cmd_mode_phy_db_hx8369a_fwvga =
 };
 
 static struct dsi_buf hx8369a_fwvga_tx_buf;
-static struct dsi_buf hx8369a_fwvga_rx_buf;
-static int is_sleep_out = 0;
-static int read_52h_err_cnt = 0;
-static int bl_abnormal = 0;
-
-static unsigned int monitor_status = 0;    // for debug
-static int reset_cnt = 0;                  // for debug
 #if LCD_HX8369A_TIANMA_ESD_SIGN
 static struct dsi_buf hx8369a_fwvga_rx_buf;
 static struct hrtimer lcd_esd_timer;
@@ -98,364 +88,9 @@ static const struct sequence hx8369a_fwvga_standby_exit_table[]=
 	{0x22,TYPE_PARAMETER,0},
 	{0x00029,MIPI_TYPE_END,0}, 
 #else
-
-	/* after 11h, 29h, need to set C9h, CAh */
-	{0xC9,MIPI_GEN_COMMAND,20},
-	{0x3E,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	{0x01,TYPE_PARAMETER,0},
-	{0x0F,TYPE_PARAMETER,0},
-	{0x02,TYPE_PARAMETER,0},
-	{0x1E,TYPE_PARAMETER,0},
-
-	/* optimise the CABC function */
-	{0xCA,MIPI_GEN_COMMAND,20},
-	{0x30,TYPE_PARAMETER,0},
-	{0x29,TYPE_PARAMETER,0},
-	{0x26,TYPE_PARAMETER,0},
-	{0x25,TYPE_PARAMETER,0},
-	{0x23,TYPE_PARAMETER,0},
-	{0x23,TYPE_PARAMETER,0},
-	{0x22,TYPE_PARAMETER,0},
-	{0x22,TYPE_PARAMETER,0},
-	{0x22,TYPE_PARAMETER,0},
-
 	{0x00029,MIPI_TYPE_END,20}, // add new command for 
 #endif
 };
-
-/* TM hx8369a re-initial code */
-static struct sequence hx8369a_fwvga_lcd_init_table[] =
-{
-	{0xB9,MIPI_GEN_COMMAND,0},//B9
-	{0xFF,TYPE_PARAMETER,0},
-	{0x83,TYPE_PARAMETER,0},
-	{0x69,TYPE_PARAMETER,0},
-
-	{0xB1,MIPI_GEN_COMMAND,0},//B1
-	{0x01,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	{0x34,TYPE_PARAMETER,0},
-	{0x04,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	{0x0F,TYPE_PARAMETER,0},
-	{0x0F,TYPE_PARAMETER,0},
-	{0x25,TYPE_PARAMETER,0},
-	{0x2D,TYPE_PARAMETER,0},
-	{0x3F,TYPE_PARAMETER,0},
-	{0x3F,TYPE_PARAMETER,0},
-	{0x01,TYPE_PARAMETER,0},
-	{0x12,TYPE_PARAMETER,0},
-	{0x01,TYPE_PARAMETER,0},
-	{0xE6,TYPE_PARAMETER,0},
-	{0xE6,TYPE_PARAMETER,0},
-	{0xE6,TYPE_PARAMETER,0},
-	{0xE6,TYPE_PARAMETER,0},
-	{0xE6,TYPE_PARAMETER,10},
-
-	{0xB2,MIPI_GEN_COMMAND,0},//B2 set display related register
-	{0x00,TYPE_PARAMETER,0},
-	{0x10,TYPE_PARAMETER,0},
-	{0x0A,TYPE_PARAMETER,0},
-	{0x0A,TYPE_PARAMETER,0},
-	{0x70,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	{0xFF,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	/* optimize display performance, 854 * 15/16 == 320h */
-	{0x03,TYPE_PARAMETER,0},
-	{0x20,TYPE_PARAMETER,0},
-	{0x03,TYPE_PARAMETER,0},
-	{0x03,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	{0x01,TYPE_PARAMETER,0},
-
-	{0xB4,MIPI_GEN_COMMAND,0},//B4 set display waveform cycle
-	{0x00,TYPE_PARAMETER,0},
-	{0x18,TYPE_PARAMETER,0},
-	{0x78,TYPE_PARAMETER,0},
-	{0x06,TYPE_PARAMETER,0},
-	{0x02,TYPE_PARAMETER,0},
-
-	{0x36,MIPI_GEN_COMMAND,0},//36 set address mode
-	{0xD0,TYPE_PARAMETER,0},
-	
-	/* Delete VCOM register to open OTP function */
-
-	{0xD5,MIPI_GEN_COMMAND,0},//D5 SET GIP
-	{0x00,TYPE_PARAMETER,0},
-	{0x01,TYPE_PARAMETER,0},
-	{0x03,TYPE_PARAMETER,0},
-	{0x28,TYPE_PARAMETER,0},
-	{0x01,TYPE_PARAMETER,0},
-	{0x09,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	{0x70,TYPE_PARAMETER,0},//70
-	{0x11,TYPE_PARAMETER,0},
-	{0x13,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	{0x60,TYPE_PARAMETER,0},
-	{0x24,TYPE_PARAMETER,0},
-	{0x71,TYPE_PARAMETER,0},
-	{0x35,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	{0x71,TYPE_PARAMETER,0},
-	{0x05,TYPE_PARAMETER,0},
-	{0x60,TYPE_PARAMETER,0},
-	{0x24,TYPE_PARAMETER,0},
-	{0x07,TYPE_PARAMETER,0},
-	{0x0F,TYPE_PARAMETER,0},
-	{0x04,TYPE_PARAMETER,0},
-	{0x04,TYPE_PARAMETER,0},
-
-	{0xE0,MIPI_GEN_COMMAND,0},//E0 gamma2.5 curve setting
-	{0x00,TYPE_PARAMETER,0},//G1_VRP0[5:0]00GRAY65
-	{0x14,TYPE_PARAMETER,0},//G1_VRP1[5:0]1DGRAY64
-	{0x1D,TYPE_PARAMETER,0},//G1_VRP2[5:0]//22GRAY63
-	{0x3B,TYPE_PARAMETER,0},//G1_VRP3[5:0]//38
-	{0x3F,TYPE_PARAMETER,0},//G1_VRP4[5:0]//3D
-	{0x3F,TYPE_PARAMETER,0},//G1_VRP5[5:0]//3F
-	{0x30,TYPE_PARAMETER,0},//G1_PRP0[6:0]2EGRAY5022
-	{0x4C,TYPE_PARAMETER,0},//G1_PRP1[6:0]4AGRAY13
-	{0x06,TYPE_PARAMETER,0},//G1_CGMP0[7:6],G1_PKP0[4:0]06
-	{0x0C,TYPE_PARAMETER,0},//G1_CGMP1[7:6],G1_PKP1[4:0]0D
-	{0x0F,TYPE_PARAMETER,0},//G1_CGMP2[7:6],G1_PKP2[4:0]0f
-	{0x13,TYPE_PARAMETER,0},//G1_CGMP3[7:6],G1_PKP3[4:0]13
-	{0x15,TYPE_PARAMETER,0},//G1_CGMP5,G1_CGMP4,G1_PKP4[4:0]15
-	{0x13,TYPE_PARAMETER,0},//G1_PKP5[4:0]13
-	{0x14,TYPE_PARAMETER,0},//G1_PKP6[4:0]
-	{0x12,TYPE_PARAMETER,0},//G1_PKP7[4:0]//10
-	{0x14,TYPE_PARAMETER,0},//G1_PKP8[4:0]//19
-	{0x00,TYPE_PARAMETER,0},//G1_VRN0[5:0]00GRAY65
-	{0x14,TYPE_PARAMETER,0},//G1_VRN1[5:0]1DGRAY64
-	{0x1D,TYPE_PARAMETER,0},//G1_VRN2[5:0]//22GRAY63
-	{0x3B,TYPE_PARAMETER,0},//G1_VRN3[5:0]//38
-	{0x3F,TYPE_PARAMETER,0},//G1_VRN4[5:0]//3D
-	{0x3F,TYPE_PARAMETER,0},//G1_VRN5[5:0]//3F
-	{0x30,TYPE_PARAMETER,0},//G1_PRN0[6:0]2EGRAY5022
-	{0x4C,TYPE_PARAMETER,0},//G1_PRN1[6:0]4AGRAY13
-	{0x06,TYPE_PARAMETER,0},//G1_CGMN0[7:6],G1_PKN0[4:0]06
-	{0x0C,TYPE_PARAMETER,0},//G1_CGMN1[7:6],G1_PKN1[4:0]0D
-	{0x0F,TYPE_PARAMETER,0},//G1_CGMN2[7:6],G1_PKN2[4:0]0f
-	{0x13,TYPE_PARAMETER,0},//G1_CGMN3[7:6],G1_PKN3[4:0]13
-	{0x15,TYPE_PARAMETER,0},//G1_CGMN5,G1_CGMN4,G1_PKN4[4:0]15
-	{0x13,TYPE_PARAMETER,0},//G1_PKN5[4:0]13
-	{0x14,TYPE_PARAMETER,0},//G1_PKN6[4:0]
-	{0x12,TYPE_PARAMETER,0},//G1_PKN7[4:0]//10
-	{0x14,TYPE_PARAMETER,0},//G1_PKN8[4:0]//19
-
-	{0xBA,MIPI_GEN_COMMAND,0},//BA
-	{0x00,TYPE_PARAMETER,0},
-	{0xA0,TYPE_PARAMETER,0},
-	{0xC6,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	{0x0A,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	{0x10,TYPE_PARAMETER,0},
-	{0x30,TYPE_PARAMETER,0},
-	{0x6F,TYPE_PARAMETER,0},
-	{0x02,TYPE_PARAMETER,0},
-	{0x11,TYPE_PARAMETER,0},
-	{0x18,TYPE_PARAMETER,0},
-	{0x40,TYPE_PARAMETER,0},
-
-	{0x3A,MIPI_GEN_COMMAND,0},//3A
-	{0x77,TYPE_PARAMETER,0},
-
-	{0x51,MIPI_DCS_COMMAND,0},
-	{0xAA,TYPE_PARAMETER,0},  // 170
-	
-	{0x53,MIPI_DCS_COMMAND,5}, //53h
-	{0x24,TYPE_PARAMETER,0},
-	
-	{0x55,MIPI_DCS_COMMAND,5},
-	{0x01,TYPE_PARAMETER,0},
-
-	{0x5E,MIPI_DCS_COMMAND,5},  //change cabc minimun brightness
-	{0x00,TYPE_PARAMETER,0},    // D0 to 00
-
-	{0xC9,MIPI_GEN_COMMAND,5},
-	{0x3E,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	{0x00,TYPE_PARAMETER,0},
-	{0x01,TYPE_PARAMETER,0},
-	{0x0F,TYPE_PARAMETER,0},
-	{0x02,TYPE_PARAMETER,0},
-	{0x1E,TYPE_PARAMETER,0},
-
-	/* optimise the CABC function */
-	{0xCA,MIPI_GEN_COMMAND,5},
-	{0x30,TYPE_PARAMETER,0},
-	{0x29,TYPE_PARAMETER,0},
-	{0x26,TYPE_PARAMETER,0},
-	{0x25,TYPE_PARAMETER,0},
-	{0x23,TYPE_PARAMETER,0},
-	{0x23,TYPE_PARAMETER,0},
-	{0x22,TYPE_PARAMETER,0},
-	{0x22,TYPE_PARAMETER,0},
-	{0x22,TYPE_PARAMETER,0},
-
-	/* SET DISPLAY ON */
-	{0x11,MIPI_DCS_COMMAND,5},
-	{0x29,MIPI_DCS_COMMAND,120},
-	{0x2C,MIPI_DCS_COMMAND,20},// 2C memory start  
-	{0x29,MIPI_TYPE_END,10}, //the end flag,it don't sent to driver IC
-};
-
-/* read 52h, 56h, 5Fh */
-static const struct read_sequence hx8369a_esd_read_table_52[] = 
-{
-	{0x52,MIPI_DCS_COMMAND,2},
-};
-
-static const struct read_sequence hx8369a_esd_read_table_56[] = 
-{
-	{0x56,MIPI_DCS_COMMAND,2},
-};
-
-static const struct read_sequence hx8369a_esd_read_table_5F[] = 
-{
-	{0x5F,MIPI_DCS_COMMAND,2},
-};
-
-static int hx8369a_read_52h(struct msm_fb_data_type *mfd) 
-{
-    struct dsi_buf *rp, *tp;
-	uint8 ret = 0; 
-	
-    tp = &hx8369a_fwvga_tx_buf; 
-    rp = &hx8369a_fwvga_rx_buf; 
-	
-    mipi_dsi_buf_init(tp); 
-    mipi_dsi_buf_init(rp); 
-
-	process_mipi_read_table(mfd,tp,rp,(struct read_sequence*)&hx8369a_esd_read_table_52);
-	ret = *((unsigned char *)rp->data);
-	//LCD_DEBUG("%s, 0x52 = 0x%02x\n", __func__, ret);
-
-	return ret;
-}
-
-static int hx8369a_read_56h(struct msm_fb_data_type *mfd) 
-{
-    struct dsi_buf *rp, *tp;
-	uint8 ret = 0; 
-	
-    tp = &hx8369a_fwvga_tx_buf; 
-    rp = &hx8369a_fwvga_rx_buf; 
-	
-    mipi_dsi_buf_init(tp); 
-    mipi_dsi_buf_init(rp); 
-
-	process_mipi_read_table(mfd,tp,rp,(struct read_sequence*)&hx8369a_esd_read_table_56);
-	ret = *((unsigned char *)rp->data);
-	//LCD_DEBUG("%s, 0x56 = 0x%02x\n", __func__, ret);
-
-	return ret;
-}
-
-static int hx8369a_read_5Fh(struct msm_fb_data_type *mfd) 
-{
-    struct dsi_buf *rp, *tp;
-	uint8 ret = 0; 
-	
-    tp = &hx8369a_fwvga_tx_buf; 
-    rp = &hx8369a_fwvga_rx_buf; 
-	
-    mipi_dsi_buf_init(tp); 
-    mipi_dsi_buf_init(rp); 
-
-	process_mipi_read_table(mfd,tp,rp,(struct read_sequence*)&hx8369a_esd_read_table_5F);
-	ret = *((unsigned char *)rp->data);
-	//LCD_DEBUG("%s, 0x5F = 0x%02x\n", __func__, ret);
-
-	return ret;
-}
-
-
-/* read 0Bh, 0Ch, 0Dh */
-static const struct read_sequence hx8369a_esd_read_table_0B[] = 
-{
-	{0x0B,MIPI_DCS_COMMAND,2},
-};
-static const struct read_sequence hx8369a_esd_read_table_0C[] = 
-{
-	{0x0C,MIPI_DCS_COMMAND,2},
-};
-static const struct read_sequence hx8369a_esd_read_table_0D[] = 
-{
-	{0x0D,MIPI_DCS_COMMAND,2},
-};
-
-static int hx8369a_monitor_reg_status(struct msm_fb_data_type *mfd) 
-{
-    struct dsi_buf *rp, *tp;
-	uint8 ret = 0; 
-    uint8 err = 0;//ok
-
-    tp = &hx8369a_fwvga_tx_buf; 
-    rp = &hx8369a_fwvga_rx_buf; 
-	
-    mipi_dsi_buf_init(tp); 
-    mipi_dsi_buf_init(rp); 
-
-	process_mipi_read_table(mfd,tp,rp,(struct read_sequence*)&hx8369a_esd_read_table_0B);
-	ret = *((unsigned char *)rp->data);
-	if (0xd0 != ret)
-	{
-		err = 1;
-		monitor_status = (monitor_status & 0x00FFFFFF) | (ret << 24);
-		pr_info("%s, 0x0b = 0x%02x\n", __func__, ret);
-	}
-	
-	process_mipi_read_table(mfd,tp,rp,(struct read_sequence*)&hx8369a_esd_read_table_0C);
-	ret = *((unsigned char *)rp->data);
-	if (0x07 != ret)
-	{
-		err = 2;
-		monitor_status = (monitor_status & 0xFF00FFFF) | (ret << 16);
-		pr_info("%s, 0x0c = 0x%02x\n",__func__, ret);
-	}
-	
-	process_mipi_read_table(mfd,tp,rp,(struct read_sequence*)&hx8369a_esd_read_table_0D);
-	ret = *((unsigned char *)rp->data);
-	if (0x00 != ret)
-	{
-		err = 3;
-		monitor_status = (monitor_status & 0xFFFF00FF) | (ret << 8);
-		pr_info("%s, 0x0d = 0x%02x\n",__func__, ret);
-	}
-
-	return err;
-}
-
-/* check if error happened */
-static int tianma_hx8369a_check_live_status(struct msm_fb_data_type *mfd)
-{
-	static uint32 check_cnt = 0;
-
-	/* do not check while booting, ignore the first LCD_ESD_CHECK_IGNORE_CNT times */
-	if (check_cnt < LCD_ESD_CHECK_IGNORE_CNT)
-	{
-		check_cnt++;
-		return TM_HX8369A_PANEL_ALIVE;
-	}
-
-	/* if bl abnormal */
-	if (bl_abnormal != 0)
-	{
-		reset_cnt++;
-		
-		mfd->is_panel_alive = FALSE;
-		pr_info("check_live_status: error, bl_abnormal=%d, reset_cnt=%d, monitor_status=0x%08x.\n", bl_abnormal, reset_cnt, monitor_status);
-	}
-
-	return ((bl_abnormal != 0) ? TM_HX8369A_PANEL_DEAD : TM_HX8369A_PANEL_ALIVE);
-}
 
 #if LCD_HX8369A_TIANMA_ESD_SIGN	
 static struct sequence hx8369a_fwvga_lcd_init_table[] =
@@ -763,7 +398,6 @@ static int mipi_hx8369a_fwvga_lcd_on(struct platform_device *pdev)
 {
 	boolean para_debug_flag = FALSE;
 	uint32 para_num = 0;
-	int read_ret = 0;
 	struct msm_fb_data_type *mfd;
 	mfd = platform_get_drvdata(pdev);
 
@@ -771,39 +405,6 @@ static int mipi_hx8369a_fwvga_lcd_on(struct platform_device *pdev)
 		return -ENODEV;
 	if (mfd->key != MFD_KEY)
 		return -EINVAL; 
-
-	if ((0 != bl_abnormal) && mfd->is_panel_alive)
-	{
-		LCD_DEBUG("%s: backlight abnormal, but msm not ready.\n", __func__);
-		return 0;
-	}
-
-	if (!mfd->is_panel_alive)
-	{
-		LCD_DEBUG("%s: backlight abnormal, reset and reinit begin.\n", __func__);
-
-		/* toggle GPIO129 to reset LCD */
-		lcd_reset();
-
-		/* change to LP mode then send initial code */
-		mipi_set_tx_power_mode(1);
-		process_mipi_table(mfd,&hx8369a_fwvga_tx_buf,(struct sequence*)&hx8369a_fwvga_lcd_init_table,
-			ARRAY_SIZE(hx8369a_fwvga_lcd_init_table), lcd_panel_wvga);
-		mipi_set_tx_power_mode(0);
-
-		msleep(30);
-		
-		LCD_DEBUG("%s: backlight abnormal, reset and reinit end.\n", __func__);
-
-		/* restore is_panel_alive */
-		mfd->is_panel_alive = TRUE;
-
-		is_sleep_out = 1;
-		bl_abnormal = 0;
-		monitor_status = 0;
-
-		return 0;
-	}
 
 	para_debug_flag = lcd_debug_malloc_get_para( "hx8369a_fwvga_lcd_init_table_debug", 
 		(void**)&hx8369a_fwvga_lcd_init_table_debug,&para_num);
@@ -825,16 +426,6 @@ static int mipi_hx8369a_fwvga_lcd_on(struct platform_device *pdev)
 	{
 		lcd_debug_free_para((void *)hx8369a_fwvga_lcd_init_table_debug);
 	}
-
-	is_sleep_out = 1;
-	
-	read_ret = hx8369a_monitor_reg_status(mfd);
-	pr_info("%s: hx8369a_monitor_reg_status ret = %d\n", __func__, read_ret);
-	if (read_ret != 0)
-	{
-		monitor_status |= (1 << read_ret);
-		monitor_status |= (1 << 4);
-	}
 	
 	LCD_DEBUG("leave mipi_hx8369a_fwvga_lcd_on \n");
 
@@ -849,7 +440,6 @@ static int mipi_hx8369a_fwvga_lcd_on(struct platform_device *pdev)
 /*lcd suspend function*/
 static int mipi_hx8369a_fwvga_lcd_off(struct platform_device *pdev)
 {
-	int read_ret = 0;
 	struct msm_fb_data_type *mfd;
 	mfd = platform_get_drvdata(pdev);
 
@@ -857,13 +447,6 @@ static int mipi_hx8369a_fwvga_lcd_off(struct platform_device *pdev)
 		return -ENODEV;
 	if (mfd->key != MFD_KEY)
 		return -EINVAL;
-
-	if (!mfd->is_panel_alive
-		|| (0 != bl_abnormal))
-	{
-		LCD_DEBUG("%s: panel not alive.\n", __func__);
-		return 0;
-	}
 		
 #if LCD_HX8369A_TIANMA_ESD_SIGN
 	hrtimer_cancel(&lcd_esd_timer);
@@ -871,17 +454,6 @@ static int mipi_hx8369a_fwvga_lcd_off(struct platform_device *pdev)
 
 	process_mipi_table(mfd,&hx8369a_fwvga_tx_buf,(struct sequence*)&hx8369a_fwvga_standby_enter_table,
 		 ARRAY_SIZE(hx8369a_fwvga_standby_enter_table), lcd_panel_wvga);
-
-	is_sleep_out = 0;
-
-	read_ret = hx8369a_monitor_reg_status(mfd);
-	pr_info("%s: hx8369a_monitor_reg_status ret = %d\n", __func__, read_ret);
-	if (read_ret != 0)
-	{
-		monitor_status |= (1 << read_ret);
-		monitor_status |= (2 << 4);
-	}
-	
 	LCD_DEBUG("leave mipi_hx8369a_fwvga_lcd_off \n");
 	return 0;
 }
@@ -906,13 +478,6 @@ static int hx8369a_fwvga_config_auto_cabc(struct msmfb_cabc_config cabc_cfg,stru
 {
 	int ret = 0;
 
-	if (!mfd->is_panel_alive
-		|| (0 != bl_abnormal))
-	{
-		LCD_DEBUG("%s: panel not alive.\n", __func__);
-		return 0;
-	}
-
 	switch(cabc_cfg.mode)
 	{
 		case CABC_MODE_UI:
@@ -933,8 +498,7 @@ static int hx8369a_fwvga_config_auto_cabc(struct msmfb_cabc_config cabc_cfg,stru
 			 ARRAY_SIZE(hx8369a_fwvga_auto_cabc_set_table), lcd_panel_wvga);
 	}
 
-	msleep(5);  // add some delay
-	pr_info("%s: change cabc mode to %d, 56h=%d, monitor_status=0x%08x\n",__func__,cabc_cfg.mode, hx8369a_read_56h(mfd), monitor_status);
+	LCD_DEBUG("%s: change cabc mode to %d\n",__func__,cabc_cfg.mode);
 	return ret;
 }
 #endif // CONFIG_FB_AUTO_CABC
@@ -948,44 +512,10 @@ static int __devinit mipi_hx8369a_fwvga_lcd_probe(struct platform_device *pdev)
 /*lcd cabc control function*/
 void hx8369a_fwvga_set_cabc_backlight(struct msm_fb_data_type *mfd,uint32 bl_level)
 {	
-	int read_52h = 0;
-	int read_5Fh = 0;
-
-	if (!mfd->is_panel_alive
-		|| (0 != bl_abnormal))
-	{
-		LCD_DEBUG("%s: panel not alive.\n", __func__);
-		return;
-	}
-
 	hx8369a_fwvga_write_cabc_brightness_table[1].reg = bl_level; 
 
 	process_mipi_table(mfd,&hx8369a_fwvga_tx_buf,(struct sequence*)&hx8369a_fwvga_write_cabc_brightness_table,
 		ARRAY_SIZE(hx8369a_fwvga_write_cabc_brightness_table), lcd_panel_wvga);
-
-	msleep(5);  // add some delay
-
-	read_52h = hx8369a_read_52h(mfd);
-	read_5Fh = hx8369a_read_5Fh(mfd);
-	
-	pr_info("%s:bl_level=%d, 52h=%d, 5Fh=%d, monitor_status=0x%08x\n",__func__, bl_level, read_52h, read_5Fh, monitor_status);
-
-	if (0 != is_sleep_out 
-		&& (bl_level != 0 && 0 == read_52h))
-	{
-		read_52h_err_cnt++;
-		pr_info("%s: read_52h_err_cnt=%d, is_sleep_out=%d\n",__func__, read_52h_err_cnt, is_sleep_out);
-	}
-	else
-	{
-		read_52h_err_cnt = 0;
-	}
-
-	if (0 != is_sleep_out && read_52h_err_cnt >= 5)
-	{
-		bl_abnormal = 1;
-		LCD_DEBUG("%s: backlight abnormal! read_52h_err_cnt=%d\n", __func__, read_52h_err_cnt);
-	}
 }
 
 static struct platform_driver this_driver = {
@@ -1004,7 +534,6 @@ static struct msm_fb_panel_data hx8369a_fwvga_panel_data = {
 #ifdef CONFIG_FB_AUTO_CABC
 	.config_cabc = hx8369a_fwvga_config_auto_cabc,
 #endif
-	.check_live_status = tianma_hx8369a_check_live_status,
 };
 static struct platform_device this_device = {
 	.name = LCD_DEVICE_NAME,
@@ -1029,7 +558,6 @@ static int __init mipi_cmd_hx8369a_fwvga_init(void)
 #if LCD_HX8369A_TIANMA_ESD_SIGN
 	mipi_dsi_buf_alloc(&hx8369a_fwvga_rx_buf, DSI_BUF_SIZE);
 #endif
-	mipi_dsi_buf_alloc(&hx8369a_fwvga_rx_buf, DSI_BUF_SIZE);
 
 	ret = platform_driver_register(&this_driver);
 	if (!ret)
@@ -1072,8 +600,7 @@ static int __init mipi_cmd_hx8369a_fwvga_init(void)
 		pinfo->mipi.dsi_phy_db = &dsi_cmd_mode_phy_db_hx8369a_fwvga;
 		pinfo->mipi.tx_eot_append = 0x01;
 		pinfo->mipi.rx_eot_ignore = 0;
-        //pinfo->mipi.dlane_swap = 0x0;    /* no need to swap data lane on 8x25q */
-		
+		pinfo->mipi.dlane_swap = 0x1;
 
 		ret = platform_device_register(&this_device);
 		if (ret)

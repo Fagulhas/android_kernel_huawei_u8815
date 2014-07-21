@@ -5473,9 +5473,6 @@ msmsdcc_probe(struct platform_device *pdev)
 	{
         mmc->caps |= MMC_CAP_NEEDS_POLL;
 
-         /* we delete some lines here because we move the configuration for 
-         * our SD card slot power supply to the Modem side 
-         * according to a suggestion from QualComm*/
     }
 #endif
 	mmc->caps2 |= MMC_CAP2_INIT_BKOPS | MMC_CAP2_BKOPS;
@@ -6179,21 +6176,12 @@ static int msmsdcc_pm_suspend(struct device *dev)
 	if (host->plat->status_irq)
 		disable_irq(host->plat->status_irq);
 
-	/*
-	 * If system comes out of suspend, msmsdcc_pm_resume() sets the
-	 * host->pending_resume flag if the SDCC wasn't runtime suspended.
-	 * Now if the system again goes to suspend without any SDCC activity
-	 * then host->pending_resume flag will remain set which may cause
-	 * the SDCC resume to happen first and then suspend.
-	 * To avoid this unnecessary resume/suspend, make sure that
-	 * pending_resume flag is cleared before calling the
-	 * msmsdcc_runtime_suspend().
-	 */
-	if (!pm_runtime_suspended(dev) && !host->pending_resume)
-		rc = msmsdcc_runtime_suspend(dev);
-
-	/* This flag must not be set if system is entering into suspend */
-	host->pending_resume = false;
+#ifdef CONFIG_HUAWEI_KERNEL
+		if (!pm_runtime_suspended(dev)){
+			rc = msmsdcc_runtime_suspend(dev);
+            printk("%s: mmc sleep_device is %s\n",__FUNCTION__, dev->kobj.name);
+        }
+#endif
 
 	return rc;
 }

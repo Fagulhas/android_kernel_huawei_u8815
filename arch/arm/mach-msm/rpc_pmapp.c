@@ -389,8 +389,8 @@ static int pmapp_rpc_req_reply(struct pmapp_buf *tbuf, struct pmapp_buf *rbuf,
 
 	if ((pm->endpoint == NULL) || IS_ERR(pm->endpoint)) {
 		for (i = 0; i < ARRAY_SIZE(rpc_vers); i++) {
-            pm->endpoint = msm_rpc_connect_compatible(             
-                    PMAPP_RPC_PROG, rpc_vers[i], MSM_RPC_UNINTERRUPTIBLE);
+			pm->endpoint = msm_rpc_connect_compatible(
+					PMAPP_RPC_PROG,	rpc_vers[i], 0);
 
 			if (IS_ERR(pm->endpoint)) {
 				ans  = PTR_ERR(pm->endpoint);
@@ -426,6 +426,7 @@ static int pmapp_rpc_req_reply(struct pmapp_buf *tbuf, struct pmapp_buf *rbuf,
 
 	if (len <= 0) {
 		printk(KERN_ERR "%s: rpc failed! len = %d\n", __func__, len);
+		pm->endpoint = NULL;	/* re-connect later ? */
 		return len;
 	}
 

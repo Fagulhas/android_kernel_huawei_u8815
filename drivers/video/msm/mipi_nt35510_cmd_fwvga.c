@@ -61,7 +61,7 @@ static uint32 mipi_nt35510_read_register(struct msm_fb_data_type *mfd)
 	cmd = &nt35510_register_id_cmd;
 	mipi_dsi_cmds_rx(mfd, tp, rp, cmd, 1);
 	lp = (char *)rp->data;	
-	/* delete one line */
+	pr_info("%s: register_id=%02x\n", __func__, *lp);
 	
 	return *lp;
 }
@@ -806,7 +806,6 @@ static int mipi_nt35510_fwvga_lcd_on(struct platform_device *pdev)
 /*lcd suspend function*/
 static int mipi_nt35510_fwvga_lcd_off(struct platform_device *pdev)
 {
-	uint32 read_ret = 0;
 	struct msm_fb_data_type *mfd;
 	mfd = platform_get_drvdata(pdev);
 
@@ -816,11 +815,10 @@ static int mipi_nt35510_fwvga_lcd_off(struct platform_device *pdev)
 		return -EINVAL;
 	
 	/* clean up ack_err_status */
-	read_ret = mipi_nt35510_read_register(mfd);
-	pr_info("%s: read register, 0Ah == 0x%02x\n", __func__, read_ret);
+	mipi_nt35510_read_register(mfd);
 
 	process_mipi_table(mfd,&nt35510_fwvga_tx_buf,(struct sequence*)&nt35510_fwvga_standby_enter_table,
-		ARRAY_SIZE(nt35510_fwvga_standby_enter_table), lcd_panel_fwvga);
+		 ARRAY_SIZE(nt35510_fwvga_standby_enter_table), lcd_panel_fwvga);
 	pr_info("leave mipi_nt35510_fwvga_lcd_off \n");
 	return 0;
 }
@@ -848,7 +846,6 @@ Return:
 static int nt35510_fwvga_config_auto_cabc(struct msmfb_cabc_config cabc_cfg,struct msm_fb_data_type *mfd)
 {
 	int ret = 0;
-	uint32 read_ret = 0;
 
 	switch(cabc_cfg.mode)
 	{
@@ -865,19 +862,16 @@ static int nt35510_fwvga_config_auto_cabc(struct msmfb_cabc_config cabc_cfg,stru
 			break;
 		default:
 			LCD_DEBUG("%s: invalid cabc mode: %d\n", __func__, cabc_cfg.mode);
-			ret = -EINVAL;
+	        ret = -EINVAL;
 			break;
 	}
 	if(likely(0 == ret))
 	{
-		/* clean up ack_err_status */
-		read_ret = mipi_nt35510_read_register(mfd);
-
 		process_mipi_table(mfd,&nt35510_fwvga_tx_buf,(struct sequence*)&nt35510_fwvga_auto_cabc_set_table,
-			ARRAY_SIZE(nt35510_fwvga_auto_cabc_set_table), lcd_panel_fwvga);
+			 ARRAY_SIZE(nt35510_fwvga_auto_cabc_set_table), lcd_panel_fwvga);
 	}
 
-	LCD_DEBUG("%s: 0Ah == 0x%02x, change cabc mode to %d\n",__func__, read_ret, cabc_cfg.mode);
+	LCD_DEBUG("%s: change cabc mode to %d\n",__func__,cabc_cfg.mode);
 	return ret;
 }
 #endif // CONFIG_FB_AUTO_CABC
@@ -899,14 +893,12 @@ static struct sequence nt35510_fwvga_write_cabc_brightness_table[]=
 /*lcd cabc control function*/
 void nt35510_fwvga_set_cabc_backlight(struct msm_fb_data_type *mfd,uint32 bl_level)
 {
-	uint32 read_ret = 0;
-	/* clean up ack_err_status */
-	read_ret = mipi_nt35510_read_register(mfd);
-	pr_info("%s: read register, 0Ah == 0x%02x\n", __func__, read_ret);
-	nt35510_fwvga_write_cabc_brightness_table[1].reg = bl_level;
+    /* clean up ack_err_status */
+	mipi_nt35510_read_register(mfd);
+	nt35510_fwvga_write_cabc_brightness_table[1].reg = bl_level; 
 
 	process_mipi_table(mfd,&nt35510_fwvga_tx_buf,(struct sequence*)&nt35510_fwvga_write_cabc_brightness_table,
-		ARRAY_SIZE(nt35510_fwvga_write_cabc_brightness_table), lcd_panel_fwvga);
+		 ARRAY_SIZE(nt35510_fwvga_write_cabc_brightness_table), lcd_panel_fwvga);
 }
 
 static struct platform_driver this_driver = {
@@ -987,7 +979,7 @@ static int __init mipi_cmd_nt35510_fwvga_init(void)
 		pinfo->mipi.dsi_phy_db = &dsi_cmd_mode_phy_db_nt35510_fwvga;
 		pinfo->mipi.tx_eot_append = 0x01;
 		pinfo->mipi.rx_eot_ignore = 0;
-//		pinfo->mipi.dlane_swap = 0x0;    /* no need to swap data lane on 8x25q */
+		pinfo->mipi.dlane_swap = 0x1;
 
 		ret = platform_device_register(&this_device);
 		if (ret)

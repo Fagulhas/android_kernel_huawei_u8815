@@ -68,7 +68,6 @@ struct msmfb_writeback_data_list {
 };
 
 
-/* add qcom patch to work around lcd esd issue */
 struct msm_fb_data_type {
 	__u32 key;
 	__u32 index;
@@ -81,9 +80,7 @@ struct msm_fb_data_type {
 	DISP_TARGET dest;
 	struct fb_info *fbi;
 
-	struct delayed_work backlight_worker;
-	struct delayed_work panel_live_status;
-	struct work_struct display_reset;
+	struct device *dev;
 	boolean op_enable;
 	uint32 fb_imgType;
 	boolean sw_currently_refreshing;
@@ -117,7 +114,6 @@ struct msm_fb_data_type {
 
 	struct timer_list vsync_resync_timer;
 	boolean vsync_handler_pending;
-	boolean is_panel_alive;
 	struct work_struct vsync_resync_worker;
 
 	ktime_t last_vsync_timetick;
@@ -130,7 +126,6 @@ struct msm_fb_data_type {
 	__u32 channel_irq;
 
 	struct mdp_dma_data *dma;
-	void (*wait4dmap) (struct msm_fb_data_type *mfd);
 	void (*dma_fnc) (struct msm_fb_data_type *mfd);
 	int (*cursor_update) (struct fb_info *info,
 			      struct fb_cursor *cursor);

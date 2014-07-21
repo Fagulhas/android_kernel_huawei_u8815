@@ -147,55 +147,7 @@ static struct msm_camera_i2c_reg_conf s5k4e1_snap_settings[] = {
 	{0x30a5, 0x01},
 	{0x30a6, 0x00},
 };
-/* currently, thes 2 empty arrays will not be used, just reserved */
-static struct msm_camera_i2c_reg_conf s5k4e1_video_60fps_settings[] = {
-	
-};
 
-static struct msm_camera_i2c_reg_conf s5k4e1_video_90fps_settings[] = {
-	
-};
-
-static struct msm_camera_i2c_reg_conf s5k4e1_zsl_settings[] = {
-	
-	/*Output Size (2608x1960)*/
-	{0x30A9, 0x03},/* Horizontal Binning Off */
-	{0x300E, 0xE8},/* Vertical Binning Off */
-	{0x0387, 0x01},/* y_odd_inc */
-	{0x034C, 0x0A},/* x_output size */
-	{0x034D, 0x30},
-	{0x034E, 0x07},/* y_output size */
-	{0x034F, 0xA8},
-	{0x30BF, 0xAB},/* outif_enable[7], data_type[5:0](2Bh = bayer 10bit} */
-	{0x30C0, 0x80},/* video_offset[7:4] 3260%12 */
-	{0x30C8, 0x0C},/* video_data_length 3260 = 2608 * 1.25 */
-	{0x30C9, 0xBC},
-	{0x0202, 0x06},
-	{0x0203, 0x28},
-	{0x0204, 0x00},
-	{0x0205, 0x80},
-	{0x0340, 0x07},/* Frame Length */
-	{0x0341, 0xB4},
-	{0x0342, 0x0A},/* 2738 Line Length */
-	{0x0343, 0xB2},
-	{0x3096, 0x40},
-	{0x3097, 0x52},
-	{0x3098, 0x7b},
-	{0x3099, 0x03},
-	{0x309a, 0x1f},
-	{0x309b, 0x02},
-	{0x309c, 0x15},
-	{0x309d, 0x00},
-	{0x309e, 0x00},
-	{0x309f, 0x00},
-	{0x30a0, 0x00},
-	{0x30a1, 0x00},
-	{0x30a2, 0x00},
-	{0x30a3, 0x00},
-	{0x30a4, 0x00},
-	{0x30a5, 0x01},
-	{0x30a6, 0x00},
-};
 /*modify the initialization settings*/
 static struct msm_camera_i2c_reg_conf s5k4e1_recommend_settings_1[] = {
 	/* Reset setting */
@@ -749,17 +701,12 @@ static struct msm_camera_i2c_conf_array s5k4e1_init_conf[] = {
 	{&s5k4e1_recommend_settings_4[0],
 	ARRAY_SIZE(s5k4e1_recommend_settings_4), 0, MSM_CAMERA_I2C_BYTE_DATA},
 };
+
 static struct msm_camera_i2c_conf_array s5k4e1_confs[] = {
 	{&s5k4e1_snap_settings[0],
 	ARRAY_SIZE(s5k4e1_snap_settings), 0, MSM_CAMERA_I2C_BYTE_DATA},
 	{&s5k4e1_prev_settings[0],
 	ARRAY_SIZE(s5k4e1_prev_settings), 0, MSM_CAMERA_I2C_BYTE_DATA},
-	{&s5k4e1_video_60fps_settings[0],
-	ARRAY_SIZE(s5k4e1_video_60fps_settings), 0, MSM_CAMERA_I2C_BYTE_DATA},
-	{&s5k4e1_video_90fps_settings[0],
-	ARRAY_SIZE(s5k4e1_video_90fps_settings), 0, MSM_CAMERA_I2C_BYTE_DATA},
-	{&s5k4e1_zsl_settings[0],
-	ARRAY_SIZE(s5k4e1_zsl_settings), 0, MSM_CAMERA_I2C_BYTE_DATA},
 };
 
 static struct msm_sensor_output_info_t s5k4e1_dimensions[] = {
@@ -781,33 +728,6 @@ static struct msm_sensor_output_info_t s5k4e1_dimensions[] = {
 		.op_pixel_clk = 81600000,
 		.binning_factor = 1,
 	},
-	{
-		.x_output = 0x518,
-		.y_output = 0x3D4,
-		.line_length_pclk = 0xAB2,
-		.frame_length_lines = 0x3E0,
-		.vt_pixel_clk = 81600000,
-		.op_pixel_clk = 81600000,
-		.binning_factor = 1,
-	},
-	{
-		.x_output = 0x518,
-		.y_output = 0x3D4,
-		.line_length_pclk = 0xAB2,
-		.frame_length_lines = 0x3E0,
-		.vt_pixel_clk = 81600000,
-		.op_pixel_clk = 81600000,
-		.binning_factor = 1,
-	},
-	{/* For ZSL */
-		.x_output = 0xA30,
-		.y_output = 0x7A8,
-		.line_length_pclk = 0xAB2,
-		.frame_length_lines = 0x7B4,
-		.vt_pixel_clk = 81600000,
-		.op_pixel_clk = 81600000,
-		.binning_factor = 0,
-	},
 };
 
 static struct msm_camera_csi_params s5k4e1_csi_params = {
@@ -820,9 +740,6 @@ static struct msm_camera_csi_params s5k4e1_csi_params = {
 };
 
 static struct msm_camera_csi_params *s5k4e1_csi_params_array[] = {
-	&s5k4e1_csi_params,
-	&s5k4e1_csi_params,
-	&s5k4e1_csi_params,
 	&s5k4e1_csi_params,
 	&s5k4e1_csi_params,
 };
@@ -842,7 +759,7 @@ static struct msm_sensor_id_info_t s5k4e1_id_info = {
 static struct msm_sensor_exp_gain_info_t s5k4e1_exp_gain_info = {
 	.coarse_int_time_addr = 0x0202,
 	.global_gain_addr = 0x0204,
-	.vert_offset = 8,
+	.vert_offset = 4,
 };
 
 static inline uint8_t s5k4e1_byte(uint16_t word, uint8_t offset)
@@ -930,7 +847,7 @@ static int32_t s5k4e1_write_prev_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 	}
 	/*modify for unnormal preview*/
 	if (line > (s_ctrl->curr_frame_length_lines - offset)) {
-		fl_lines = line + offset;
+		fl_lines = line ; //+ offset;
 		s_ctrl->func_tbl->sensor_group_hold_on(s_ctrl);
 		msm_camera_i2c_write(s_ctrl->sensor_i2c_client,
 			s_ctrl->sensor_output_reg_addr->frame_length_lines,
@@ -1160,7 +1077,7 @@ static int32_t s5k4e1_sensor_model_match(struct msm_sensor_ctrl_t *s_ctrl)
 
     if(s5k4e1_mode_type == S5k4E1_MODE_SAMSUNG)
     {
-        strncpy((char *)s_ctrl->sensor_name, "23060110FA-SAM-3", strlen("23060110FA-SAM-3"));
+        strncpy((char *)s_ctrl->sensor_name, "23060069FA-SAM-3", strlen("23060069FA-SAM-3"));
     }
     else
     {
@@ -1222,7 +1139,7 @@ static struct msm_sensor_ctrl_t s5k4e1_s_ctrl = {
 	.sensor_v4l2_subdev_ops = &s5k4e1_subdev_ops,
 	.func_tbl = &s5k4e1_func_tbl,
 	.clk_rate = MSM_SENSOR_MCLK_24HZ,
-	.sensor_name = "23060110FA-SAM-3",
+	.sensor_name = "23060069FA-SAM-L",
 };
 
 module_init(msm_sensor_init_module);

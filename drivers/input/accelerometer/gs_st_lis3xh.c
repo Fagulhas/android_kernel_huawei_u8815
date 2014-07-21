@@ -81,7 +81,6 @@ static const struct {
 };
 static struct workqueue_struct *gs_wq;
 extern struct input_dev *sensor_dev;
-static atomic_t st_status_flag;
 
 struct gs_data {
 	uint16_t addr;
@@ -212,34 +211,38 @@ static void gs_st_update_odr(struct gs_data  *gs)
 	}
 }
 static int gs_st_open(struct inode *inode, struct file *file)
-{
-	reg_read(this_gs_data, GS_ST_REG_STATUS ); /* read status */
-	/* enable x, y, z; low power mode 50 HZ */	
-	reg_write(this_gs_data, GS_ST_REG_CTRL1, GS_ST_CTRL1_PD|
-		GS_ST_CTRL1_Zen|
-		GS_ST_CTRL1_Yen|
-		GS_ST_CTRL1_Xen);
-	reg_write(this_gs_data, GS_ST_REG_CTRL3, GS_INTMODE_DATA_READY);
+{			
+       reg_read(this_gs_data, GS_ST_REG_STATUS ); /* read status */
 
-	reg_read(this_gs_data, GS_ST_REG_OUT_XL ); /* read X */
-	reg_read(this_gs_data, GS_ST_REG_OUT_XH ); /* read X */
-	reg_read(this_gs_data, GS_ST_REG_OUT_YL ); /* read Y */
-	reg_read(this_gs_data, GS_ST_REG_OUT_YH ); /* read Y */
-	reg_read(this_gs_data, GS_ST_REG_OUT_ZL ); /* read Z*/
-	reg_read(this_gs_data, GS_ST_REG_OUT_ZH ); /* read Z*/
-	atomic_set(&st_status_flag, GS_RESUME);
-	if (this_gs_data->use_irq)
-		enable_irq(this_gs_data->client->irq);
-	else
-		hrtimer_start(&this_gs_data->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
+       /* enable x, y, z; low power mode 50 HZ */	
+       reg_write(this_gs_data, GS_ST_REG_CTRL1, GS_ST_CTRL1_PD|
+	       GS_ST_CTRL1_Zen|
+	       GS_ST_CTRL1_Yen|
+	       GS_ST_CTRL1_Xen);
+	
+       reg_write(this_gs_data, GS_ST_REG_CTRL3, GS_INTMODE_DATA_READY);
 
-	return nonseekable_open(inode, file);
+       reg_read(this_gs_data, GS_ST_REG_OUT_XL ); /* read X */
+       reg_read(this_gs_data, GS_ST_REG_OUT_XH ); /* read X */
+       reg_read(this_gs_data, GS_ST_REG_OUT_YL ); /* read Y */
+       reg_read(this_gs_data, GS_ST_REG_OUT_YH ); /* read Y */
+       reg_read(this_gs_data, GS_ST_REG_OUT_ZL ); /* read Z*/
+       reg_read(this_gs_data, GS_ST_REG_OUT_ZH ); /* read Z*/
+
+       if (this_gs_data->use_irq)
+	       enable_irq(this_gs_data->client->irq);
+       else
+	       hrtimer_start(&this_gs_data->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
+	
+		
+       return nonseekable_open(inode, file);
 }
+
 static int gs_st_release(struct inode *inode, struct file *file)
 {
 	
 	reg_write(this_gs_data, GS_ST_REG_CTRL1, 0x00);
-	atomic_set(&st_status_flag, GS_SUSPEND);
+	
 	if (this_gs_data->use_irq)
 		disable_irq(this_gs_data->client->irq);
 	else
@@ -449,7 +452,8 @@ static void gs_work_func(struct work_struct *work)
     }
     else
     {
-        printk(KERN_ERR"%s, line %d,GS_ST_REG_CTRL1 is 0x%x,status = 0x%x \n",__func__, __LINE__,reg_read(gs, GS_ST_REG_CTRL1),status);
+        printk("MMA8452_CTRL_REG1 is %d \n",reg_read(gs, GS_ST_REG_CTRL1));
+        printk(KERN_ERR "%s, line %d: status=0x%x\n", __func__, __LINE__, status);
     }
     if(lis3xh_debug_mask)
     {
@@ -470,9 +474,11 @@ static void gs_work_func(struct work_struct *work)
     }
     else
     {
-        if(GS_RESUME == atomic_read(&st_status_flag))
-            if (0 != hrtimer_start(&gs->timer, ktime_set(sesc, nsesc), HRTIMER_MODE_REL) )
-                printk(KERN_ERR "%s, line %d: hrtimer_start fail! sec=%d, nsec=%d\n", __func__, __LINE__, sesc, nsesc);
+        /* hrtimer_start fail */
+        if (0 != hrtimer_start(&gs->timer, ktime_set(sesc, nsesc), HRTIMER_MODE_REL) )
+        {
+            printk(KERN_ERR "%s, line %d: hrtimer_start fail! sec=%d, nsec=%d\n", __func__, __LINE__, sesc, nsesc);
+        }
     }
 }
 
@@ -637,11 +643,11 @@ static int gs_probe(
 		/* fail? */
 		goto err_detect_failed;
 	}
-	atomic_set(&st_status_flag, GS_SUSPEND);
-	#ifdef CONFIG_HUAWEI_HW_DEV_DCT
-	/* detect current device successful, set the flag as present */
-	set_hw_dev_flag(DEV_I2C_G_SENSOR);
-	#endif
+
+    #ifdef CONFIG_HUAWEI_HW_DEV_DCT
+    /* detect current device successful, set the flag as present */
+    set_hw_dev_flag(DEV_I2C_G_SENSOR);
+    #endif
 
 	if (sensor_dev == NULL)
 	{
@@ -796,9 +802,10 @@ static int gs_remove(struct i2c_client *client)
 
 static int gs_suspend(struct i2c_client *client, pm_message_t mesg)
 {
-	int ret;
+     
+	 int ret;
 	struct gs_data *gs = i2c_get_clientdata(client);
-	atomic_set(&st_status_flag, GS_SUSPEND);
+
 	if (gs->use_irq)
 		disable_irq(client->irq);
 	else
@@ -822,13 +829,13 @@ static int gs_suspend(struct i2c_client *client, pm_message_t mesg)
 static int gs_resume(struct i2c_client *client)
 {
 	struct gs_data *gs = i2c_get_clientdata(client);
-	/*Make ODR to 200HZ as if some apk does't update ODR when resume*/
-	reg_write(gs, GS_ST_REG_CTRL1, ODR200F|
+	
+	reg_write(gs, GS_ST_REG_CTRL1, GS_ST_CTRL1_PD|
 						GS_ST_CTRL1_Zen|
 						GS_ST_CTRL1_Yen|
 						GS_ST_CTRL1_Xen); /* enable abs int */
 	reg_write(gs, GS_ST_REG_CTRL3, GS_INTMODE_DATA_READY);/*active mode*/
-	atomic_set(&st_status_flag, GS_RESUME);
+    
 	if (!gs->use_irq)
 		hrtimer_start(&gs->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
 	else

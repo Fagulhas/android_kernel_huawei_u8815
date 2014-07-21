@@ -1,4 +1,4 @@
-/* Copyright (c) 2002,2007-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2002,2007-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -527,8 +527,7 @@ struct kgsl_pagetable *kgsl_mmu_getpagetable(unsigned long name)
 		return (void *)(-1);
 
 #ifndef CONFIG_KGSL_PER_PROCESS_PAGE_TABLE
-	if (!(cpu_is_msm8625q() && (get_ddr_size() > SZ_512M)))
-		name = KGSL_MMU_GLOBAL_PT;
+	name = KGSL_MMU_GLOBAL_PT;
 #endif
 	pt = kgsl_get_pagetable(name);
 

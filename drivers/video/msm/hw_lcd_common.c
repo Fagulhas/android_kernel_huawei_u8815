@@ -349,10 +349,7 @@ void process_mipi_table(struct msm_fb_data_type *mfd,struct dsi_buf *tp,
 			case MIPI_CMD_NT35310_BYD_HVGA:
 			case MIPI_CMD_NT35310_BOE_HVGA:
 			case MIPI_CMD_OTM8009A_CHIMEI_FWVGA:
-			case MIPI_CMD_OTM8009A_TIANMA_FWVGA:
 			case MIPI_CMD_NT35510_CHIMEI_WVGA:
-			case MIPI_CMD_OTM9608A_TIANMA_QHD:
-			case MIPI_CMD_NT35516_TRULY_QHD:
 				mipi_lcd_register_write(mfd,tp,reg,value,0);
 				break;
 			default:
@@ -365,7 +362,7 @@ void process_mipi_table(struct msm_fb_data_type *mfd,struct dsi_buf *tp,
 	}
 			
 }
-#if (LCD_HX8369A_TIANMA_ESD_SIGN || LCD_OTM8009A_CMI_ESD_SIGN || LCD_OTM9608A_TIANMA_ESD_SIGN)
+#if (LCD_HX8369A_TIANMA_ESD_SIGN || LCD_OTM8009A_CMI_ESD_SIGN)
 /*****************************************
   @brief   process mipi read sequence table
   @param table: lcd init code, count: sizeof(table), read_data: data of registers
@@ -736,9 +733,6 @@ void truly_r61529_set_cs(struct msm_panel_common_pdata * lcdc_pnael_data){
 int lcd_reset(void)
 {
 	hw_lcd_interface_type lcd_interface_type=get_hw_lcd_interface_type();
-	#if LCD_OTM9608A_TIANMA_ESD_SIGN
-	lcd_panel_type panel_type = get_lcd_panel_type();
-	#endif
 
 	if((LCD_IS_MDDI_TYPE1 == lcd_interface_type)
 		||(LCD_IS_MDDI_TYPE2 == lcd_interface_type))
@@ -756,39 +750,11 @@ int lcd_reset(void)
 	{
 		gpio_tlmm_config(GPIO_CFG(GPIO_OUT_129, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA),GPIO_CFG_ENABLE);
 		gpio_set_value(GPIO_OUT_129,1);
-	/* extend delay time for TIANMA OTM9608A LCD ESD issue */
-	#if LCD_OTM9608A_TIANMA_ESD_SIGN
-	if (MIPI_CMD_OTM9608A_TIANMA_QHD == panel_type)
-	{
-		LCD_MDELAY(10);
-		gpio_set_value(GPIO_OUT_129,0);
-		LCD_MDELAY(30);
-		gpio_set_value(GPIO_OUT_129,1);
-		LCD_MDELAY(150);
-	}
-	else
-	{
 		LCD_MDELAY(1);
 		gpio_set_value(GPIO_OUT_129,0);
-	#if LCD_OTM8009A_CMI_ESD_SIGN
-		LCD_MDELAY(10);
-	#else
 		LCD_MDELAY(5);
-	#endif
 		gpio_set_value(GPIO_OUT_129,1);
 		LCD_MDELAY(120);
-	}
-	#else
-		LCD_MDELAY(1);
-		gpio_set_value(GPIO_OUT_129,0);
-	#if LCD_OTM8009A_CMI_ESD_SIGN
-		LCD_MDELAY(10);
-	#else
-		LCD_MDELAY(5);
-	#endif
-		gpio_set_value(GPIO_OUT_129,1);
-		LCD_MDELAY(120);
-	#endif
 	}
 	#ifdef CONFIG_FB_MSM_LCDC
 	else

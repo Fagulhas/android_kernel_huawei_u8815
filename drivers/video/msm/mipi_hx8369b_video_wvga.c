@@ -566,7 +566,7 @@ static int __init mipi_video_hx8369b_wvga_init(void)
 
 		pinfo->mipi.dsi_phy_db = &dsi_video_mode_phy_db;
 		pinfo->mipi.tx_eot_append = 0x01;
-		//pinfo->mipi.dlane_swap = 0x1;
+		pinfo->mipi.dlane_swap = 0x1;
 
 		ret = platform_device_register(&this_device);
 		if (ret)

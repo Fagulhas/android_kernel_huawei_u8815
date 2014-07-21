@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -17,18 +17,16 @@
 #include <linux/init.h>
 #include <linux/reboot.h>
 #include <linux/pm.h>
-/* Delete the include the fan53555.h file */
 #include <asm/system_misc.h>
 #include <mach/proc_comm.h>
 
 #include "devices-msm7x2xa.h"
+#include "smd_rpcrouter.h"
 
 static uint32_t restart_reason = 0x776655AA;
 
 static void msm_pm_power_off(void)
 {
-	/* Disable interrupts */
-	local_irq_disable();
 	msm_proc_comm(PCOM_POWER_DOWN, 0, 0);
 	for (;;)
 		;
@@ -37,7 +35,6 @@ static void msm_pm_power_off(void)
 static void msm_pm_restart(char str, const char *cmd)
 {
 	pr_debug("The reset reason is %x\n", restart_reason);
-    /* Delete the fan53555)restart_config() */
 
 	/* Disable interrupts */
 	local_irq_disable();
@@ -64,8 +61,7 @@ static int msm_reboot_call
 	if ((code == SYS_RESTART) && _cmd) {
 		char *cmd = _cmd;
 		if (!strncmp(cmd, "bootloader", 10)) {
-			/*let the phone enter fastboot*/
-			restart_reason = 0x6f656d01;
+			restart_reason = 0x77665500;
 		} else if (!strncmp(cmd, "recovery", 8)) {
 			restart_reason = 0x77665502;
 		} else if (!strncmp(cmd, "eraseflash", 10)) {

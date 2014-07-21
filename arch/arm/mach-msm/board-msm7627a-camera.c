@@ -35,17 +35,9 @@
 #define GPIO_SKU3_CAM_5MP_SHDN_N   5         /* PWDN */
 #define GPIO_SKU3_CAM_5MP_CAMIF_RESET   6    /* (board_is(EVT))?123:121 RESET */
 #define GPIO_SKU3_CAM_5MP_CAM_DRIVER_PWDN 30
-#define GPIO_SKUD_CAM_5MP_SHDN_N   23      /* PWDN */
-#define GPIO_SKUD_CAM_5MP_CAMIF_RESET   79 /* (board_is(EVT))?123:121 RESET */
-#define GPIO_SKUD_CAM_5MP_CAM_VCM_PWDN 16
-#define GPIO_SKUD_CAM_1MP_PWDN 85
-#define GPIO_SKUD_CAM_LED_EN 34
-#define GPIO_SKUD_CAM_LED_FLASH_EN 48
 #define GPIO_SKU7_CAM_VGA_SHDN    91
 #define GPIO_SKU7_CAM_5MP_SHDN_N   93         /* PWDN */
 #define GPIO_SKU7_CAM_5MP_CAMIF_RESET   23   /* (board_is(EVT))?123:121 RESET */
-#define GPIO_NOT_CONFIGURED -1
-#define MOUNT_ANGLE_NOT_CONFIGURED -1
 
 #ifdef CONFIG_MSM_CAMERA_V4L2
 #define CAMERA_NAME_LEN 128 //this size is same with CAMERA_NAME_LEN in msm_sensor.h
@@ -62,7 +54,7 @@ static uint32_t camera_off_gpio_table[] = {
 	GPIO_CFG(60, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_8MA), 
 	GPIO_CFG(61, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_8MA), 
 	GPIO_CFG(119, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), /*PWD*/
-	GPIO_CFG(120, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), /* PWD for front camera*/   
+	//GPIO_CFG(120, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), /* PWD for front camera*/   
 };
 
 static uint32_t camera_on_gpio_table[] = {
@@ -75,7 +67,7 @@ static uint32_t camera_on_gpio_table[] = {
 	GPIO_CFG(60, 1, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA), 
 	GPIO_CFG(61, 1, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA), 
 	GPIO_CFG(119, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), /* PWD */
-	GPIO_CFG(120, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), /* PWD for front camera*/   
+	//GPIO_CFG(120, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), /* PWD for front camera*/   
 };
 
 /* update to 1040 by lishubin begin */
@@ -147,12 +139,14 @@ static struct msm_camera_gpio_conf gpio_conf_ov7692 = {
 	.gpio_no_mux = 1,
 };
 #endif
-#ifdef CONFIG_OV5648
-static struct msm_camera_gpio_conf gpio_conf_ov5648 = {
+#ifndef CONFIG_HUAWEI_KERNEL
+#ifdef CONFIG_OV5647
+static struct msm_camera_gpio_conf gpio_conf_ov5647 = {
 	.camera_off_table = camera_off_gpio_table,
 	.camera_on_table = camera_on_gpio_table,
 	.gpio_no_mux = 1,
 };
+#endif
 #endif
 
 #ifdef CONFIG_MSM_CAMERA_FLASH
@@ -185,60 +179,35 @@ static struct camera_vreg_t msm_cam_vreg_BSI[] = {
 	{ "bt", REG_LDO, 2850000, 2850000, 1000},
     { "wlan2", REG_LDO, 1300000, 1300000, 0},
 };
-/* 8x25Q use L6 contorl AVDD, L5 contorl IOVDD/DVDD */
-/* AVDD should power on before IOVDD */
-static struct camera_vreg_t msm_cam_vreg_8x25Q[] = {
-    { "wlan3", REG_LDO, 1200000, 1200000,   0},//ldo06
-    { "wlan2", REG_LDO, 1300000, 1300000,   0},//ldo05 
-};
 
-#ifdef CONFIG_OV5647
+/*< lishubin update baseline add macro begin */
+#ifndef CONFIG_HUAWEI_KERNEL
 static struct camera_vreg_t ov5647_gpio_vreg[] = {
 	{"cam_ov5647_avdd", REG_GPIO, 0, 0, 0},
 	{"cam_ov5647_vdd", REG_GPIO, 0, 0, 0},
 };
-#endif
 
-#ifdef CONFIG_OV5648
-static struct camera_vreg_t ov5648_gpio_vreg[] = {
-	{"ldo12", REG_LDO, 2700000, 3300000, 0},
-	{"smps3", REG_LDO, 1800000, 1800000, 0},
-};
-
-static struct camera_vreg_t ov5648_gpio_vreg_evbd[] = {
-	{"ldo12", REG_LDO, 2700000, 3300000, 0},
-	{"smps3", REG_LDO, 1800000, 1800000, 0},
-	{"cam_ov5648_avdd", REG_GPIO, 0, 0, 0},
-	{"cam_ov5648_vdd", REG_GPIO, 0, 0, 0},
-};
-#endif
-#ifdef CONFIG_OV8825
 static struct camera_vreg_t ov8825_gpio_vreg[] = {
 	{"cam_ov8825_avdd", REG_GPIO, 0, 0, 0},
 	{"cam_ov8825_vdd", REG_GPIO, 0, 0, 0},
 };
 
-#endif
-#ifdef CONFIG_OV7692
 static struct camera_vreg_t ov7692_gpio_vreg[] = {
 	{"cam_ov7692_avdd", REG_GPIO, 0, 0, 0},
 	{"cam_ov7692_vdd", REG_GPIO, 0, 0, 0},
 };
 #endif
+/* lishubin update baseline add macro end > */
 
 void msm_get_camera_vreg (struct msm_camera_sensor_platform_info *info)
 {
 	struct msm_camera_sensor_platform_info *msm_info = info;
-    if( machine_is_msm8x25_C8950D() )
+    if(machine_is_msm8x25_C8950D()
+        || machine_is_msm8x25_U8950D()
+        || machine_is_msm8x25_U8950())
     {
         msm_info->cam_vreg = msm_cam_vreg_BSI;
 		msm_info->num_vreg = ARRAY_SIZE(msm_cam_vreg_BSI);
-    }
-    else if(machine_is_msm8x25_G520U()
-            || machine_is_msm8x25_C8813Q())
-    {
-        msm_info->cam_vreg = msm_cam_vreg_8x25Q;
-        msm_info->num_vreg = ARRAY_SIZE(msm_cam_vreg_8x25Q);
     }
 	else if (WIFI_QUALCOMM == get_hw_wifi_device_type())
 	{
@@ -306,12 +275,8 @@ static struct msm_actuator_info msm_act_main_cam_4_info = {
 
 static struct gpio s5k4e1_cam_req_gpio[] = {
 	{49, GPIOF_DIR_OUT, "CAM_RESET"},
-	{119, GPIOF_DIR_OUT, "CAM_PWD"},
 };
 
-static struct msm_gpio_set_tbl s5k4e1_cam_gpio_req_init_tbl[] = {
-	{119, GPIOF_OUT_INIT_LOW, 1000},  // s5k4e1 pwd will be pull low before power on
-};
 static struct msm_gpio_set_tbl s5k4e1_cam_gpio_set_tbl[] = {
 	{49, GPIOF_OUT_INIT_LOW, 1000},
 	{49, GPIOF_OUT_INIT_HIGH, 4000},
@@ -331,8 +296,6 @@ static struct msm_camera_gpio_conf gpio_conf_s5k4e1 = {
 	.cam_gpio_set_tbl_size = ARRAY_SIZE(s5k4e1_cam_gpio_set_tbl),
 	.cam_gpio_config_tbl_power_down = s5k4e1_cam_gpio_config_tbl_power_down,
 	.cam_gpio_config_tbl_power_down_size = ARRAY_SIZE(s5k4e1_cam_gpio_config_tbl_power_down),
-	.cam_gpio_req_init_tbl=s5k4e1_cam_gpio_req_init_tbl,
-	.cam_gpio_req_init_tbl_size=ARRAY_SIZE(s5k4e1_cam_gpio_req_init_tbl),
 	.gpio_no_mux = 1,
 };
 
@@ -390,62 +353,6 @@ static struct msm_camera_sensor_info msm_camera_sensor_ov7692_data = {
 };
 #endif
 
-#ifdef CONFIG_OV7695
-/*
-static struct gpio ov7695_cam_req_gpio_skud[] = {
-	{GPIO_SKUD_CAM_1MP_PWDN, GPIOF_DIR_OUT, "CAM_VGA_SHDN"},
-};
-*/ 
-
-static struct msm_gpio_set_tbl ov7695_cam_gpio_set_tbl_skud[] = {
-	{GPIO_SKUD_CAM_1MP_PWDN, GPIOF_OUT_INIT_LOW, 5000},
-	{GPIO_SKUD_CAM_1MP_PWDN, GPIOF_OUT_INIT_HIGH, 5000},
-};
-static struct msm_camera_gpio_conf skud_gpio_conf_ov7695 = {
-//	.cam_gpio_req_tbl = ov7695_cam_req_gpio_skud,
-//	.cam_gpio_req_tbl_size = ARRAY_SIZE(ov7695_cam_req_gpio_skud),
-	.cam_gpio_set_tbl = ov7695_cam_gpio_set_tbl_skud,
-	.cam_gpio_set_tbl_size = ARRAY_SIZE(ov7695_cam_gpio_set_tbl_skud),
-	.camera_off_table = camera_off_gpio_table,
-	.camera_on_table = camera_on_gpio_table,
-	.gpio_no_mux = 1,
-};
-
-static struct camera_vreg_t ov7695_gpio_vreg[] = {
-	{"ldo12", REG_LDO, 2700000, 3300000, 0},
-	{"smps3", REG_LDO, 1800000, 1800000, 0},
-};
-
-static struct camera_vreg_t ov7695_gpio_vreg_evbd[] = {
-	{"ldo12", REG_LDO, 2700000, 3300000, 0},
-	{"smps3", REG_LDO, 1800000, 1800000, 0},
-	{"cam_ov7695_avdd", REG_GPIO, 0, 0, 0},
-	{"cam_ov7695_vdd", REG_GPIO, 0, 0, 0},
-};
-static struct msm_camera_sensor_platform_info sensor_board_info_ov7695 = {
-	.mount_angle = 90,
-	.cam_vreg = msm_cam_vreg,
-	.num_vreg = ARRAY_SIZE(msm_cam_vreg),
-	.gpio_conf = &skud_gpio_conf_ov7695,
-};
-
-static struct msm_camera_sensor_flash_data flash_ov7695 = {
-	.flash_type     = MSM_CAMERA_FLASH_NONE,
-};
-
-static struct msm_camera_sensor_info msm_camera_sensor_ov7695_data = {
-	.sensor_name	    = "ov7695",
-	.sensor_reset_enable    = 0,
-	.sensor_reset	   = GPIO_NOT_CONFIGURED,
-	.sensor_pwd	     = GPIO_NOT_CONFIGURED,
-	.pdata			= &msm_camera_device_data_csi0[0],
-	.flash_data	     = &flash_ov7695,
-	.sensor_platform_info   = &sensor_board_info_ov7695,
-	.csi_if		 = 1,
-	.camera_type = FRONT_CAMERA_2D,
-	.sensor_type = YUV_SENSOR,
-};
-#endif
 #ifdef CONFIG_HUAWEI_SENSOR_MT9P017
 /*add the actuator info for mt9p017*/
 static struct msm_actuator_info msm_act_main_cam_6_info = {
@@ -504,41 +411,6 @@ static struct msm_camera_sensor_info msm_camera_sensor_mt9p017_data = {
 };
 #endif
 
-#ifdef CONFIG_OV7695_RAW
-static struct msm_camera_gpio_conf skud_gpio_conf_ov7695_raw = {
-	.camera_off_table = camera_off_gpio_table,
-	.camera_on_table = camera_on_gpio_table,
-	.gpio_no_mux = 1,
-};
-
-static struct camera_vreg_t ov7695_raw_gpio_vreg[] = {
-	{"ldo12", REG_LDO, 2700000, 3300000, 0},
-	{"smps3", REG_LDO, 1800000, 1800000, 0},
-};
-static struct msm_camera_sensor_platform_info sensor_board_info_ov7695_raw = {
-	.mount_angle = 90,
-	.cam_vreg = msm_cam_vreg,
-	.num_vreg = ARRAY_SIZE(msm_cam_vreg),
-	.gpio_conf = &skud_gpio_conf_ov7695_raw,
-};
-
-static struct msm_camera_sensor_flash_data flash_ov7695_raw = {
-	.flash_type     = MSM_CAMERA_FLASH_NONE,
-};
-
-static struct msm_camera_sensor_info msm_camera_sensor_ov7695_raw_data = {
-	.sensor_name	    = "ov7695_raw",
-	.sensor_reset_enable    = 0,
-	.sensor_reset	   = GPIO_NOT_CONFIGURED,
-	.sensor_pwd	     = GPIO_NOT_CONFIGURED,
-	.pdata			= &msm_camera_device_data_csi1[0],//&msm_camera_device_data_csi0[0],
-	.flash_data	     = &flash_ov7695_raw,
-	.sensor_platform_info   = &sensor_board_info_ov7695_raw,
-	.csi_if		 = 1,
-	.camera_type = FRONT_CAMERA_2D,
-	.sensor_type = BAYER_SENSOR,
-};
-#endif
 #ifdef CONFIG_OV5647
 
 static struct msm_actuator_info msm_act_main_cam_5_info = {
@@ -564,10 +436,6 @@ static struct msm_gpio_set_tbl ov5647_cam_gpio_set_tbl[] = {
 	{49, GPIOF_OUT_INIT_HIGH, 30000},
 };
 
-static struct msm_gpio_set_tbl ov5647_cam_gpio_config_tbl_power_down[] = {
-	{49, GPIOF_OUT_INIT_LOW,   1000},
-	{119, GPIOF_OUT_INIT_LOW,  1000},
-};
 
 static struct msm_gpio_set_tbl ov5647_is_sub_cam_gpio_req_init_tbl[] = {
 	{119, GPIOF_OUT_INIT_HIGH, 2000},  //set the flag of gpio, then usleep the times
@@ -595,8 +463,6 @@ static struct msm_camera_gpio_conf gpio_conf_ov5647 = {
 	.cam_gpio_req_init_tbl=ov5647_cam_gpio_req_init_tbl,
 	.cam_gpio_req_init_tbl_size=ARRAY_SIZE(ov5647_cam_gpio_req_init_tbl),
 	.gpio_no_mux = 1,
-	.cam_gpio_config_tbl_power_down = ov5647_cam_gpio_config_tbl_power_down,
-	.cam_gpio_config_tbl_power_down_size = ARRAY_SIZE(ov5647_cam_gpio_config_tbl_power_down),
 	.get_correct_gpio_set = ov5647_get_correct_gpio_set,
 };
 void ov5647_get_correct_gpio_set(void)
@@ -616,6 +482,11 @@ static struct msm_camera_sensor_platform_info sensor_board_info_ov5647 = {
 	.gpio_conf = &gpio_conf_ov5647,
 };
 
+/*patch from Qualcomm*/
+static struct camera_vreg_t cam_ov5647_gpio_vreg[] = {
+	{"cam0_avdd", REG_GPIO, 0, 0, 0},
+	{"cam0_vdd", REG_GPIO, 0, 0, 0},
+};
 /*static struct msm_camera_sensor_flash_src msm_flash_src_ov5647 = {
 	.flash_sr_type = MSM_CAMERA_FLASH_SRC_LED1,
 	._fsrc.ext_driver_src.led_en = 13,
@@ -645,48 +516,6 @@ static struct msm_camera_sensor_info msm_camera_sensor_ov5647_data = {
 
 #endif
 
-#ifdef CONFIG_OV5648
-static struct msm_actuator_info msm_act_main_cam_7_info = {
-	.board_info     = &msm_act_main_cam_i2c_info,
-	.cam_name   = MSM_ACTUATOR_MAIN_CAM_7,
-	.bus_id         = MSM_GSBI0_QUP_I2C_BUS_ID,
-	.vcm_pwd        = GPIO_NOT_CONFIGURED,
-	.vcm_enable     = 0,
-};
-
-static struct msm_camera_sensor_platform_info sensor_board_info_ov5648 = {
-	.mount_angle = MOUNT_ANGLE_NOT_CONFIGURED,
-	.cam_vreg = msm_cam_vreg,
-	.num_vreg = ARRAY_SIZE(msm_cam_vreg),
-	.gpio_conf = &gpio_conf_ov5648,
-};
-
-static struct msm_camera_sensor_flash_src msm_flash_src_ov5648 = {
-	.flash_sr_type = MSM_CAMERA_FLASH_SRC_LED1,
-	._fsrc.ext_driver_src.led_en =  GPIO_SKUD_CAM_LED_EN,
-	._fsrc.ext_driver_src.led_flash_en = GPIO_SKUD_CAM_LED_FLASH_EN,
-};
-
-static struct msm_camera_sensor_flash_data flash_ov5648 = {
-	.flash_type             = MSM_CAMERA_FLASH_LED,
-	.flash_src              = &msm_flash_src_ov5648,
-};
-
-static struct msm_camera_sensor_info msm_camera_sensor_ov5648_data = {
-	.sensor_name    = "ov5648",
-	.sensor_reset_enable = 1,
-	.pmic_gpio_enable  = 1,
-	.sensor_reset   = GPIO_NOT_CONFIGURED,
-	.sensor_pwd     = GPIO_NOT_CONFIGURED,
-	.pdata          = &msm_camera_device_data_csi1[0],
-	.flash_data     = &flash_ov5648,
-	.sensor_platform_info   = &sensor_board_info_ov5648,
-	.csi_if                 = 1,
-	.camera_type	= BACK_CAMERA_2D,
-	.sensor_type = BAYER_SENSOR,
-	.actuator_info = &msm_act_main_cam_7_info,
-};
-#endif
 static struct msm_camera_gpio_conf gpio_conf_ov8825 = {
 	.camera_off_table = camera_off_gpio_table,
 	.camera_on_table = camera_on_gpio_table,
@@ -876,11 +705,11 @@ static struct msm_camera_sensor_info msm_camera_sensor_s5k5ca_data = {
 #ifdef CONFIG_HUAWEI_CAMERA_SENSOR_MT9V113
 static struct gpio mt9v113_cam_req_gpio[] = {
 	{8, GPIOF_DIR_OUT, "CAM_RESET"},
-	{120, GPIOF_DIR_OUT, "CAM_PWD"},
+	//{120, GPIOF_DIR_OUT, "CAM_PWD"},
 };
 
 static struct msm_gpio_set_tbl mt9v113_cam_gpio_req_init_tbl[] = {
-	{120, GPIOF_OUT_INIT_LOW, 1000},  //set the flag of gpio, then usleep the times
+	//{120, GPIOF_OUT_INIT_LOW, 1000},  //set the flag of gpio, then usleep the times
 	{8, GPIOF_OUT_INIT_HIGH, 10000},
 };
 
@@ -1000,21 +829,14 @@ static struct msm_camera_sensor_info msm_camera_sensor_gc0313_data = {
 #ifdef CONFIG_HUAWEI_CAMERA_SENSOR_BF3905
 static struct gpio bf3905_cam_req_gpio[] = {
 	{8, GPIOF_DIR_OUT, "CAM_RESET"},
-	{120, GPIOF_DIR_OUT, "CAM_PWDN"},
 };
 
-static struct msm_gpio_set_tbl bf3905_cam_gpio_init_tbl[] = {
-	{8, GPIOF_OUT_INIT_LOW, 1000},
-	{120, GPIOF_OUT_INIT_LOW, 1000},
-};
 static struct msm_gpio_set_tbl bf3905_cam_gpio_set_tbl[] = {
-	{120, GPIOF_OUT_INIT_HIGH, 1000},
-	{8, GPIOF_OUT_INIT_HIGH, 1000},
-	{120, GPIOF_OUT_INIT_LOW, 1000},
+	{8, GPIOF_OUT_INIT_LOW, 10000},
+	{8, GPIOF_OUT_INIT_HIGH, 10000},
 };
 
 static struct msm_gpio_set_tbl bf3905_cam_gpio_config_tbl_power_down[] = {
-	{120, GPIOF_OUT_INIT_HIGH, 1000},
 	{8 ,   GPIOF_OUT_INIT_LOW,  1000 },
 };
 static struct msm_camera_gpio_conf gpio_conf_bf3905 = {
@@ -1026,8 +848,6 @@ static struct msm_camera_gpio_conf gpio_conf_bf3905 = {
 	.cam_gpio_req_tbl_size = ARRAY_SIZE(bf3905_cam_req_gpio),
 	.cam_gpio_set_tbl = bf3905_cam_gpio_set_tbl,
 	.cam_gpio_set_tbl_size = ARRAY_SIZE(bf3905_cam_gpio_set_tbl),
-	.cam_gpio_req_init_tbl = bf3905_cam_gpio_init_tbl,
-	.cam_gpio_req_init_tbl_size = ARRAY_SIZE(bf3905_cam_gpio_init_tbl),
 	.cam_gpio_config_tbl_power_down = bf3905_cam_gpio_config_tbl_power_down,
 	.cam_gpio_config_tbl_power_down_size = ARRAY_SIZE(bf3905_cam_gpio_config_tbl_power_down),
 	.gpio_no_mux = 1,
@@ -1351,15 +1171,11 @@ static void __init msm7x27a_init_cam(void)
 {
 	if (!(machine_is_msm7x27a_ffa() || machine_is_msm7625a_ffa()
 				|| machine_is_msm7627a_qrd1()
-				|| machine_is_msm8625q_evbd()
-				|| machine_is_msm8625q_skud()
-				|| machine_is_qrd_skud_prime() 
 				|| machine_is_msm8625_ffa())) {
 	}
-	if (machine_is_msm8625_evb() || machine_is_msm7627a_evb()
-				||  machine_is_msm8625_evt()
-				|| machine_is_msm7627a_qrd3()
-				|| machine_is_msm8625_qrd7()) {
+	/*patch from Qualcomm*/
+	if (machine_is_msm8625_evb()
+			|| machine_is_msm8625_evt()) {
 #ifdef CONFIG_OV7692
 		sensor_board_info_ov7692.cam_vreg =
 			ov7692_gpio_vreg;
@@ -1368,9 +1184,9 @@ static void __init msm7x27a_init_cam(void)
 #endif
 #ifdef CONFIG_OV5647
 		sensor_board_info_ov5647.cam_vreg =
-			ov5647_gpio_vreg;
+			cam_ov5647_gpio_vreg;
 		sensor_board_info_ov5647.num_vreg =
-			ARRAY_SIZE(ov5647_gpio_vreg);
+			ARRAY_SIZE(cam_ov5647_gpio_vreg);
 #endif
 #ifdef CONFIG_OV8825
 		sensor_board_info_ov8825.cam_vreg =
@@ -1379,66 +1195,16 @@ static void __init msm7x27a_init_cam(void)
 			ARRAY_SIZE(ov8825_gpio_vreg);
 #endif
 	}
-	else if(machine_is_msm8625q_evbd()||
-		machine_is_msm8625q_skud()||
-		machine_is_qrd_skud_prime())
-	{  //for SKUD
-#ifdef CONFIG_OV5648
-		if(machine_is_msm8625q_evbd()) {
-			sensor_board_info_ov5648.cam_vreg = ov5648_gpio_vreg_evbd;
-			sensor_board_info_ov5648.num_vreg = ARRAY_SIZE(ov5648_gpio_vreg_evbd);
-		} else {
-			sensor_board_info_ov5648.cam_vreg = ov5648_gpio_vreg;
-			sensor_board_info_ov5648.num_vreg = ARRAY_SIZE(ov5648_gpio_vreg);
-		}
-		msm_act_main_cam_7_info.vcm_pwd = GPIO_SKUD_CAM_5MP_CAM_VCM_PWDN;
-		msm_act_main_cam_7_info.vcm_enable = 1;
-		msm_camera_sensor_ov5648_data.sensor_reset=GPIO_SKUD_CAM_5MP_CAMIF_RESET;
-		msm_camera_sensor_ov5648_data.sensor_pwd = GPIO_SKUD_CAM_5MP_SHDN_N;
-		sensor_board_info_ov5648.mount_angle = 90;
-		msm_flash_src_ov5648._fsrc.ext_driver_src.led_en = GPIO_SKUD_CAM_LED_EN;
-		msm_flash_src_ov5648._fsrc.ext_driver_src.led_flash_en = GPIO_SKUD_CAM_LED_FLASH_EN;
-#endif
-#ifdef CONFIG_OV7695
-		if(machine_is_msm8625q_evbd()) {
-			sensor_board_info_ov7695.cam_vreg = ov7695_gpio_vreg_evbd;
-			sensor_board_info_ov7695.num_vreg = ARRAY_SIZE(ov7695_gpio_vreg_evbd);
-		} else {
-			sensor_board_info_ov7695.cam_vreg = ov7695_gpio_vreg;
-			sensor_board_info_ov7695.num_vreg = ARRAY_SIZE(ov7695_gpio_vreg);
-		}
-		msm_camera_sensor_ov7695_data.vcm_pwd = 0;
-		msm_camera_sensor_ov7695_data.vcm_enable = 0;
-		sensor_board_info_ov7695.gpio_conf = &skud_gpio_conf_ov7695;
-		sensor_board_info_ov7695.mount_angle = 270;
-#endif
-#ifdef CONFIG_OV7695_RAW
-		sensor_board_info_ov7695_raw.cam_vreg = ov7695_raw_gpio_vreg;
-		sensor_board_info_ov7695_raw.num_vreg = ARRAY_SIZE(ov7695_raw_gpio_vreg);
-		msm_camera_sensor_ov7695_raw_data.vcm_pwd = 0;
-		msm_camera_sensor_ov7695_raw_data.vcm_enable = 0;
-		msm_camera_sensor_ov7695_raw_data.sensor_pwd = GPIO_SKUD_CAM_1MP_PWDN;
-		sensor_board_info_ov7695_raw.gpio_conf = &skud_gpio_conf_ov7695_raw;
-		sensor_board_info_ov7695_raw.mount_angle = 270;
-#endif
-	}
     platform_device_register(&msm_camera_server);
 #ifdef CONFIG_HUAWEI_KERNEL
 	if (machine_is_msm8625_surf() || machine_is_msm8625_evb()
 			|| machine_is_msm8625_evt()
             || cpu_is_msm8625()
-            ||cpu_is_msm8625q()
-			|| machine_is_msm8625_qrd7()
-			|| machine_is_msm8625q_evbd()
-			|| machine_is_msm8625q_skud()
-			|| machine_is_qrd_skud_prime()) {
+			|| machine_is_msm8625_qrd7()) {
 #else
 	if (machine_is_msm8625_surf() || machine_is_msm8625_evb()
 			|| machine_is_msm8625_evt()
-			|| machine_is_msm8625_qrd7()
-			|| machine_is_msm8625q_evbd()
-			|| machine_is_msm8625q_skud()
-			|| machine_is_qrd_skud_prime()) {
+			|| machine_is_msm8625_qrd7()) {
 #endif
 		platform_device_register(&msm8625_device_csic0);
 		platform_device_register(&msm8625_device_csic1);
@@ -1448,10 +1214,7 @@ static void __init msm7x27a_init_cam(void)
 	}
 	if (machine_is_msm8625_evb()
 			|| machine_is_msm8625_evt()
-			|| machine_is_msm8625_qrd7()
-			|| machine_is_msm8625q_evbd()
-			|| machine_is_msm8625q_skud()
-			|| machine_is_qrd_skud_prime())
+			|| machine_is_msm8625_qrd7())
 		*(int *) msm7x27a_device_clkctl.dev.platform_data = 1;
 	platform_device_register(&msm7x27a_device_clkctl);
 	platform_device_register(&msm7x27a_device_vfe);
@@ -1580,35 +1343,6 @@ static struct i2c_board_info i2c_camera_devices[] = {
 	},
 };
 #endif
-static struct i2c_board_info i2c_camera_devices_qpr_skud[] = {
-#ifdef CONFIG_OV5648
-        {
-                I2C_BOARD_INFO("ov5648", 0x36 << 1),//original
-                .platform_data = &msm_camera_sensor_ov5648_data,
-        },
-#endif
-#ifdef CONFIG_OV7695_RAW
-        {
-                I2C_BOARD_INFO("ov7695_raw", 0x21 << 1),
-                .platform_data = &msm_camera_sensor_ov7695_raw_data,
-        },
-#endif
-};
-
-static struct i2c_board_info i2c_camera_devices_qpr[] = {
-#ifdef CONFIG_OV5648
-	{
-		I2C_BOARD_INFO("ov5648", 0x36 << 1),//original
-		.platform_data = &msm_camera_sensor_ov5648_data,
-	},
-#endif
-#ifdef CONFIG_OV7695
-	{
-		I2C_BOARD_INFO("ov7695", 0x21 << 1),
-		.platform_data = &msm_camera_sensor_ov7695_data,
-	},
-#endif
-};
 #else
 static uint32_t camera_off_gpio_table[] = {
 	GPIO_CFG(8, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), /* RESET For mt9v113 */
@@ -1777,95 +1511,6 @@ static void evb_camera_gpio_cfg(void)
 		pr_err("%s: unable to set gpio: %d direction for ov7692 camera\n",
 			__func__, msm_camera_sensor_ov7692_data.sensor_pwd);
 #endif
-}
-static void skud_camera_gpio_cfg(void)
-{
-	int rc = 0;
-	printk("skuD_camera_gpio_cfg in, cfg gpio\n");
-	printk("gpio request: GPIO_SKUD_CAM_5MP_SHDN_N is %d\n", GPIO_SKUD_CAM_5MP_SHDN_N);
-	rc = gpio_request(GPIO_SKUD_CAM_5MP_SHDN_N, "ov5648");
-	if (rc < 0)
-		printk("%s: gpio_request OV5648 sensor_pwd: %d failed!",
-			 __func__, GPIO_SKUD_CAM_5MP_SHDN_N);
-
-	rc = gpio_tlmm_config(GPIO_CFG(GPIO_SKUD_CAM_5MP_SHDN_N,
-				0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN,
-				GPIO_CFG_2MA), GPIO_CFG_ENABLE);
-	if (rc < 0) {
-		printk("%s:unable to enable Powr Dwn gpio for main camera!\n",
-			 __func__);
-		gpio_free(GPIO_SKUD_CAM_5MP_SHDN_N);
-	}
-
-	rc = gpio_direction_output(GPIO_SKUD_CAM_5MP_SHDN_N, 1);
-	if (rc < 0)
-		pr_err("%s: unable to set gpio: %d direction for ov5648 camera\n",
-			__func__, GPIO_SKUD_CAM_5MP_SHDN_N);
-
-	printk("gpio request: GPIO_SKUD_CAM_5MP_CAMIF_RESET is %d\n", GPIO_SKUD_CAM_5MP_CAMIF_RESET);
-	rc = gpio_request(GPIO_SKUD_CAM_5MP_CAMIF_RESET, "ov5648");
-	if (rc < 0)
-		pr_err("%s: gpio_request OV5648 sensor_reset: %d failed!",
-			 __func__, GPIO_SKUD_CAM_5MP_CAMIF_RESET);
-
-	rc = gpio_tlmm_config(GPIO_CFG(
-				GPIO_SKUD_CAM_5MP_CAMIF_RESET,
-				0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN,
-				GPIO_CFG_2MA), GPIO_CFG_ENABLE);
-	if (rc < 0) {
-		pr_err("%s: unable to enable reset gpio for main camera!\n",
-			 __func__);
-		gpio_free(GPIO_SKUD_CAM_5MP_CAMIF_RESET);
-	}
-
-	rc = gpio_direction_output(
-			GPIO_SKUD_CAM_5MP_CAMIF_RESET, 1);
-	if (rc < 0)
-		pr_err("%s: unable to set gpio: %d direction for ov5648 camera\n",
-			__func__, GPIO_SKUD_CAM_5MP_CAMIF_RESET);
-
-	printk("gpio request: GPIO_SKUD_CAM_1MP_PWDN is %d\n", GPIO_SKUD_CAM_1MP_PWDN);
-		rc = gpio_request(GPIO_SKUD_CAM_1MP_PWDN, "OV7695");
-	if (rc < 0)
-	pr_err("%s: gpio_request OV7695 sensor_pwdn: %d failed!",
-		__func__, GPIO_SKUD_CAM_1MP_PWDN);
-
-	rc = gpio_tlmm_config(GPIO_CFG(
-		GPIO_SKUD_CAM_1MP_PWDN,
-		0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN,
-		GPIO_CFG_2MA), GPIO_CFG_ENABLE);
-	if (rc < 0) {
-		pr_err("%s: unable to enable reset gpio for front camera!\n", __func__);
-		gpio_free(GPIO_SKUD_CAM_1MP_PWDN);
-	}
-
-	rc = gpio_direction_output(GPIO_SKUD_CAM_1MP_PWDN, 0);
-	if (rc < 0)
-		pr_err("%s: unable to set gpio: %d direction for ov7695 camera\n",
-		__func__, GPIO_SKUD_CAM_1MP_PWDN);
-
-        printk("gpio request: GPIO_SKUD_CAM_5MP_CAM_VCM_PWDN is %d\n", GPIO_SKUD_CAM_5MP_CAM_VCM_PWDN);
-        rc = gpio_request(GPIO_SKUD_CAM_5MP_CAM_VCM_PWDN, "msm_actuator");
-	if (rc < 0)
-		printk("%s: gpio_request msm_actuator : %d failed!",
-		__func__, GPIO_SKUD_CAM_5MP_CAM_VCM_PWDN);
-
-	rc = gpio_tlmm_config(GPIO_CFG(
-                GPIO_SKUD_CAM_5MP_CAM_VCM_PWDN,
-                0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN,
-                GPIO_CFG_2MA), GPIO_CFG_ENABLE);
-        if (rc < 0) {
-		printk("%s:unable to enable Powr Dwn gpio for msm_actuator!\n", __func__);
-               gpio_free(GPIO_SKUD_CAM_5MP_CAM_VCM_PWDN);
-        }
-        rc = gpio_direction_output(GPIO_SKUD_CAM_5MP_CAM_VCM_PWDN, 0);
-        if (rc < 0)
-              pr_err("%s: unable to set gpio: %d direction for ov5648 camera\n",
-               __func__, GPIO_SKUD_CAM_5MP_CAM_VCM_PWDN);
-
-        /*Free the gpio for the actuator will request it again, only do tlmm config here.*/
-        gpio_free(GPIO_SKUD_CAM_5MP_CAM_VCM_PWDN);
-
 }
 
 #ifndef CONFIG_MSM_CAMERA_V4L2
@@ -2645,30 +2290,6 @@ static void camera_sensor_pwd_config(void)
 	}
 }
 #endif
-void camera_af_software_powerdown(struct i2c_client *client)
-{
-	int rc = 0;
-	unsigned char txdata[] = {0x80, 0x0};
-	struct i2c_msg msg[] = {
-		{
-			.addr = 0x18>>1,
-			.flags = 0,
-			.len = 2,
-			.buf = txdata,
-		 },
-	};
-	printk("camera_af_software_powerdown IN...\n");
-	/* send software powerdown cmd to AF motor, avoid current leak */
-	if (machine_is_msm8625q_evbd()||
-	machine_is_msm8625q_skud() ){
-		printk("SKUA AF Motor software powerdown, write i2c saddr:0x18, waddr:0x80, wdata:0x00\n");
-		rc = i2c_transfer(client->adapter, msg, 1);
-		if (rc < 0)
-			printk("AF software powerdown faild\n");
-		return;
-	}
-}
-EXPORT_SYMBOL(camera_af_software_powerdown);
 void __init msm7627a_camera_init(void)
 {
 
@@ -2700,21 +2321,13 @@ void __init msm7627a_camera_init(void)
 			|| machine_is_msm7627a_qrd3()
 			|| machine_is_msm8625_qrd7()) {
 
-#ifndef CONFIG_MSM_CAMERA_V4L2
-		lcd_camera_power_init();
-#endif
+		/*patch from Qualcomm*/
 
 #ifdef CONFIG_OV5647
 		evb_camera_gpio_cfg();
 #endif
 	}
 
-	if(machine_is_qrd_skud_prime() ||
-		machine_is_msm8625q_skud()||
-		machine_is_msm8625q_evbd())
-	{
-		skud_camera_gpio_cfg();
- 	}
 #ifndef CONFIG_MSM_CAMERA_V4L2
 	if (machine_is_msm7627a_qrd1()) {
 		qrd1_camera_gpio_cfg();
@@ -2724,10 +2337,7 @@ void __init msm7627a_camera_init(void)
 			|| machine_is_msm8625_evb()
 			|| machine_is_msm8625_evt()
 			|| machine_is_msm7627a_qrd3()
-			|| machine_is_msm8625_qrd7()
-			|| machine_is_msm8625q_evbd()
-			|| machine_is_msm8625q_skud()
-			|| machine_is_qrd_skud_prime()) {
+			|| machine_is_msm8625_qrd7()) {
 		platform_add_devices(camera_devices_evb,
 				ARRAY_SIZE(camera_devices_evb));
 	} else if (machine_is_msm7627a_qrd3())
@@ -2740,10 +2350,7 @@ void __init msm7627a_camera_init(void)
 					|| !machine_is_msm8625_evb()
 					|| !machine_is_msm8625_evt()
 					|| !machine_is_msm7627a_qrd3()
-					|| !machine_is_msm8625_qrd7()
-					|| !machine_is_msm8625q_evbd()
-					|| !machine_is_msm8625q_skud()
-					|| !machine_is_qrd_skud_prime())
+					|| !machine_is_msm8625_qrd7())
 		register_i2c_devices();
 #ifndef CONFIG_MSM_CAMERA_V4L2
 	rc = regulator_bulk_get(NULL, ARRAY_SIZE(regs_camera), regs_camera);
@@ -2774,10 +2381,7 @@ void __init msm7627a_camera_init(void)
 			|| machine_is_msm8625_evb()
 			|| machine_is_msm8625_evt()
 			|| machine_is_msm7627a_qrd3()
-			|| machine_is_msm8625_qrd7()
-			|| machine_is_msm8625q_evbd()
-			|| machine_is_msm8625q_skud()
-			|| machine_is_qrd_skud_prime()) {
+			|| machine_is_msm8625_qrd7()) {
 		pr_debug("machine_is_msm7627a_evb i2c_register_board_info\n");
 		i2c_register_board_info(MSM_GSBI0_QUP_I2C_BUS_ID,
 				i2c_camera_devices_evb,
@@ -2785,18 +2389,7 @@ void __init msm7627a_camera_init(void)
 	} else
 #endif
 		pr_debug("i2c_register_board_info\n");
-        if (machine_is_qrd_skud_prime()||
-			machine_is_msm8625q_evbd()) {
-		i2c_register_board_info(MSM_GSBI0_QUP_I2C_BUS_ID,
-				i2c_camera_devices_qpr,
-				ARRAY_SIZE(i2c_camera_devices_qpr));
-	} else if(machine_is_msm8625q_skud()){
-		i2c_register_board_info(MSM_GSBI0_QUP_I2C_BUS_ID,
-				i2c_camera_devices_qpr_skud,
-				ARRAY_SIZE(i2c_camera_devices_qpr_skud));
-	} else {
 		i2c_register_board_info(MSM_GSBI0_QUP_I2C_BUS_ID,
 				i2c_camera_devices,
 				ARRAY_SIZE(i2c_camera_devices));
-	}
 }

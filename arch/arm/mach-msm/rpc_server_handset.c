@@ -94,6 +94,11 @@
 
 #define KEY(hs_key, input_key) ((hs_key << 24) | input_key)
 
+enum mschine_type{
+    HW_MACHINE_8X55 = 0,
+    HW_MACHINE_7X2725A,
+};
+static int get_current_machine(void);
 /* creates /sys/module/rpc_server_handset/parameters/oeminfo_rpc_debug_mask file */
 static int oeminfo_rpc_debug_mask = 0;
 module_param(oeminfo_rpc_debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
@@ -103,6 +108,28 @@ module_param(oeminfo_rpc_debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
 		if (oeminfo_rpc_debug_mask)	  \
 			printk(KERN_ERR x);	  \
 	} while (0)
+static int get_current_machine()
+{
+    if( (machine_is_msm8255_u8800_pro())
+		|| (machine_is_msm8255_u8860()) 
+		|| (machine_is_msm8255_c8860()) 
+		|| (machine_is_msm8255_u8860lp())
+        || machine_is_msm8255_u8860_r()
+		|| (machine_is_msm8255_u8860_92())            
+		|| (machine_is_msm8255_u8860_51())
+		|| (machine_is_msm8255_u8680()) 
+	    || (machine_is_msm8255_u8730()))
+    {
+        OEMINFO_RPC_DEBUG("8x55 oeminfo. \n");
+        return HW_MACHINE_8X55;
+    }
+    else
+    {
+        OEMINFO_RPC_DEBUG("27a25a oeminfo. \n");
+        return HW_MACHINE_7X2725A;
+    }
+}
+
 		
 enum hs_event {
 	HS_EVNT_EXT_PWR = 0,	/* External Power status        */
@@ -549,6 +576,7 @@ static int rmt_oeminfo_handle_key(uint32_t key_parm)
 	OEMINFO_RPC_DEBUG("emmc_oeminfo: %s(). malloc kdata OK. \n",__func__);
   }
 
+  // share_ptr = (void *)be32_to_cpu(key_parm);
   share_ptr = smem_alloc(SMEM_LCD_CUR_PANEL, sizeof(struct oeminfo_type));
   OEMINFO_RPC_DEBUG("emmc_oeminfo: share_ptr is 0x%x. \n",(int)share_ptr);
   
@@ -590,17 +618,20 @@ static long rmt_oeminfo_ioctl(struct file *fp, unsigned int cmd,
 	switch (cmd) {
 
 	case RMT_OEMINFO_WAIT_FOR_REQ:
-		if (firstboot == true)
+		if (HW_MACHINE_7X2725A == get_current_machine())
 		{
-			firstboot = false;
-			/* use rpc to set sig TMC_KERNEL_READY_SIG */
-			rc = msm_rpc_client_req(rpc_client, OEMINFO_READY_PROC,
-				NULL, NULL,
-				NULL, NULL, -1);
-			if (rc)
+			if (firstboot == true)
 			{
-				firstboot = true;
-				pr_err("%s: couldn't send rpc client request OEMINFO_READY_PROC\n", __func__);
+				firstboot = false;
+				/* use rpc to set sig TMC_KERNEL_READY_SIG */
+				rc = msm_rpc_client_req(rpc_client, OEMINFO_READY_PROC,
+					NULL, NULL,
+					NULL, NULL, -1);
+				if (rc)
+				{
+					firstboot = true;
+					pr_err("%s: couldn't send rpc client request OEMINFO_READY_PROC\n", __func__);
+				}
 			}
 		}
 		OEMINFO_RPC_DEBUG("emmc_oeminfo: %s: wait for request ioctl\n", __func__);
@@ -639,16 +670,31 @@ static long rmt_oeminfo_ioctl(struct file *fp, unsigned int cmd,
 			break;
 		}
 
-		rc = msm_rpc_client_req(rpc_client, OEMINFO_FINISH_PROC,
-					NULL, NULL,
-					NULL, NULL, -1);
-           if (rc)
-		    pr_err("%s: couldn't send rpc client request\n", __func__);
+		if (HW_MACHINE_7X2725A == get_current_machine())
+		{
+			rc = msm_rpc_client_req(rpc_client, OEMINFO_FINISH_PROC,
+						NULL, NULL,
+						NULL, NULL, -1);
+            if (rc)
+			    pr_err("%s: couldn't send rpc client request\n", __func__);
+		}
 		OEMINFO_RPC_DEBUG("%s:kernel memory data: \n", __func__);
         print_oeminfo_data(kdata->data);
 
 		OEMINFO_RPC_DEBUG("%s:share memory data: \n", __func__);
         print_oeminfo_data(share_ptr);
+
+#if 0 
+		OEMINFO_RPC_DEBUG("%s: call msm_rpc_server_cb_req().\n", __func__);
+		ret = msm_rpc_server_cb_req(&hs_rpc_server, &kdata->cinfo,
+			RMT_OEMINFO_EVENT_FUNC_PTR_TYPE_PROC, NULL, NULL,NULL, NULL, -1);
+        
+		if (ret < 0)
+			pr_err("%s: send callback failed with ret val = %d\n",
+				__func__, ret);
+		if (atomic_dec_return(&rms->wcount) == 0)
+			wake_unlock(&rms->wlock);
+#endif
 
 		kfree(kdata);
 		break;
@@ -872,9 +918,11 @@ static void report_hs_key(uint32_t key_code, uint32_t key_parm)
 #ifdef CONFIG_HUAWEI_KERNEL
         printk(KERN_ERR "%s: SW_HEADPHONE_INSERT: key_code = %d\n",__func__, key_code);
 
+		//delete
             /* add 2s wake lock here to fix issue that time of swtiching audio-output 
              * is not enough when headset unpluging during incall */
             wake_lock_timeout(&headset_unplug_wake_lock, HEADSET_WAKE_DURING*HZ);
+		//delete
 #endif
 		hs->mic_on = hs->hs_on = (key_code != HS_REL_K) ? 1 : 0;
 		input_report_switch(hs->ipdev, SW_HEADPHONE_INSERT,

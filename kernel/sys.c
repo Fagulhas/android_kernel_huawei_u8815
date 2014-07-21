@@ -311,7 +311,16 @@ out_unlock:
 }
 
 
-/* delete 12 lines */
+#ifdef CONFIG_SRECORDER_MSM
+#ifdef CONFIG_SRECORDER_POWERCOLLAPS
+#ifndef CONFIG_KPROBES
+static void emergency_restart_prepare(char *reason)
+{
+    raw_notifier_call_chain(&emergency_reboot_notifier_list, SYS_RESTART, reason);
+}
+#endif
+#endif /* CONFIG_SRECORDER_POWERCOLLAPS */
+#endif /* CONFIG_SRECORDER_MSM */
 
 
 /**
@@ -324,7 +333,13 @@ out_unlock:
  */
 void emergency_restart(void)
 {
-/* delete 9 lines */
+#ifdef CONFIG_SRECORDER_MSM
+#ifdef CONFIG_SRECORDER_POWERCOLLAPS
+#ifndef CONFIG_KPROBES
+    emergency_restart_prepare(NULL);
+#endif
+#endif /* CONFIG_SRECORDER_POWERCOLLAPS */
+#endif /* CONFIG_SRECORDER_MSM */
 
 	kmsg_dump(KMSG_DUMP_EMERG);
 	machine_emergency_restart();
@@ -371,7 +386,42 @@ int unregister_reboot_notifier(struct notifier_block *nb)
 }
 EXPORT_SYMBOL(unregister_reboot_notifier);
 
-/* delete 37 lines */
+#ifdef CONFIG_SRECORDER_MSM
+#ifdef CONFIG_SRECORDER_POWERCOLLAPS
+#ifndef CONFIG_KPROBES
+/**
+ *	register_emergency_reboot_notifier - Register function to be called at reboot time
+ *	@nb: Info about notifier function to be called
+ *
+ *	Registers a function with the list of functions
+ *	to be called at reboot time.
+ *
+ *	Currently always returns zero, as blocking_notifier_chain_register()
+ *	always returns zero.
+ */
+int register_emergency_reboot_notifier(struct notifier_block *nb)
+{
+    return raw_notifier_chain_register(&emergency_reboot_notifier_list, nb);
+}
+EXPORT_SYMBOL(register_emergency_reboot_notifier);
+
+/**
+ *	unregister_emergency_reboot_notifier - Unregister previously registered reboot notifier
+ *	@nb: Hook to be unregistered
+ *
+ *	Unregisters a previously registered reboot
+ *	notifier function.
+ *
+ *	Returns zero on success, or %-ENOENT on failure.
+ */
+int unregister_emergency_reboot_notifier(struct notifier_block *nb)
+{
+    return raw_notifier_chain_unregister(&emergency_reboot_notifier_list, nb);
+}
+EXPORT_SYMBOL(unregister_emergency_reboot_notifier);
+#endif
+#endif /* CONFIG_SRECORDER_POWERCOLLAPS */
+#endif /* CONFIG_SRECORDER_MSM */
 
 /**
  *	kernel_restart - reboot the system
@@ -1221,18 +1271,15 @@ DECLARE_RWSEM(uts_sem);
  * Work around broken programs that cannot handle "Linux 3.0".
  * Instead we map 3.x to 2.6.40+x, so e.g. 3.0 would be 2.6.40
  */
-
-/* google 2013-02 security patch */
-static int override_release(char __user *release, size_t len)
+static int override_release(char __user *release, int len)
 {
 	int ret = 0;
+	char buf[65];
 
 	if (current->personality & UNAME26) {
-		const char *rest = UTS_RELEASE;
-		char buf[65] = { 0 };
+		char *rest = UTS_RELEASE;
 		int ndots = 0;
 		unsigned v;
-		size_t copy;
 
 		while (*rest) {
 			if (*rest == '.' && ++ndots >= 3)
@@ -1242,9 +1289,8 @@ static int override_release(char __user *release, size_t len)
 			rest++;
 		}
 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
-		copy = clamp_t(size_t, len, 1, sizeof(buf));
-		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
-		ret = copy_to_user(release, buf, copy + 1);
+		snprintf(buf, len, "2.6.%u%s", v, rest);
+		ret = copy_to_user(release, buf, len);
 	}
 	return ret;
 }

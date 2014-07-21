@@ -3,7 +3,7 @@
  * MSM Power Management Routines
  *
  * Copyright (C) 2007 Google, Inc.
- * Copyright (c) 2008-2013 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2008-2012 Code Aurora Forum. All rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -64,8 +64,6 @@
  * Debug Definitions
  *****************************************************************************/
 
-void __iomem *virt_start_ptr;
-
 enum {
 	MSM_PM_DEBUG_SUSPEND = BIT(0),
 	MSM_PM_DEBUG_POWER_COLLAPSE = BIT(1),
@@ -77,9 +75,8 @@ enum {
 	MSM_PM_DEBUG_HOTPLUG = BIT(7),
 };
 
-DEFINE_PER_CPU(int, power_collapsed);
-
 static int msm_pm_debug_mask;
+int power_collapsed;
 module_param_named(
 	debug_mask, msm_pm_debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP
 );
@@ -161,13 +158,6 @@ struct msm_pm_kobj_attribute {
 	unsigned int cpu;
 	struct kobj_attribute ka;
 };
-
-struct msm8x25q_ahb_registers {
-	uint32_t sel;
-	uint32_t cntl;
-};
-
-static struct msm8x25q_ahb_registers msm8x25q_ahb;
 
 #define GET_CPU_OF_ATTR(attr) \
 	(container_of(attr, struct msm_pm_kobj_attribute, ka)->cpu)
@@ -463,9 +453,6 @@ enum {
 #define APPS_PWRDOWN      (MSM_CSR_BASE + 0x440)
 #define APPS_STANDBY_CTL  (MSM_CSR_BASE + 0x108)
 #define APPS_SECOP	  NULL
-#define A11S_CLK_CNTL_ADDR	(MSM_CSR_BASE + 0x100)
-#define A11S_CLK_SEL_ADDR	(MSM_CSR_BASE + 0x104)
-
 #endif
 
 /*
@@ -495,75 +482,66 @@ static void msm_pm_config_hw_before_power_down(void)
  * Program the top csr from core0 context to put the
  * core1 into GDFS, as core1 is not running yet.
  */
-static void msm_pm_configure_top_csr(void)
+static void configure_top_csr(void)
 {
-	/*
-	 * Enable TCSR for core
-	 * Set reset bit for SPM
-	 * Set CLK_OFF bit
-	 * Set clamps bit
-	 * Set power_up bit
-	 * Disable TSCR for core
-	 */
-	uint32_t bit_pos[][6] = {
-		/* c2 */
-		{17, 15, 13, 16, 14, 17},
-		/* c1 & c3*/
-		{22, 20, 18, 21, 19, 22},
-	};
-	uint32_t mpa5_cfg_ctl[2] = {0x30, 0x48};
 	void __iomem *base_ptr;
 	unsigned int value = 0;
-	unsigned int cpu;
-	int i;
 
-	/* Initialize all the SPM registers */
+	base_ptr = core1_reset_base();
+	if (!base_ptr)
+		return;
+
+	/* bring the core1 out of reset */
+	__raw_writel(0x3, base_ptr);
+	mb();
+	/*
+	 * override DBGNOPOWERDN and program the GDFS
+	 * count val
+	 */
+
+	 __raw_writel(0x00030002, (MSM_CFG_CTL_BASE + 0x38));
+	mb();
+
+	/* Initialize the SPM0 and SPM1 registers */
 	msm_spm_reinit();
 
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x12;
+	/* enable TCSR for core1 */
+	value = __raw_readl((MSM_CFG_CTL_BASE + MPA5_CFG_CTL_REG));
+	value |= BIT(22);
+	__raw_writel(value,  MSM_CFG_CTL_BASE + MPA5_CFG_CTL_REG);
+	mb();
 
-	for_each_possible_cpu(cpu) {
-		/* skip for C0 */
-		if (!cpu)
-			continue;
+	/* set reset bit for SPM1 */
+	value = __raw_readl((MSM_CFG_CTL_BASE + MPA5_CFG_CTL_REG));
+	value |= BIT(20);
+	__raw_writel(value,  MSM_CFG_CTL_BASE + MPA5_CFG_CTL_REG);
+	mb();
 
-		base_ptr = core_reset_base(cpu);
-		if (!base_ptr)
-			return;
+	/* set CLK_OFF bit */
+	value = __raw_readl((MSM_CFG_CTL_BASE + MPA5_CFG_CTL_REG));
+	value |= BIT(18);
+	__raw_writel(value,  MSM_CFG_CTL_BASE + MPA5_CFG_CTL_REG);
+	mb();
 
-		/* bring the core out of reset */
-		__raw_writel(0x3, base_ptr);
-		mb();
+	/* set clamps bit */
+	value = __raw_readl((MSM_CFG_CTL_BASE + MPA5_CFG_CTL_REG));
+	value |= BIT(21);
+	__raw_writel(value,  MSM_CFG_CTL_BASE + MPA5_CFG_CTL_REG);
+	mb();
 
-		/*
-		 * i == 0, Enable TCSR for core
-		 * i == 1, Set reset bit for SPM
-		 * i == 2, Set CLK_OFF bit
-		 * i == 3, Set clamps bit
-		 * i == 4, Set power_up bit
-		 */
-		for (i = 0; i < 5; i++) {
-			value = __raw_readl(MSM_CFG_CTL_BASE +
-							mpa5_cfg_ctl[cpu/2]);
-			value |= BIT(bit_pos[cpu%2][i]);
-			__raw_writel(value,  MSM_CFG_CTL_BASE +
-							mpa5_cfg_ctl[cpu/2]);
-			mb();
-		}
+	/* set power_up bit */
+	value = __raw_readl((MSM_CFG_CTL_BASE + MPA5_CFG_CTL_REG));
+	value |= BIT(19);
+	__raw_writel(value,  MSM_CFG_CTL_BASE + MPA5_CFG_CTL_REG);
+	mb();
 
-		/* i == 5, Disable TCSR for core */
-		value = __raw_readl(MSM_CFG_CTL_BASE +
-						mpa5_cfg_ctl[cpu/2]);
-		value &= ~BIT(bit_pos[cpu%2][i]);
-		__raw_writel(value,  MSM_CFG_CTL_BASE +
-						mpa5_cfg_ctl[cpu/2]);
-		mb();
-
-		__raw_writel(0x0, base_ptr);
-		mb();
-	}
-
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x13;
+	/* Disable TSCR for core0 */
+	value = __raw_readl((MSM_CFG_CTL_BASE + MPA5_CFG_CTL_REG));
+	value &= ~BIT(22);
+	__raw_writel(value,  MSM_CFG_CTL_BASE + MPA5_CFG_CTL_REG);
+	mb();
+	__raw_writel(0x0, base_ptr);
+	mb();
 }
 #endif
 
@@ -579,11 +557,11 @@ static void msm_pm_config_hw_after_power_up(void)
 		__raw_writel(0, APPS_PWRDOWN);
 		mb();
 		msm_spm_reinit();
-	} else if (cpu_is_msm8625() || cpu_is_msm8625q()) {
+	} else if (cpu_is_msm8625()) {
 		__raw_writel(0, APPS_PWRDOWN);
 		mb();
 
-		if (per_cpu(power_collapsed, 1)) {
+		if (power_collapsed) {
 			/*
 			 * enable the SCU while coming out of power
 			 * collapse.
@@ -593,8 +571,7 @@ static void msm_pm_config_hw_after_power_up(void)
 			/*
 			 * Program the top csr to put the core1 into GDFS.
 			 */
-
-			msm_pm_configure_top_csr();
+			configure_top_csr();
 			#endif
 		}
 	} else {
@@ -887,18 +864,6 @@ static int msm_pm_power_collapse
 	int val;
 	int modem_early_exit = 0;
 
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x1;
-
-	/* this location tell us we are doing a PC */
-	*(uint32_t *)(virt_start_ptr + 0x34) = 0x1;
-
-	/* this location tell us what PC we are doing
-	 * i.e. idle/suspend
-	 * idlePC	--> 0x2
-	 * suspendPC	--> 0x1
-	 */
-	*(uint32_t *)(virt_start_ptr + 0x38) = (1 << from_idle);
-
 	MSM_PM_DPRINTK(MSM_PM_DEBUG_SUSPEND|MSM_PM_DEBUG_POWER_COLLAPSE,
 		KERN_INFO, "%s(): idle %d, delay %u, limit %u\n", __func__,
 		(int)from_idle, sleep_delay, sleep_limit);
@@ -913,24 +878,20 @@ static int msm_pm_power_collapse
 
 	memset(msm_pm_smem_data, 0, sizeof(*msm_pm_smem_data));
 
-	if (msm_cpr_ops && msm_cpr_ops->cpr_suspend()) {
-		ret = -EAGAIN;
-		goto power_collapse_bail;
-	}
-
-	if (cpu_is_msm8625() || cpu_is_msm8625q()) {
+	if (cpu_is_msm8625()) {
 		/* Program the SPM */
 		ret = msm_spm_set_low_power_mode(MSM_SPM_MODE_POWER_COLLAPSE,
 									false);
 		WARN_ON(ret);
 	}
 
+	if (msm_cpr_ops)
+		msm_cpr_ops->cpr_suspend();
+
 	msm_pm_irq_extns->enter_sleep1(true, from_idle,
 						&msm_pm_smem_data->irq_mask);
 	msm_sirc_enter_sleep();
 	msm_gpio_enter_sleep(from_idle);
-
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x2;
 
 	msm_pm_smem_data->sleep_time = sleep_delay;
 	msm_pm_smem_data->resources_used = sleep_limit;
@@ -970,8 +931,6 @@ static int msm_pm_power_collapse
 		goto power_collapse_early_exit;
 	}
 
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x3;
-
 	/* DEM Master in RSA */
 
 	MSM_PM_DEBUG_PRINT_STATE("msm_pm_power_collapse(): PWRC RSA");
@@ -999,16 +958,8 @@ static int msm_pm_power_collapse
 		goto power_collapse_early_exit;
 	}
 
-	/* save the AHB clock registers */
-	if (cpu_is_msm8625q()) {
-		msm8x25q_ahb.sel = readl_relaxed(A11S_CLK_SEL_ADDR);
-		msm8x25q_ahb.cntl = readl_relaxed(A11S_CLK_CNTL_ADDR);
-	}
-
 	msm_pm_boot_config_before_pc(smp_processor_id(),
 			virt_to_phys(msm_pm_collapse_exit));
-
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x4;
 
 #ifdef CONFIG_VFP
 	if (from_idle)
@@ -1016,82 +967,41 @@ static int msm_pm_power_collapse
 #endif
 
 #ifdef CONFIG_CACHE_L2X0
-	if (!cpu_is_msm8625() && !cpu_is_msm8625q())
+	if (!cpu_is_msm8625())
 		l2cc_suspend();
 	else
 		apps_power_collapse = 1;
 #endif
 
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x5;
-
 	collapsed = msm_pm_collapse();
-
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0xE;
-
 
 	/*
 	 * TBD: Currently recognise the MODEM early exit
 	 * path by reading the MPA5_GDFS_CNT_VAL register.
 	 */
-	if (cpu_is_msm8625() || cpu_is_msm8625q()) {
-		int cpu;
+	if (cpu_is_msm8625()) {
 		/*
 		 * on system reset, default value of MPA5_GDFS_CNT_VAL
 		 * is = 0x0, later modem reprogram this value to
-		 * 0x00030004/0x000F0004(8x25Q). Once APPS did
-		 * a power collapse and coming out of it expected value
-		 * of this register always be 0x00030004/0x000F0004(8x25Q).
-		 * Incase if APPS sees the value as 0x00030002/0x000F0002(8x25Q)
-		 * consider this case as a modem early exit.
+		 * 0x00030004. Once APPS did a power collapse and
+		 * coming out of it expected value of this register
+		 * always be 0x00030004. Incase if APPS sees the value
+		 * as 0x00030002 consider this case as a modem early
+		 * exit.
 		 */
 		val = __raw_readl(MSM_CFG_CTL_BASE + 0x38);
-
-		/* 8x25Q */
-		if (cpu_is_msm8625q()) {
-			if (val != 0x000F0002) {
-				for_each_possible_cpu(cpu) {
-					if (!cpu)
-						continue;
-					per_cpu(power_collapsed, cpu) = 1;
-				}
-
-				/*
-				 * override DBGNOPOWERDN and program the GDFS
-				 * count val
-				 */
-				 __raw_writel(0x000F0002,
-						 (MSM_CFG_CTL_BASE + 0x38));
-			} else
-				modem_early_exit = 1;
-		} else {
-			if (val != 0x00030002) {
-				for_each_possible_cpu(cpu) {
-					if (!cpu)
-						continue;
-					per_cpu(power_collapsed, cpu) = 1;
-				}
-
-				/*
-				 * override DBGNOPOWERDN and program the GDFS
-				 * count val
-				 */
-				 __raw_writel(0x00030002,
-						 (MSM_CFG_CTL_BASE + 0x38));
-			} else
-				modem_early_exit = 1;
-		}
+		if (val != 0x00030002)
+			power_collapsed = 1;
+		else
+			modem_early_exit = 1;
 	}
 
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0xF;
-
 #ifdef CONFIG_CACHE_L2X0
-	if (!cpu_is_msm8625() && !cpu_is_msm8625q())
+	if (!cpu_is_msm8625())
 		l2cc_resume();
 	else
 		apps_power_collapse = 0;
 #endif
-
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x10;
 
 	msm_pm_boot_config_after_pc(smp_processor_id());
 
@@ -1103,15 +1013,6 @@ static int msm_pm_power_collapse
 		cpu_init();
 		local_fiq_enable();
 	}
-
-	/* restore the AHB clock registers */
-	if (cpu_is_msm8625q()) {
-		writel_relaxed(msm8x25q_ahb.sel, A11S_CLK_SEL_ADDR);
-		writel_relaxed(msm8x25q_ahb.cntl, A11S_CLK_CNTL_ADDR);
-		mb();
-	}
-
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x11;
 
 	MSM_PM_DPRINTK(MSM_PM_DEBUG_SUSPEND | MSM_PM_DEBUG_POWER_COLLAPSE,
 		KERN_INFO,
@@ -1130,9 +1031,6 @@ static int msm_pm_power_collapse
 		msm_pm_smem_data->pending_irqs);
 
 	msm_pm_config_hw_after_power_up();
-
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x14;
-
 	MSM_PM_DEBUG_PRINT_STATE("msm_pm_power_collapse(): post power up");
 
 	memset(state_grps, 0, sizeof(state_grps));
@@ -1162,7 +1060,6 @@ static int msm_pm_power_collapse
 	/* Sanity check */
 	if (collapsed && !modem_early_exit) {
 		BUG_ON(!(state_grps[0].value_read & DEM_MASTER_SMSM_RSA));
-		*(uint32_t *)(virt_start_ptr + 0x30) = 0x15;
 	} else {
 		BUG_ON(!(state_grps[0].value_read &
 			DEM_MASTER_SMSM_PWRC_EARLY_EXIT));
@@ -1201,14 +1098,10 @@ static int msm_pm_power_collapse
 		goto power_collapse_restore_gpio_bail;
 	}
 
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x16;
-
 	/* DEM Master == RUN */
 
 	MSM_PM_DEBUG_PRINT_STATE("msm_pm_power_collapse(): WFPI RUN");
 	MSM_PM_DEBUG_PRINT_SLEEP_INFO();
-
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x17;
 
 	msm_pm_irq_extns->exit_sleep2(msm_pm_smem_data->irq_mask,
 		msm_pm_smem_data->wakeup_reason,
@@ -1219,8 +1112,6 @@ static int msm_pm_power_collapse
 	msm_gpio_exit_sleep();
 	msm_sirc_exit_sleep();
 
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x18;
-
 	smsm_change_state(SMSM_APPS_DEM,
 		DEM_SLAVE_SMSM_WFPI, DEM_SLAVE_SMSM_RUN);
 
@@ -1228,9 +1119,7 @@ static int msm_pm_power_collapse
 
 	smd_sleep_exit();
 
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x19;
-
-	if (cpu_is_msm8625() || cpu_is_msm8625q()) {
+	if (cpu_is_msm8625()) {
 		ret = msm_spm_set_low_power_mode(MSM_SPM_MODE_CLOCK_GATING,
 									false);
 		WARN_ON(ret);
@@ -1239,12 +1128,9 @@ static int msm_pm_power_collapse
 	if (msm_cpr_ops)
 		msm_cpr_ops->cpr_resume();
 
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x20;
-	*(uint32_t *)(virt_start_ptr + 0x34) = 0x0;
 	return 0;
 
 power_collapse_early_exit:
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x21;
 	/* Enter PWRC_EARLY_EXIT */
 
 	smsm_change_state(SMSM_APPS_DEM,
@@ -1281,7 +1167,6 @@ power_collapse_early_exit:
 	ret = -EAGAIN;
 
 power_collapse_restore_gpio_bail:
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x22;
 	msm_gpio_exit_sleep();
 	msm_sirc_exit_sleep();
 
@@ -1292,25 +1177,19 @@ power_collapse_restore_gpio_bail:
 
 	MSM_PM_DEBUG_PRINT_STATE("msm_pm_power_collapse(): RUN");
 
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x23;
-
 	if (collapsed)
 		smd_sleep_exit();
 
 	if (msm_cpr_ops)
 		msm_cpr_ops->cpr_resume();
 
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x24;
-
-	if (cpu_is_msm8625() || cpu_is_msm8625q()) {
+power_collapse_bail:
+	if (cpu_is_msm8625()) {
 		ret = msm_spm_set_low_power_mode(MSM_SPM_MODE_CLOCK_GATING,
 									false);
 		WARN_ON(ret);
 	}
 
-power_collapse_bail:
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x25;
-	*(uint32_t *)(virt_start_ptr + 0x34) = 0x0;
 	return ret;
 }
 
@@ -1325,63 +1204,9 @@ static int __ref msm_pm_power_collapse_standalone(bool from_idle)
 	int collapsed = 0;
 	int ret;
 	void *entry;
-	int cpu;
 
 	MSM_PM_DPRINTK(MSM_PM_DEBUG_SUSPEND|MSM_PM_DEBUG_POWER_COLLAPSE,
 		KERN_INFO, "%s()\n", __func__);
-
-	cpu = smp_processor_id();
-
-	switch (cpu) {
-	case 0:
-		/* clear the location first */
-		*(uint32_t *)(virt_start_ptr + 0x10) = 0x1;
-
-		*(uint32_t *)(virt_start_ptr + 0x20) = 0x1;
-		break;
-	case 1:
-		*(uint32_t *)(virt_start_ptr + 0x14) = 0x1;
-
-		/*
-		 * update "0x24" as below:
-		 * idleSPC = 0x1
-		 * hotplug = 0x2
-		 */
-		if (from_idle)
-			*(uint32_t *)(virt_start_ptr + 0x24) = 0x1;
-		else
-			/* clear this in platsmp-8625.c */
-			*(uint32_t *)(virt_start_ptr + 0x24) = 0x2;
-		break;
-	case 2:
-		*(uint32_t *)(virt_start_ptr + 0x18) = 0x1;
-
-		/*
-		 * update "0x28" as below:
-		 * idleSPC = 0x1
-		 * hotplug = 0x2
-		 */
-		if (from_idle)
-			*(uint32_t *)(virt_start_ptr + 0x28) = 0x1;
-		else
-			/* clear this in platsmp-8625.c */
-			*(uint32_t *)(virt_start_ptr + 0x28) = 0x2;
-		break;
-	case 3:
-		*(uint32_t *)(virt_start_ptr + 0x1C) = 0x1;
-
-		/*
-		 * update "0x2C" as below:
-		 * idleSPC = 0x1
-		 * hotplug = 0x2
-		 */
-		if (from_idle)
-			*(uint32_t *)(virt_start_ptr + 0x2C) = 0x1;
-		else
-			/* clear this in platsmp-8625.c */
-			*(uint32_t *)(virt_start_ptr + 0x2C) = 0x2;
-		break;
-	}
 
 	ret = msm_spm_set_low_power_mode(MSM_SPM_MODE_POWER_COLLAPSE, false);
 	WARN_ON(ret);
@@ -1397,44 +1222,14 @@ static int __ref msm_pm_power_collapse_standalone(bool from_idle)
 #endif
 
 #ifdef CONFIG_CACHE_L2X0
-	if (!cpu_is_msm8625() && !cpu_is_msm8625q())
+	if (!cpu_is_msm8625())
 		l2cc_suspend();
 #endif
 
-	switch (cpu) {
-	case 0:
-		*(uint32_t *)(virt_start_ptr + 0x10) = 0x2;
-		break;
-	case 1:
-		*(uint32_t *)(virt_start_ptr + 0x14) = 0x2;
-		break;
-	case 2:
-		*(uint32_t *)(virt_start_ptr + 0x18) = 0x2;
-		break;
-	case 3:
-		*(uint32_t *)(virt_start_ptr + 0x1C) = 0x2;
-		break;
-	}
-
 	collapsed = msm_pm_collapse();
 
-	switch (cpu) {
-	case 0:
-		*(uint32_t *)(virt_start_ptr + 0x10) = 0xB;
-		break;
-	case 1:
-		*(uint32_t *)(virt_start_ptr + 0x14) = 0xB;
-		break;
-	case 2:
-		*(uint32_t *)(virt_start_ptr + 0x18) = 0xB;
-		break;
-	case 3:
-		*(uint32_t *)(virt_start_ptr + 0x1C) = 0xB;
-		break;
-	}
-
 #ifdef CONFIG_CACHE_L2X0
-	if (!cpu_is_msm8625() && !cpu_is_msm8625q())
+	if (!cpu_is_msm8625())
 		l2cc_resume();
 #endif
 
@@ -1454,25 +1249,6 @@ static int __ref msm_pm_power_collapse_standalone(bool from_idle)
 
 	ret = msm_spm_set_low_power_mode(MSM_SPM_MODE_CLOCK_GATING, false);
 	WARN_ON(ret);
-
-	switch (cpu) {
-	case 0:
-		*(uint32_t *)(virt_start_ptr + 0x10) = 0xC;
-		*(uint32_t *)(virt_start_ptr + 0x20) = 0x0;
-		break;
-	case 1:
-		*(uint32_t *)(virt_start_ptr + 0x14) = 0xC;
-		*(uint32_t *)(virt_start_ptr + 0x24) = 0x0;
-		break;
-	case 2:
-		*(uint32_t *)(virt_start_ptr + 0x18) = 0xC;
-		*(uint32_t *)(virt_start_ptr + 0x28) = 0x0;
-		break;
-	case 3:
-		*(uint32_t *)(virt_start_ptr + 0x1C) = 0xC;
-		*(uint32_t *)(virt_start_ptr + 0x2C) = 0x0;
-		break;
-	}
 
 	return !collapsed;
 }
@@ -1498,7 +1274,7 @@ static int msm_pm_swfi(bool ramp_acpu)
 			return -EIO;
 	}
 
-	if (!cpu_is_msm8625() && !cpu_is_msm8625q())
+	if (!cpu_is_msm8625())
 		msm_pm_config_hw_before_swfi();
 
 	msm_arch_idle();
@@ -1901,29 +1677,23 @@ static int __init msm_pm_init(void)
 		return ret;
 	}
 
-	if (cpu_is_msm8625() || cpu_is_msm8625q()) {
+	if (cpu_is_msm8625()) {
 		target_type = TARGET_IS_8625;
 		clean_caches((unsigned long)&target_type, sizeof(target_type),
 				virt_to_phys(&target_type));
 
 		/*
 		 * Configure the MPA5_GDFS_CNT_VAL register for
-		 * DBGPWRUPEREQ_OVERRIDE[19:16] = Override the
+		 * DBGPWRUPEREQ_OVERRIDE[17:16] = Override the
 		 * DBGNOPOWERDN for each cpu.
 		 * MPA5_GDFS_CNT_VAL[9:0] = Delay counter for
 		 * GDFS control.
 		 */
-		if (cpu_is_msm8625q())
-			val = 0x000F0002;
-		else
-			val = 0x00030002;
-
+		val = 0x00030002;
 		__raw_writel(val, (MSM_CFG_CTL_BASE + 0x38));
 
 		l2x0_base_addr = MSM_L2CC_BASE;
 	}
-
-	idle_v7_start_ptr = virt_start_ptr;
 
 #ifdef CONFIG_MSM_MEMORY_LOW_POWER_MODE
 	/* The wakeup_reason field is overloaded during initialization time

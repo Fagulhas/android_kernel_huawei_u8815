@@ -274,8 +274,7 @@ void mdp_vsync_cfg_regs(struct msm_fb_data_type *mfd,
 				 * huawei default : lcd_y / 2
 				 */
 #ifdef CONFIG_HUAWEI_KERNEL
-				/* optimize display performance */
-				vsync_load_cnt =  mfd->panel_info.yres * 15 / 16;
+				vsync_load_cnt =  mfd->panel_info.yres/2;
 #else
 				vsync_load_cnt = mfd->panel_info.yres;
 #endif

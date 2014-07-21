@@ -115,7 +115,15 @@ static DEFINE_RAW_SPINLOCK(logbuf_lock);
  */
 static unsigned log_start;	/* Index into log_buf: next char to be read by syslog() */
 static unsigned con_start;	/* Index into log_buf: next char to be sent to consoles */
+#ifdef CONFIG_SRECORDER_MSM
+#ifdef CONFIG_SRECORDER_POWERCOLLAPS
+static unsigned log_end __attribute__((__section__(".data")));	/* Index into log_buf: most-recently-written-char + 1 */
+#else
 static unsigned log_end;	/* Index into log_buf: most-recently-written-char + 1 */
+#endif /* CONFIG_SRECORDER_POWERCOLLAPS */
+#else
+static unsigned log_end;	/* Index into log_buf: most-recently-written-char + 1 */
+#endif /* CONFIG_SRECORDER_MSM */
 
 /*
  * If exclusive_console is non-NULL then only this console is to be printed to.
@@ -148,12 +156,30 @@ static int console_may_schedule;
 
 #ifdef CONFIG_PRINTK
 
+#ifdef CONFIG_SRECORDER_MSM
+#ifdef CONFIG_SRECORDER_POWERCOLLAPS
+static char __log_buf[__LOG_BUF_LEN] __attribute__((__section__(".data")));
+#else
 static char __log_buf[__LOG_BUF_LEN];
+#endif /* CONFIG_SRECORDER_POWERCOLLAPS */
+#else
+static char __log_buf[__LOG_BUF_LEN];
+#endif /* CONFIG_SRECORDER_MSM */
 #ifdef CONFIG_EXT4_HUAWEI_DEBUG
 const char *kmsg_buf = __log_buf;
 #endif
+#ifdef CONFIG_SRECORDER_MSM
+#ifdef CONFIG_SRECORDER_POWERCOLLAPS
+static char *log_buf __attribute__((__section__(".data"))) = __log_buf;
+static int log_buf_len __attribute__((__section__(".data"))) = __LOG_BUF_LEN;
+#else
 static char *log_buf = __log_buf;
 static int log_buf_len = __LOG_BUF_LEN;
+#endif /* CONFIG_SRECORDER_POWERCOLLAPS */
+#else
+static char *log_buf = __log_buf;
+static int log_buf_len = __LOG_BUF_LEN;
+#endif /* CONFIG_SRECORDER_MSM */
 static unsigned logged_chars; /* Number of chars produced since last read+clear operation */
 static int saved_console_loglevel = -1;
 
@@ -244,7 +270,20 @@ void __init setup_log_buf(int early)
 		free, (free * 100) / __LOG_BUF_LEN);
 }
 
-/* delete 16 lines */
+#ifdef CONFIG_SRECORDER_MSM
+void get_log_buf_info(unsigned long *plog_buf, unsigned long*plog_end, unsigned long*plog_buf_len)
+{
+    if (unlikely(NULL == plog_buf || NULL == plog_end || NULL == plog_buf_len))
+    {
+        return;
+    }
+
+    *plog_buf = (unsigned long)&log_buf;
+    *plog_end = (unsigned long)&log_end;
+    *plog_buf_len = (unsigned long)&log_buf_len;
+}
+EXPORT_SYMBOL(get_log_buf_info);
+#endif /* CONFIG_SRECORDER_MSM */
 
 #ifdef CONFIG_BOOT_PRINTK_DELAY
 
@@ -1351,9 +1390,7 @@ void console_unlock(void)
 {
 	unsigned long flags;
 	unsigned _con_start, _log_end;
-	/* merge kernel commit 7ff9554 */
-	unsigned wake_klogd = 0;
-	bool retry = 0;
+	unsigned wake_klogd = 0, retry = 0;
 
 	if (console_suspended) {
 		up(&console_sem);
@@ -1394,8 +1431,8 @@ again:
 	 * flush, no worries.
 	 */
 	raw_spin_lock(&logbuf_lock);
-	/* merge kernel commit 7ff9554 */
-	retry = con_start != log_end;
+	if (con_start != log_end)
+		retry = 1;
 	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
 
 	if (retry && console_trylock())

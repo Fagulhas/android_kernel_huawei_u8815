@@ -1985,7 +1985,7 @@ static int tavarua_fops_open(struct file *file)
 		}
 
 		/* Check for Bahama V2 variant*/
-		if ((bahama_version == 0x09) || (bahama_version == 0x0a)) {
+		if (bahama_version == 0x09)	{
 
 			/* In case of Bahama v2, forcefully enable the
 			 * internal analog and digital voltage controllers
@@ -2224,8 +2224,7 @@ static int tavarua_fops_release(struct file *file)
 	/* Set the index based on the bt status*/
 	index = bt_status ?  1 : 0;
 	/* Check for Bahama's existance and Bahama V2 variant*/
-	if (bahama_present
-		&& (bahama_version == 0x09 || bahama_version == 0x0a))   {
+	if (bahama_present && (bahama_version == 0x09))   {
 		radio->marimba->mod_id = SLAVE_ID_BAHAMA;
 		/* actual value itself used as mask*/
 		retval = marimba_write_bit_mask(radio->marimba,
@@ -4020,7 +4019,7 @@ static int tavarua_setup_interrupts(struct tavarua_device *radio,
 
 	/* use xfr for interrupt setup */
     if (radio->chipID == MARIMBA_2_1 || radio->chipID == BAHAMA_1_0
-		|| radio->chipID == BAHAMA_2_0 || radio->chipID == BAHAMA_2_1) {
+		|| radio->chipID == BAHAMA_2_0) {
 		FMDBG("Setting interrupts\n");
 		retval =  sync_write_xfr(radio, INT_CTRL, int_ctrl);
 	/* use register write to setup interrupts */
@@ -4046,8 +4045,7 @@ static int tavarua_setup_interrupts(struct tavarua_device *radio,
 	*  registers and it is not valid for MBA 2.1
 	*/
 	if ((radio->chipID != MARIMBA_2_1) && (radio->chipID != BAHAMA_1_0)
-		&& (radio->chipID != BAHAMA_2_0)
-		&& (radio->chipID != BAHAMA_2_1))
+		&& (radio->chipID != BAHAMA_2_0))
 		tavarua_handle_interrupts(radio);
 
 	return retval;
@@ -4080,7 +4078,7 @@ static int tavarua_disable_interrupts(struct tavarua_device *radio)
 	/* use xfr for interrupt setup */
 	wait_timeout = 100;
 	if (radio->chipID == MARIMBA_2_1 || radio->chipID == BAHAMA_1_0
-		|| radio->chipID == BAHAMA_2_0 || radio->chipID == BAHAMA_2_1)
+		|| radio->chipID == BAHAMA_2_0)
 		retval = sync_write_xfr(radio, INT_CTRL, lpm_buf);
 	/* use register write to setup interrupts */
 	else
@@ -4194,8 +4192,6 @@ static int tavarua_resume(struct platform_device *pdev)
 					tavarua_resume %d\n", retval);
 				return -EIO;
 			}
-			/* set up and handle interrupts again after suspending */
-			tavarua_handle_interrupts(radio);
 		}
 	}
 	return 0;

@@ -468,11 +468,15 @@ static inline int msm_flash_ctrl(
 }
 #endif
 
-/* Add set led state interface for all type of leds. */
-extern void register_led_set_state( int (* func)(unsigned led_state) );
-extern int call_led_set_state(unsigned led_state);
-
-/* delete tps61310 set state interface */
+/*Add function for new flash tps61310*/
+#ifdef CONFIG_HUAWEI_FEATURE_TPS61310
+int tps61310_set_flash(unsigned led_state);
+#else
+static int tps61310_set_flash(unsigned led_state)
+{
+	return -ENOTSUPP;
+}
+#endif
 
 
 void msm_camvfe_init(void);

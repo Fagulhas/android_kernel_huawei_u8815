@@ -32,19 +32,72 @@
 #define ADD_VALUE			4
 #define PWM_LEVEL_ADJUST	226
 /*modify the min value*/
-#define BL_MIN_LEVEL 3
-#define G610C_BL_MIN_LEVEL 10
-#define G610C_BL_MAX_LEVEL 250
-#define PWM_LEVEL_ADJUST_LPG 100
+#define BL_MIN_LEVEL 13
+
+
+/* delete 2 lines about PWM_LEVEL_ADJUST_LPG and BL_MIN_LEVEL_LPG */
+/* move semaphore to msm_fb.c */
 static struct msm_fb_data_type *mfd_local;
 static boolean backlight_set = FALSE;
 static atomic_t suspend_flag = ATOMIC_INIT(0);
 
-
+int backlight_pwm_gpio_config(void)
+{
+    int rc;
+	struct pm_gpio backlight_drv = 
+	{
+		.direction      = PM_GPIO_DIR_OUT,
+		.output_buffer  = PM_GPIO_OUT_BUF_CMOS,
+		.output_value   = 0,
+		.pull           = PM_GPIO_PULL_NO,
+		.vin_sel        = 0,
+		.out_strength   = PM_GPIO_STRENGTH_HIGH,
+		.function       = PM_GPIO_FUNC_2,
+		.inv_int_pol 	= 1,
+	};
+	/* U8800 use PM_GPIO25 as backlight's PWM,but U8820 use PM_GPIO26 */
+    if(machine_is_msm7x30_u8800() 
+		|| machine_is_msm7x30_u8800_51() 
+		|| machine_is_msm8255_u8800_pro() 
+		|| machine_is_msm8255_u8860() 
+		|| machine_is_msm8255_c8860() 
+		|| machine_is_msm8255_u8860lp()
+        || machine_is_msm8255_u8860_r()
+		|| machine_is_msm8255_u8860_92()
+		|| machine_is_msm8255_u8680()
+		|| machine_is_msm8255_u8667()
+		|| machine_is_msm8255_u8860_51()
+		|| machine_is_msm8255_u8730())
+	{
+        rc = pm8xxx_gpio_config( 24, &backlight_drv);
+    }
+    else if(machine_is_msm7x30_u8820()) 
+    {
+    	rc = pm8xxx_gpio_config( 25, &backlight_drv);
+    }
+	else
+	{
+    	rc = -1;
+	}
+	
+    if (rc) 
+	{
+		pr_err("%s LCD backlight GPIO config failed\n", __func__);
+		return rc;
+	}
+    return 0;
+}
+/* use the mmp pin like three-leds */
 void msm_backlight_set(int level)
 {
     static uint8 last_level = 0;
-	level = ((level * PWM_LEVEL_ADJUST_LPG) / PWM_LEVEL );
+/*fix bug in new base-line 1025*/
+#ifdef CONFIG_ARCH_MSM7X30
+	static boolean first_set_bl = TRUE;
+	static struct pwm_device *bl_pwm;
+#endif	//CONFIG_ARCH_MSM7X30
+	/* keep duty 10% < level < 100% */
+#ifdef CONFIG_ARCH_MSM7X27A
 	if(level)
 	{
 		if (level < BL_MIN_LEVEL)        
@@ -58,7 +111,64 @@ void msm_backlight_set(int level)
     }
     last_level = level;
 	pmapp_disp_backlight_set_brightness(last_level);
+#endif
 
+#ifdef CONFIG_ARCH_MSM7X30
+	if(TRUE == first_set_bl)
+	{
+		backlight_pwm_gpio_config();
+		/* U8800 use PM_GPIO25 as backlight's PWM,but U8820 use PM_GPIO26 */
+		if(machine_is_msm7x30_u8800() 
+			|| machine_is_msm7x30_u8800_51() 
+			|| machine_is_msm8255_u8800_pro()
+			|| machine_is_msm8255_u8860() 
+			|| machine_is_msm8255_c8860()
+			|| machine_is_msm8255_u8860lp()
+            || machine_is_msm8255_u8860_r()
+			|| machine_is_msm8255_u8860_92()
+			|| machine_is_msm8255_u8680()
+			|| machine_is_msm8255_u8667()
+			|| machine_is_msm8255_u8860_51()
+			|| machine_is_msm8255_u8730())
+
+		{
+			bl_pwm = pwm_request(PM_GPIO25_PWM_ID, "backlight");
+		}
+		else if(machine_is_msm7x30_u8820())
+		{
+			bl_pwm = pwm_request(PM_GPIO26_PWM_ID, "backlight");
+		}
+		else
+		{
+			bl_pwm = NULL;
+		}
+
+		if (NULL == bl_pwm || IS_ERR(bl_pwm)) 
+		{
+			pr_err("%s: pwm_request() failed\n", __func__);
+			bl_pwm = NULL;
+		}
+		first_set_bl = FALSE;
+	}
+	if (bl_pwm)
+	{
+		if(level)
+		{
+			level = ((level * PWM_LEVEL_ADJUST) / PWM_LEVEL + ADD_VALUE); 
+			if (level < BL_MIN_LEVEL)
+			{
+				level = BL_MIN_LEVEL;
+			}
+		}	
+	    if (last_level == level)
+	    {
+	        return ;
+	    }
+	    last_level = level;
+		pwm_config(bl_pwm, PWM_DUTY_LEVEL*level/NSEC_PER_USEC, PWM_PERIOD/NSEC_PER_USEC);
+		pwm_enable(bl_pwm);
+	}
+#endif
 }
 
 void cabc_backlight_set(struct msm_fb_data_type * mfd)
@@ -85,9 +195,7 @@ void cabc_backlight_set(struct msm_fb_data_type * mfd)
 
 void pwm_set_backlight(struct msm_fb_data_type *mfd)
 {
-	uint32 bl_level = mfd->bl_level;
 	/*< Delete unused variable */
-	lcd_panel_type lcd_panel = get_lcd_panel_type();
 	/*When all the device are resume that can turn the light*/
 	if(atomic_read(&suspend_flag)) 
 	{
@@ -96,39 +204,6 @@ void pwm_set_backlight(struct msm_fb_data_type *mfd)
 		return;
 	}
 	/*< Delete some lines,control backlight in hardware lights.c by property */
-	if (MIPI_CMD_OTM8009A_CHIMEI_FWVGA == lcd_panel)
-	{
-		/* Improve brightness for CMI OTM8009A, 67 is default, 79 is experimental value */
-		mfd->bl_level *= (79 / 67);
-	}
-	else if (MIPI_CMD_OTM8009A_TIANMA_FWVGA == lcd_panel)
-	{
-		/* if bl_level bigger than 160(experimental value) */
-		if (bl_level > 160)
-		{
-			/* increase bl_level by multiplying 79/67(experimental value) */
-			bl_level = (bl_level * 79 / 67);
-			if (bl_level > PWM_LEVEL)
-			{
-				bl_level = PWM_LEVEL;
-			}
-
-			//pr_info("%s: cur_bl_level = %d, new_bl_level = %d\n", __func__, mfd->bl_level, bl_level);
-			mfd->bl_level = bl_level;
-		}
-	}
-	/* no need to change bl_level, if bl_level is zero!!!*/
-	if(machine_is_msm8x25_G610C() && bl_level)
-	{
-		//workaround for G610C
-		if(bl_level < G610C_BL_MIN_LEVEL)
-			bl_level = G610C_BL_MIN_LEVEL;
-		else if(bl_level > G610C_BL_MAX_LEVEL)
-			bl_level = G610C_BL_MAX_LEVEL;
-
-		//printk("%s: cur_bl_level = %d, new_bl_level = %d \n", __func__,mfd->bl_level,bl_level);
-		mfd->bl_level = bl_level;
-	}
 	if (get_hw_lcd_ctrl_bl_type() == CTRL_BL_BY_MSM)
 	{
 		msm_backlight_set(mfd->bl_level);

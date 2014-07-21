@@ -55,9 +55,6 @@ static void gpio_wlan_config(void)
 					|| machine_is_msm7627a_qrd3()
 					|| machine_is_msm8625_qrd7())
 		gpio_wlan_sys_rest_en = 124;
-	else if  (machine_is_qrd_skud_prime() || machine_is_msm8625q_evbd()
-				|| machine_is_msm8625q_skud())
-		gpio_wlan_sys_rest_en = 38;
 }
 
 static unsigned int qrf6285_init_regs(void)
@@ -246,9 +243,7 @@ static unsigned int msm_AR600X_setup_power(bool on)
 					|| machine_is_msm8625_evb()
 					|| machine_is_msm8625_evt()
 					|| machine_is_msm7627a_qrd3()
-					|| machine_is_msm8625_qrd7()
-					|| machine_is_msm8625q_evbd()
-					|| machine_is_qrd_skud_prime()) {
+					|| machine_is_msm8625_qrd7()) {
 		rc = gpio_tlmm_config(GPIO_CFG(gpio_wlan_sys_rest_en, 0,
 					GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL,
 					GPIO_CFG_2MA), GPIO_CFG_ENABLE);
@@ -340,9 +335,7 @@ static unsigned int msm_AR600X_shutdown_power(bool on)
 					|| machine_is_msm8625_evb()
 					|| machine_is_msm8625_evt()
 					|| machine_is_msm7627a_qrd3()
-					|| machine_is_msm8625_qrd7()
-					|| machine_is_msm8625q_evbd()
-					|| machine_is_qrd_skud_prime()) {
+					|| machine_is_msm8625_qrd7()) {
 		rc = gpio_tlmm_config(GPIO_CFG(gpio_wlan_sys_rest_en, 0,
 					GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL,
 					GPIO_CFG_2MA), GPIO_CFG_ENABLE);

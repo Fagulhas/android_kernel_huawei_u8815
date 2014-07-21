@@ -259,7 +259,7 @@ static int __init mipi_cmd_hx8369a_wvga_init(void)
 		pinfo->mipi.dsi_phy_db = &dsi_cmd_mode_phy_db;
 		pinfo->mipi.tx_eot_append = 0x01;
 		pinfo->mipi.rx_eot_ignore = 0;
-		//pinfo->mipi.dlane_swap = 0x1;
+		pinfo->mipi.dlane_swap = 0x1;
 
 		ret = platform_device_register(&this_device);
 		if (ret)

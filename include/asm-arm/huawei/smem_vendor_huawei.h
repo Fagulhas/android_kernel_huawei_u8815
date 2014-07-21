@@ -37,13 +37,6 @@ typedef struct
 {
   app_usb_para_smem      usb_para;
   app_vender_name   vender_para;
-  unsigned				 network_type;
-  unsigned				 run_mode;
-  unsigned char 		 sb_state_rs_sdata[12];  /* size == sizeof(sb_smem_data_type) */
-  unsigned				 global_card_flag;
-  /* Use dc_chip_type to send dc chip info to amss. */
-  unsigned char          dc_chip_type;
-  unsigned char 		 reserved[15];
 } smem_huawei_vender;
 
 extern smem_huawei_vender usb_para_data;

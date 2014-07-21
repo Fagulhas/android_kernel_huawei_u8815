@@ -55,9 +55,6 @@
 #include "xattr.h"
 #include "acl.h"
 #include "mballoc.h"
-#ifdef CONFIG_EXT4_HUAWEI_READ_ONLY_RECOVERY
-#include <linux/reboot.h>
-#endif
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/ext4.h>
@@ -478,7 +475,7 @@ static void ext4_journal_commit_callback(journal_t *journal, transaction_t *txn)
 #define MOUNT_FILE               "/proc/mounts"                  /* The mounted file path, it perhaps be /proc/fstab or /proc/mtab or others */
 #define LINE_MAX                 1024                            /* The max length of line_buf to save one line in the mounted file */
 #define CONTENT_MAX              512                             /* The max length of each field in one line */
-#define LOG_PATH                 "/.ext4_error_log"               /* We want to save the log file in this directory */
+#define LOG_PATH                 "/ext4_error_log"               /* We want to save the log file in this directory */
 
 /* When parse one line in the mounted file, the first field is block name,
    the second field is mounted directory, we need this struct to save this two field
@@ -613,7 +610,6 @@ void ext4_handle_kmsg(void)
     char tmpbuf[10] = {0};
     unsigned char file_index = 0;
     mm_segment_t old_fs;
-    int file_count= 0;    
     
     /* The internal SD card block name, both are same */
     char inter_sd_blk_name1[] = "/dev/block/mmcblk0p19";
@@ -759,9 +755,7 @@ void ext4_handle_kmsg(void)
                     result = (result * 10) + (line_buf[i] - '0');
                     i++;
                 }
-                file_count = result;
-                file_index = file_count%10;
-                printk("file_count=%d, file_index=%d\n", file_count,file_index);
+                file_index = result;
             }
         }
         
@@ -808,19 +802,20 @@ void ext4_handle_kmsg(void)
             set_fs(old_fs);
             return;
         }
-        /* save last 10 files loop  */
-        file_count++;
+
+        /* 10 files, but only loop 1~9, number 0 file need to be remained */
+        file_index++;
+        if (file_index >= 10)
+        {
+            file_index = 1;
+        }
         
         /* we need to record the current file index */
         memset(tmpbuf, 0, sizeof(tmpbuf));
-        decimal_itoa(file_count, tmpbuf);
+        decimal_itoa(file_index, tmpbuf);
         strcat(tmpbuf, "\n");
         sys_lseek(fdInfo, 0, SEEK_SET);
         sys_write(fdInfo, tmpbuf, strlen(tmpbuf));
-
-        /* Update to eMMC */
-        sys_fsync(fdKmsg);
-        sys_fsync(fdInfo);
 
         /* close the opened file */
         sys_close(fdKmsg);
@@ -862,18 +857,6 @@ static void ext4_handle_error(struct super_block *sb)
 	if (test_opt(sb, ERRORS_PANIC))
 		panic("EXT4-fs (device %s): panic forced after error\n",
 			sb->s_id);
-
-#ifdef CONFIG_EXT4_HUAWEI_READ_ONLY_RECOVERY
-{
-	struct ext4_super_block *es = EXT4_SB(sb)->s_es;
-
-    /* Update error status flag and restart */
-	es->s_state |= cpu_to_le16(EXT4_ERROR_FS);
-    ext4_commit_super(sb, 1);
-    kernel_restart(NULL);
-}
-#endif
-    
 }
 
 void __ext4_error(struct super_block *sb, const char *function,

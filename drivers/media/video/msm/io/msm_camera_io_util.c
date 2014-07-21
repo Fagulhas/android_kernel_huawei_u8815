@@ -263,8 +263,7 @@ int msm_camera_enable_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 					__func__, cam_vreg[i].reg_name);
 				goto disable_vreg;
 			}
-			/* move this delay, we hope AVDD and IOVDD power on at the same time */
-			//usleep(500);
+			usleep(500);
 		}
 	} else {
 		for (i = num_vreg-1; i >= 0; i--)
@@ -486,11 +485,10 @@ int msm_camera_config_gpio_table(struct msm_camera_sensor_info *sinfo,
 		/* qualcomm modify, resume it */
 		else
 		{
-			/* qualcomm default setting is to pull all gpio low when power down */
 			for (i = gpio_conf->cam_gpio_set_tbl_size - 1; i >= 0; i--) {
 				gpio_set_value_cansleep(
 					gpio_conf->cam_gpio_set_tbl[i].gpio,
-					GPIOF_OUT_INIT_LOW);
+					gpio_conf->cam_gpio_set_tbl[i].flags);
 			}
 		}
 	}
