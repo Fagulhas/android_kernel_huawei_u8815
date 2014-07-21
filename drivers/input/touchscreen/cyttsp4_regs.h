@@ -126,8 +126,8 @@ enum cyttsp4_cmd_operate {
 
 #define OFILM       0
 #define EELY         1
-#define TRULY       2
-#define CMI           4
+#define TRULY       4
+#define CMI           2
 #define JUNDA       5
 #define MUTTO      6
 #define GPIO_TP_1V8         121
@@ -338,8 +338,8 @@ enum cyttsp4_ic_grpnum {
 	CY_IC_GRPNUM_TTHE_REGS,
 	CY_IC_GRPNUM_NUM
 };
-#define CY_VKEYS_X 540
-#define CY_VKEYS_Y 960
+#define CY_VKEYS_X 720
+#define CY_VKEYS_Y 1280
 enum cyttsp4_flags {
 	CY_FLAG_NONE = 0x00,
 	CY_FLAG_HOVER = 0x04,

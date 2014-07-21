@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -594,7 +594,7 @@ static struct wifi_platform_data bcm_wifi_control = {
 };
 
 static struct platform_device bcm_wifi_device = {
-        .name           = "bcmdhd_wlan",	/*bcm4330 wlan device*/
+        .name           = "bcm4330_wlan",	/*bcm4330 wlan device*/
         .id             = 1,
         .num_resources  = 0,
         .resource       = NULL,

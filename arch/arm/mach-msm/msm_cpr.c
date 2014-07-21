@@ -45,16 +45,13 @@ typedef enum
 {
     ACPU_NCP6335D_DC = 1,
 	ACPU_FAN5355504X_DC = 2,
-	ACPU_FAN5355509_DC = 3,
     ACPU_INVALID_DC = 0
 } acpu_dc_name_type;
 #endif
 
 #ifdef CONFIG_HUAWEI_KERNEL
 #include <linux/regulator/driver.h>
-/* Add FAN53555 09 version chip support. */
-#define REGULATOR_DC_FAN5355504 "fan5355504"
-#define REGULATOR_DC_FAN5355509 "fan5355509"
+#define REGULATOR_DC_FAN53555 "fan53555"
 #define REGULATOR_DC_NCP6335D "ncp6335d"
 #define STEP_VOLTAGE_FAN53555 12826
 #define STEP_VOLTAGE_NCP6335D 6250
@@ -1083,18 +1080,11 @@ static int __devinit msm_cpr_probe(struct platform_device *pdev)
 	
 #ifdef CONFIG_HUAWEI_KERNEL
     /* Use regulator name to adapt different dcdc chip automatically. */
-    /* Identify FAN53555 04 and 09 version chip. */
-    if (0 == strcmp(REGULATOR_DC_FAN5355504, regulator_get_name(cpr->vreg_cx)))
+    if (0 == strcmp(REGULATOR_DC_FAN53555, regulator_get_name(cpr->vreg_cx)))
     {
 	    cpr->step_size = STEP_VOLTAGE_FAN53555;
         acpu_dc_info = ACPU_FAN5355504X_DC;
     }
-    /* Identify FAN53555 04 and 09 version chip. */
-	else if(0 == strcmp(REGULATOR_DC_FAN5355509, regulator_get_name(cpr->vreg_cx)))
-	{
-		cpr->step_size = STEP_VOLTAGE_FAN53555;
-        acpu_dc_info = ACPU_FAN5355509_DC;
-	}
 	else if(0 == strcmp(REGULATOR_DC_NCP6335D, regulator_get_name(cpr->vreg_cx)))
 	{
 		cpr->step_size = STEP_VOLTAGE_NCP6335D;

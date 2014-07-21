@@ -1094,9 +1094,9 @@ int msm_adsp_enable(struct msm_adsp_module *module)
 
 	MM_INFO("enable '%s'state[%d] id[%d]\n",
 				module->name, module->state, module->id);
-	if (!strncmp(module->name, "JPEGTASK", sizeof(*module->name)))
+	if (!strncmp(module->name, "JPEGTASK", sizeof(module->name)))
 		module_en = find_adsp_module_by_name(&adsp_info, "VIDEOTASK");
-	else if (!strncmp(module->name, "VIDEOTASK", sizeof(*module->name)))
+	else if (!strncmp(module->name, "VIDEOTASK", sizeof(module->name)))
 		module_en = find_adsp_module_by_name(&adsp_info, "JPEGTASK");
 	if (module_en) {
 		mutex_lock(&module_en->lock);
@@ -1119,9 +1119,10 @@ int msm_adsp_enable(struct msm_adsp_module *module)
 			break;
 		module->state = ADSP_STATE_ENABLING;
 		mutex_unlock(&module->lock);
+        /* timeout value change from 1s to 3s */
 		rc = wait_event_timeout(module->state_wait,
 					module->state != ADSP_STATE_ENABLING,
-					1 * HZ);
+					3 * HZ);
 		mutex_lock(&module->lock);
 		if (module->state == ADSP_STATE_ENABLED) {
 			rc = 0;

@@ -271,7 +271,7 @@ static struct sequence otm9608a_tianma_lcd_init_table[] =
 	{0x000b0,TYPE_PARAMETER,0},
 	{0x000C5,MIPI_GEN_COMMAND,0},
 	{0x00004,TYPE_PARAMETER,0},
-	{0x0000C,TYPE_PARAMETER,0}, //a8 --> 08	
+	{0x000a8,TYPE_PARAMETER,0},
 
 	//c680h ABC Parameter1:is used to set the internal founction block of LABC
 	{0x00000,MIPI_DCS_COMMAND,0},
@@ -285,8 +285,7 @@ static struct sequence otm9608a_tianma_lcd_init_table[] =
 	{0x000C6,MIPI_GEN_COMMAND,0},
 	{0x00003,TYPE_PARAMETER,0},
 	/*for pwd  the register set LCD_backlight PWM frequency (22kHz)*/
-	/*change pwm frequency to 45kHZ for workaround backlight issue*/
-	{0x00002,TYPE_PARAMETER,0}, //05-->02
+	{0x00005,TYPE_PARAMETER,0}, //10-->05
 	{0x00000,TYPE_PARAMETER,0},
 	{0x0005f,TYPE_PARAMETER,0}, //1f -->5f
 	{0x00012,TYPE_PARAMETER,0},

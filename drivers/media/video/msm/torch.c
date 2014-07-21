@@ -108,8 +108,7 @@ static long hw_camera_led_ioctl(struct file *filep ,unsigned int cmd, unsigned l
 			else
 			{
 				/*C8813Q support torch */
-				if( machine_is_msm7x27a_U8815()
-				|| machine_is_msm8x25_C8950D()
+				if( machine_is_msm8x25_C8950D()
 				|| machine_is_msm8x25_C8813()
 				|| machine_is_msm8x25_C8813Q()
 				|| machine_is_msm8x25_G610C()

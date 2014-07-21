@@ -280,11 +280,11 @@ typedef enum
    BT_WCN2243,
    BT_UNKNOWN,	
 } hw_bt_device_model;
+
 struct bt_device
 {
     hw_bt_device_model dev_model;
     char *dev_name;
-    char *fw_ver;
 };
 
 typedef enum
@@ -409,10 +409,8 @@ int board_support_ofn(bool * ofn_support);
 char *get_compass_gs_position_name(void);
 char *get_sensors_list_name(void);
 char *get_wifi_device_name(void);
-char *get_wifi_fw_ver(void);
 hw_bt_device_model get_hw_bt_device_model(void);
 char *get_bt_device_name(void);
-char *get_bt_fw_ver(void);
 lcd_panel_type get_lcd_panel_type(void);
 hw_lcd_ctrl_bl_type get_hw_lcd_ctrl_bl_type(void);
 lcd_type get_hw_lcd_resolution_type(void);
@@ -502,7 +500,4 @@ typedef enum
 hw_battery_id_mv get_battery_resistance_id(void);
 char* get_battery_manufacturer_info(void);
 #endif
-#define CAMERA_VER_LEN  10
-void set_camera_version(char *camera_ver, int slave_sensor);
-void get_camera_version(char *version);
 

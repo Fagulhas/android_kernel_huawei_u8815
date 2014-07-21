@@ -133,7 +133,7 @@ static struct aps_init_regdata aps9900_init_regdata[]=
   * DF:Device Factor
   * alsGain: ALS Gain
   * aTime: ALS Timing
-  * ALSIT = 2.72ms * (256 Å¡C ATIME) = 2.72ms * (256-0xDB) =  100ms
+  * ALSIT = 2.72ms * (256 ¨C ATIME) = 2.72ms * (256-0xDB) =  100ms
   */
 static int aTime = 0xDB; 
 static int alsGain = 1;
@@ -803,13 +803,6 @@ static int aps_9900_probe(
         apds_9900_pwindows_value = G610C_WINDOW;
         apds_9900_pwave_value = G610C_WAVE; 
         p = &lsensor_adc_table_g610c[0];	
-    }
-	else if(machine_is_msm7x27a_U8815())
-    {
-        /*merge 8815's parameters to TA and main branch*/
-        apds_9900_pwindows_value = U8815_WINDOW;
-        apds_9900_pwave_value = U8815_WAVE;
-        p = &lsensor_adc_table_u8815[0];
     }
     else
     {

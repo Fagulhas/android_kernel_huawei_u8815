@@ -30,6 +30,8 @@
 #define LM3642_ERROR -1
 #define LM3642_NORMAL 0
 
+#undef CDBG
+#define CDBG(fmt, args...) printk(KERN_INFO "lm3642.c: " fmt, ## args)
 struct i2c_client *lm3642_client;
 
 static int lm3642_i2c_write(struct i2c_client *client, uint8_t reg, uint8_t val)
@@ -115,10 +117,9 @@ int lm3642_set_flash(unsigned led_state)
 		rc = lm3642_i2c_write( lm3642_client, 0x0A, 0x12 );
 		gpio_set_value(lm3642_torch, 1);
         break;
-		
-	//650mA
+	//843.75mA
 	case MSM_CAMERA_LED_HIGH:
-		rc = lm3642_i2c_write( lm3642_client, 0x09, 0x06 );
+		rc = lm3642_i2c_write( lm3642_client, 0x09, 0x08 );
 		rc = lm3642_i2c_write( lm3642_client, 0x08, 0x07 );
 		rc = lm3642_i2c_write( lm3642_client, 0x0A, 0x23 );
 		gpio_set_value(lm3642_strobe, 1);
@@ -145,6 +146,9 @@ int lm3642_set_flash(unsigned led_state)
 		gpio_set_value(lm3642_torch, 0);
         break;
     }
+   /* read the value of 0x0A and 0x0B */
+    lm3642_i2c_read(lm3642_client, 0x0A);
+    lm3642_i2c_read(lm3642_client, 0x0B);
 
     return rc;
 }

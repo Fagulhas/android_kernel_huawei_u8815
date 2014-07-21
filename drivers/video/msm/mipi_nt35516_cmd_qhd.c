@@ -34,23 +34,6 @@ static struct mipi_dsi_phy_ctrl dsi_cmd_mode_phy_db = {
 	0x01, 0x0f, 0x07, 
 	0x05, 0x14, 0x03, 0x0, 0x0, 0x0, 0x20, 0x0, 0x02, 0x0}, 
 };
-/* add new tianma phy db */
-static struct mipi_dsi_phy_ctrl tianma_dsi_cmd_mode_phy_db = {
-	/* DSI Bit Clock at 460 MHz, 2 lane, RGB888 */
-	/* regulator */
-	{0x03, 0x01, 0x01, 0x00, 0x00},
-	/* timing */
-	{0x82, 0x31, 0x12, 0x00, 0x41, 0x4A, 0x16, 0x35,
-	0x16, 0x3, 0x04, 0x00},
-	/* phy ctrl */
-	{0x7f, 0x00, 0x00, 0x00},
-	/* strength */
-	{0xbb, 0x02, 0x06, 0x00},
-	/* pll control */
-	{0x01, 0xc6, 0x31, 0xd2, 0x00, 0x40, 0x37, 0x62,
-	0x01, 0x0f, 0x07,
-	0x05, 0x14, 0x03, 0x0, 0x0, 0x0, 0x20, 0x0, 0x02, 0x0},
-};
 
 static struct dsi_buf nt35516_tx_buf;
 static struct sequence * nt35516_lcd_init_table_debug = NULL;
@@ -86,111 +69,12 @@ static uint32 mipi_nt35516_read_register(struct msm_fb_data_type *mfd)
 /*LCD init code*/
 static const struct sequence nt35516_hvga_standby_enter_table[]= 
 {
-	{0x00053,MIPI_GEN_COMMAND,0},
-	{0x00020,TYPE_PARAMETER,0},  //close diming and BL circuit now
-
-	//extra cmd2
-	{0x000F0,MIPI_GEN_COMMAND,0}, //open cmd2
-	{0x00055,TYPE_PARAMETER,0},
-	{0x000AA,TYPE_PARAMETER,0},
-	{0x00052,TYPE_PARAMETER,0},
-	{0x00008,TYPE_PARAMETER,0},
-	{0x00001,TYPE_PARAMETER,0},
-
-	{0x000D4,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000FF,TYPE_PARAMETER,0},
-
-	{0x000D8,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000FF,TYPE_PARAMETER,0},
-
-	{0x000DF,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000FF,TYPE_PARAMETER,0},
-
-	{0x000E3,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000FF,TYPE_PARAMETER,0},
-
-	{0x000E7,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000FF,TYPE_PARAMETER,0},
-
-	{0x000EB,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000FF,TYPE_PARAMETER,0},
-
 	/*set the delay time 100ms*/
 	/* Fixed LCD Flicker */
 	//{0x0021,MIPI_DCS_COMMAND,0},
 	{0x00028,MIPI_DCS_COMMAND,0}, //28h
-
-	{0x000C1,MIPI_GEN_COMMAND,20},
-	{0x00001,TYPE_PARAMETER,0},
-
-	{0x00010,MIPI_DCS_COMMAND,60},
-
-	//extra cmd2
-	{0x000C1,MIPI_GEN_COMMAND,120},
-	{0x00000,TYPE_PARAMETER,0},
-
-	{0x000D4,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F8,TYPE_PARAMETER,0},
-
-	{0x000D8,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F8,TYPE_PARAMETER,0},
-
-	{0x000DF,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F8,TYPE_PARAMETER,0},
-
-	{0x000E3,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F8,TYPE_PARAMETER,0},
-
-	{0x000E7,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F8,TYPE_PARAMETER,0},
-
-	{0x000EB,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F8,TYPE_PARAMETER,0},
-
-	{0x000F0,MIPI_GEN_COMMAND,0}, //close cmd2
-	{0x00055,TYPE_PARAMETER,0},
-	{0x000AA,TYPE_PARAMETER,0},
-	{0x00052,TYPE_PARAMETER,0},
-	{0x00000,TYPE_PARAMETER,0},
-	{0x00000,TYPE_PARAMETER,0},
-
-	{0x00029,MIPI_TYPE_END,20}, // add new command for 
+	{0x00010,MIPI_DCS_COMMAND,20},
+	{0x00029,MIPI_TYPE_END,150}, // add new command for 
 };
 /* let the reset go ,so remove this code */
 static const struct sequence nt35516_hvga_standby_exit_table[]= 
@@ -200,114 +84,6 @@ static const struct sequence nt35516_hvga_standby_exit_table[]=
 	{0x00029,MIPI_DCS_COMMAND,120},
 	/* Fixed LCD Flicker */
 	//{0x0020,MIPI_DCS_COMMAND,20},
-	{0x00029,MIPI_TYPE_END,20}, // add new command for 
-};
-
-static const struct sequence nt35516_hvga_standby_exit_table_new[]= 
-{
-	//extra cmd2
-	{0x000F0,MIPI_GEN_COMMAND,0}, //open cmd2
-	{0x00055,TYPE_PARAMETER,0},
-	{0x000AA,TYPE_PARAMETER,0},
-	{0x00052,TYPE_PARAMETER,0},
-	{0x00008,TYPE_PARAMETER,0},
-	{0x00001,TYPE_PARAMETER,0},
-	
-	{0x000C1,MIPI_GEN_COMMAND,0},
-	{0x00001,TYPE_PARAMETER,0},
-
-	{0x000D4,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000FF,TYPE_PARAMETER,0},
-
-	{0x000D8,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000FF,TYPE_PARAMETER,0},
-
-	{0x000DF,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000FF,TYPE_PARAMETER,0},
-
-	{0x000E3,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000FF,TYPE_PARAMETER,0},
-
-	{0x000E7,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000FF,TYPE_PARAMETER,0},
-
-	{0x000EB,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000FF,TYPE_PARAMETER,0},
-
-	/*set the delay time 100ms*/
-	{0x00011,MIPI_DCS_COMMAND,0}, //29h
-	{0x00029,MIPI_DCS_COMMAND,240},
-	/* Fixed LCD Flicker */
-	//{0x0020,MIPI_DCS_COMMAND,20},
-
-	//extra cmd2
-	{0x000C1,MIPI_GEN_COMMAND,40},
-	{0x00000,TYPE_PARAMETER,0},
-
-	{0x000D4,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F8,TYPE_PARAMETER,0},
-
-	{0x000D8,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F8,TYPE_PARAMETER,0},
-
-	{0x000DF,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F8,TYPE_PARAMETER,0},
-
-	{0x000E3,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F8,TYPE_PARAMETER,0},
-
-	{0x000E7,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F8,TYPE_PARAMETER,0},
-
-	{0x000EB,MIPI_GEN_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F7,TYPE_PARAMETER,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x000F8,TYPE_PARAMETER,0},
-
-	{0x000F0,MIPI_GEN_COMMAND,0}, //close cmd2
-	{0x00055,TYPE_PARAMETER,0},
-	{0x000AA,TYPE_PARAMETER,0},
-	{0x00052,TYPE_PARAMETER,0},
-	{0x00000,TYPE_PARAMETER,0},
-	{0x00000,TYPE_PARAMETER,0},
-
-	{0x00053,MIPI_GEN_COMMAND,0}, 
-	{0x00024,TYPE_PARAMETER,0},  //close diming, open BL circuit
-
 	{0x00029,MIPI_TYPE_END,20}, // add new command for 
 };
 /*lcd resume function*/
@@ -1034,10 +810,10 @@ int mipi_nt35516_set_dynamic_gamma(enum danymic_gamma_mode  gamma_mode,struct ms
 #endif
 static int mipi_nt35516_lcd_on(struct platform_device *pdev)
 {
+	
 	/*delete some lines */
 	boolean para_debug_flag = FALSE;
 	uint32 para_num = 0;
-	static boolean first_call = TRUE;
 	struct msm_fb_data_type *mfd;
 	mfd = platform_get_drvdata(pdev);
 
@@ -1048,31 +824,19 @@ static int mipi_nt35516_lcd_on(struct platform_device *pdev)
 
 	/*delete some lines */
 	para_debug_flag = lcd_debug_malloc_get_para( "nt35516_lcd_init_table_debug", 
-			(void**)&nt35516_lcd_init_table_debug,&para_num);
+            (void**)&nt35516_lcd_init_table_debug,&para_num);
 
-	if( (TRUE == para_debug_flag) && (NULL != nt35516_lcd_init_table_debug))
-	{
-		process_mipi_table(mfd,&nt35516_tx_buf,nt35516_lcd_init_table_debug,
-				para_num, lcd_panel_qhd);
-	}
+    if( (TRUE == para_debug_flag) && (NULL != nt35516_lcd_init_table_debug))
+    {
+        process_mipi_table(mfd,&nt35516_tx_buf,nt35516_lcd_init_table_debug,
+		     para_num, lcd_panel_qhd);
+    }
 	else
 	{
 		/* change mipi transmit mode to low power when load sequences */
 		mipi_set_tx_power_mode(1);
-
-		/* when first call this function, use old sequence */
-		if (FALSE == first_call)
-		{
-			process_mipi_table(mfd,&nt35516_tx_buf,(struct sequence*)&nt35516_hvga_standby_exit_table_new,
-				ARRAY_SIZE(nt35516_hvga_standby_exit_table_new), lcd_panel_qhd);
-		}
-		else
-		{
-			process_mipi_table(mfd,&nt35516_tx_buf,(struct sequence*)&nt35516_hvga_standby_exit_table,
-				ARRAY_SIZE(nt35516_hvga_standby_exit_table), lcd_panel_qhd);
-			first_call = FALSE;
-		}
-
+		process_mipi_table(mfd,&nt35516_tx_buf,(struct sequence*)&nt35516_hvga_standby_exit_table,
+		 	ARRAY_SIZE(nt35516_hvga_standby_exit_table), lcd_panel_qhd);
 		mipi_set_tx_power_mode(0);
 		/*delete some lines */
 	}
@@ -1082,7 +846,7 @@ static int mipi_nt35516_lcd_on(struct platform_device *pdev)
 		lcd_debug_free_para((void *)nt35516_lcd_init_table_debug);
 	}
 	
-	pr_info("leave mipi_nt35516_lcd_on, first_call == %d \n", first_call);
+	pr_info("leave mipi_nt35516_lcd_on \n");
 	return 0;
 }
 /*lcd suspend function*/
@@ -1258,15 +1022,7 @@ static int mipi_cmd_nt35516_qhd_pt_init(void)
 		pinfo->fb_num = 3;
 		/* increase the rate of mipi transmit */
 		/* reduce the rate of mipi transmit */
-		if (MIPI_CMD_NT35516_TIANMA_QHD == lcd_panel_qhd)
-		/* change mipi clock rate to resolve EMI issue */
-		{
-			pinfo->clk_rate = 460000000;  // 460M
-		}
-		else
-		{
-			pinfo->clk_rate = 419000000;
-		}
+		pinfo->clk_rate = 419000000;
 		pinfo->lcd.refx100 = 6000; /* adjust refx100 to prevent tearing */
 
 		pinfo->mipi.mode = DSI_CMD_MODE;
@@ -1288,15 +1044,7 @@ static int mipi_cmd_nt35516_qhd_pt_init(void)
 		pinfo->mipi.insert_dcs_cmd = TRUE;
 		pinfo->mipi.wr_mem_continue = 0x3c;
 		pinfo->mipi.wr_mem_start = 0x2c;
-		/* use new phy db for tianma lcd */
-		if (MIPI_CMD_NT35516_TIANMA_QHD == lcd_panel_qhd)
-		{
-			pinfo->mipi.dsi_phy_db = &tianma_dsi_cmd_mode_phy_db;
-		}
-		else
-		{
-			pinfo->mipi.dsi_phy_db = &dsi_cmd_mode_phy_db;
-		}
+		pinfo->mipi.dsi_phy_db = &dsi_cmd_mode_phy_db;
 		pinfo->mipi.tx_eot_append = 0x01;
 		pinfo->mipi.rx_eot_ignore = 0;
 		//pinfo->mipi.dlane_swap = 0x1;

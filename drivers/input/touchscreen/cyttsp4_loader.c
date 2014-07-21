@@ -992,24 +992,21 @@ static int cyttsp4_upgrade_firmware(struct cyttsp4_device *ttsp,
 	if (rc < 0) {
 		dev_err(dev, "%s: Firmware update failed with error code %d\n",
 			__func__, rc);
-	}
-	else { 
-
-		if (data->loader_pdata &&
+	} else if (data->loader_pdata &&
 			(data->loader_pdata->flags & CY_FLAG_AUTO_CALIBRATE)) {
-			/* set up startup call back */
-			dev_vdbg(dev, "%s: Adding callback for calibration\n",
+		/* set up startup call back */
+		dev_vdbg(dev, "%s: Adding callback for calibration\n",
 				__func__);
-			rc = cyttsp4_subscribe_attention(ttsp, CY_ATTEN_STARTUP,
+		rc = cyttsp4_subscribe_attention(ttsp, CY_ATTEN_STARTUP,
 				cyttsp4_fw_calibration_attention, 0);
-			if (rc) {
-				dev_err(dev, "%s: Failed adding callback for calibration\n",
+		if (rc) {
+			dev_err(dev, "%s: Failed adding callback for calibration\n",
 				__func__);
-				dev_err(dev, "%s: No calibration will be performed\n",
+			dev_err(dev, "%s: No calibration will be performed\n",
 				__func__);
-				rc = 0;
-			}
+			rc = 0;
 		}
+	} else { 
 	    INIT_COMPLETION(data->sysinfo_update);
 		cyttsp4_subscribe_attention(ttsp, CY_ATTEN_STARTUP,
 				cyttsp4_sysinfo_attention, 0);
@@ -1243,7 +1240,6 @@ static int cyttsp4_upgrade_ttconfig(struct cyttsp4_device *ttsp,
 		const u8 *ttconfig_data, int ttconfig_size)
 {
 	struct device *dev = &ttsp->dev;
-	struct cyttsp4_loader_data *data = dev_get_drvdata(dev);
 	int rc, rc2;
 
 	dev_vdbg(dev, "%s\n", __func__);
@@ -1273,23 +1269,7 @@ static int cyttsp4_upgrade_ttconfig(struct cyttsp4_device *ttsp,
 				__func__, rc);
 		goto exit_setmode;
 	}
-	else
-	{
-		if (data->loader_pdata &&
-			(data->loader_pdata->flags & CY_FLAG_AUTO_CALIBRATE)) {
-			/* set up startup call back */
-			dev_vdbg(dev, "%s: Adding callback for calibration\n", __func__);
-			rc = cyttsp4_subscribe_attention(ttsp, CY_ATTEN_STARTUP,
-				cyttsp4_fw_calibration_attention, 0);
-			if (rc) {
-				dev_err(dev, "%s: Failed adding callback for calibration\n",
-					__func__);
-				dev_err(dev, "%s: No calibration will be performed\n",
-					__func__);
-				rc = 0;
-			}
-		}
-	}
+
 exit_setmode:
 	rc2 = cyttsp4_request_set_mode(ttsp, CY_MODE_OPERATIONAL);
 	if (rc2 < 0)
@@ -1422,11 +1402,8 @@ static int upgrade_ttconfig_from_platform(struct cyttsp4_device *ttsp)
 
 	data->si = cyttsp4_request_sysinfo(ttsp);
 	if (data->si == NULL)
-	{
 	dev_err(dev, "%s: Fail get sysinfo pointer from core\n",
 		__func__);
-	return rc;
-	}
 	pm_runtime_put(dev);
     
 	pannel_id = data->si->si_ptrs.pcfg->panel_info0;
@@ -1720,11 +1697,6 @@ static void cyttsp4_fw_and_config_upgrade(
 	
 #endif
     data->si = cyttsp4_request_sysinfo(ttsp);
-    if(data->si == NULL)
-    {
-    		dev_err(dev, "%s: Fail get sysinfo pointer from core\n", __func__);
-		return;
-    }
     pannel_id = data->si->si_ptrs.pcfg->panel_info0;
     ttconfig_version = data->si->ttconfig.version & CY_VER_MASK;
 
@@ -1933,7 +1905,7 @@ static int __init cyttsp4_loader_init(void)
 	return 0;
 
 fail_unregister_devices:
-	for (i--; i >= 0; i--) {
+	for (i--; i <= 0; i--) {
 		cyttsp4_unregister_device(cyttsp4_loader_infos[i].name,
 			cyttsp4_loader_infos[i].core_id);
 		pr_info("%s: Unregistering loader device for core_id: %s\n",

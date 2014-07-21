@@ -1,4 +1,4 @@
-#if (defined(CONFIG_HUAWEI_BT_BCM43XX) && defined(CONFIG_HUAWEI_KERNEL))
+#if (defined(HUAWEI_BT_BTLA_VER30) && defined(CONFIG_HUAWEI_KERNEL))
 /*
 
    This program is free software; you can redistribute it and/or modify
@@ -16,7 +16,7 @@
 
 
    Copyright (C) 2006-2007 - Motorola
-   Copyright (c) 2008-2010, Code Aurora Forum. All rights reserved.
+   Copyright (c) 2008-2010, The Linux Foundation. All rights reserved.
 
    Date         Author           Comment
    -----------  --------------   --------------------------------
@@ -807,7 +807,7 @@ MODULE_DESCRIPTION("Bluetooth Sleep Mode Driver ver %s " VERSION);
 MODULE_LICENSE("GPL");
 #endif
 #endif
-#if (defined(CONFIG_HUAWEI_BT_WCN2243) || (!defined(CONFIG_HUAWEI_KERNEL)))
+#if (defined(HUAWEI_BT_BLUEZ_VER30) || (!defined(CONFIG_HUAWEI_KERNEL)))
 /*
 
    This program is free software; you can redistribute it and/or modify

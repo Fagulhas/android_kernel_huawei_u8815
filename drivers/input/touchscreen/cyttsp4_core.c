@@ -48,14 +48,9 @@
 #include <linux/cyttsp4_core.h>
 #include <asm/mach-types.h>
 #include "cyttsp4_regs.h"
-
-#ifdef CONFIG_HUAWEI_HW_DEV_DCT
-#include <linux/hw_dev_dec.h>
-#endif
-
 /* Timeout in ms. */
 #define CY_CORE_REQUEST_EXCLUSIVE_TIMEOUT	5000
-#define CY_CORE_MODE_CHANGE_TIMEOUT		5000
+#define CY_CORE_MODE_CHANGE_TIMEOUT		1000
 #define CY_CORE_RESET_AND_WAIT_TIMEOUT		1000
 #define CY_CORE_WAKEUP_TIMEOUT			1000
 
@@ -3439,12 +3434,6 @@ static int cyttsp4_core_probe(struct cyttsp4_core *core)
 		rc = -ENODEV;
 		goto error_no_pdata;
 	}
-	if(pdata->read_touch_probe_flag)
-		if(pdata->read_touch_probe_flag(pdata,dev))
-		{
-			dev_info(dev, "%s: the touch driver has detected \n", __func__);
-			goto error_no_pdata;
-		}
 
 	/* get context and debug print buffers */
 	cd = kzalloc(sizeof(*cd), GFP_KERNEL);
@@ -3514,9 +3503,6 @@ static int cyttsp4_core_probe(struct cyttsp4_core *core)
 		/* use edge triggered interrupts */
 		irq_flags = IRQF_TRIGGER_FALLING | IRQF_ONESHOT;
 
-	if(pdata->set_touch_probe_flag)
-		pdata->set_touch_probe_flag(pdata,1,dev);
-
 	rc = request_threaded_irq(cd->irq, NULL, cyttsp4_irq, irq_flags,
 		dev_name(dev), cd);
 	if (rc < 0) {
@@ -3565,12 +3551,7 @@ static int cyttsp4_core_probe(struct cyttsp4_core *core)
 			__func__, rc);
 		goto error_startup;
 	}
-	
-	#ifdef CONFIG_HUAWEI_HW_DEV_DCT
-	/* detect current device successful, set the flag as present */
-	set_hw_dev_flag(DEV_I2C_TOUCH_PANEL);
-	#endif
-	
+
 	dev_info(dev, "%s: ok\n", __func__);
 	rc = 0;
 	goto no_error;

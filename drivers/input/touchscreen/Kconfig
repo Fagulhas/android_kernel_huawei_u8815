@@ -1212,7 +1212,7 @@ config TOUCHSCREEN_CYPRESS_CYTTSP4_MT_B
 config TOUCHSCREEN_CYPRESS_CYTTSP4_BUTTON
 	tristate "Cypress TrueTouch Gen4 MultiTouch CapSense Button"
 	depends on TOUCHSCREEN_CYPRESS_CYTTSP4
-	default y
+	default n
 	help
 	  Cypress TrueTouch(tm) Standard Product Generation4
 	  CapSense driver.

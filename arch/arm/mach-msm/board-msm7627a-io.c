@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -88,24 +88,10 @@ static struct touch_settings cyttsp4_sett_param_size = {
 };
 #endif
 
-#include <linux/Config_G610_Ofilm_V0011.h>
-static struct touch_settings cyttsp4_sett_ofilm_regs = {
-       .data = (uint8_t *)&cyttsp4_ofilm_param_regs[0],
-       .size = ARRAY_SIZE(cyttsp4_ofilm_param_regs),
-       .tag = 0,
-};
-
-#include <linux/Config_G610_Truly_V0011.h>
+#include <linux/Config_G610_V0004.h>
 static struct touch_settings cyttsp4_sett_truly_regs = {
-       .data = (uint8_t *)&cyttsp4_truly_param_regs[0],
-       .size = ARRAY_SIZE(cyttsp4_truly_param_regs),
-       .tag = 0,
-};
-
-#include <linux/Config_G610_CMI_V0011.h>
-static struct touch_settings cyttsp4_sett_cmi_regs = {
-       .data = (uint8_t *)&cyttsp4_cmi_param_regs[0],
-       .size = ARRAY_SIZE(cyttsp4_cmi_param_regs),
+       .data = (uint8_t *)&cyttsp4_param_regs[0],
+       .size = ARRAY_SIZE(cyttsp4_param_regs),
        .tag = 0,
 };
 
@@ -113,25 +99,21 @@ struct cyttsp4_sett_param_map cyttsp4_config_param_map[] = {
     
 	[0] = {
 			  .id = 0,
-			  .param = &cyttsp4_sett_ofilm_regs,//ofilm
+			  .param = &cyttsp4_sett_truly_regs,
 		  },
 	[1] = {
-			  .id = 1,
-			  .param = &cyttsp4_sett_ofilm_regs,//eely,
+			  .id = 2,
+			  .param = &cyttsp4_sett_truly_regs,//&cyttsp4_sett_truly_regs,
 		  },
 	[2] = {
-			  .id = 2,
-			  .param =&cyttsp4_sett_truly_regs,// &cyttsp4_sett_truly_ofilm_regs,//truly
+			  .id = 4,
+			  .param = &cyttsp4_sett_truly_regs,//&cyttsp4_sett_truly_regs,
 		  },
 	[3] = {
-			  .id = 4,
-			  .param = &cyttsp4_sett_cmi_regs,//cmi
+			  .id = 6,
+			  .param = &cyttsp4_sett_truly_regs,//&cyttsp4_sett_truly_regs,
 		  },
 	[4] = {
-			  .id = 6,
-			  .param = &cyttsp4_sett_ofilm_regs,//mutto
-		  },
-	[5] = {
 			  .param = NULL,
 		  },
 };
@@ -184,7 +166,7 @@ static struct cyttsp4_loader_platform_data _cyttsp4_loader_platform_data = {
 	.param_regs = &cyttsp4_sett_param_regs,
 	.param_size = &cyttsp4_sett_param_size,
 	.param_map = cyttsp4_config_param_map,
-	.flags = 1,
+	.flags = 0,
 };
 
 
@@ -217,8 +199,8 @@ static struct cyttsp4_loader_platform_data _cyttsp4_loader_platform_data = {
 #error "GPIO numbers should be different when both I2C and SPI are on!"
 #endif
 #endif
-#define CY_MAXX 540
-#define CY_MAXY 960
+#define CY_MAXX 720
+#define CY_MAXY 1280
 #define CY_MINX 0
 #define CY_MINY 0
 
@@ -957,17 +939,6 @@ static int cyttsp4_init(struct cyttsp4_core_platform_data *pdata,
 	int irq_gpio = pdata->irq_gpio;
 	int rc = 0;
 
-	if (gpio_tlmm_config(GPIO_CFG(irq_gpio, 0,GPIO_CFG_INPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),GPIO_CFG_ENABLE))
-	{
-		pr_err("%s:touch int gpio config failed\n", __func__);
-		rc = -ENODEV;
-	}
-                
-	if (gpio_tlmm_config(GPIO_CFG(rst_gpio, 0,GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),GPIO_CFG_ENABLE))
-	{
-		pr_err("%s:touch rst gpio config failed\n", __func__);
-		rc = -ENODEV;
-	}
 	if (on) {
 		rc = gpio_request(rst_gpio, NULL);
 		if (rc < 0) {
@@ -1065,26 +1036,7 @@ static int cyttsp4_irq_stat(struct cyttsp4_core_platform_data *pdata,
 {
 	return gpio_get_value(pdata->irq_gpio);
 }
-void set_cyttsp4_probe_flag(struct cyttsp4_core_platform_data *pdata,
-		int detected,struct device *dev)
-{
-	if(detected >= 0)
-	{
-		atomic_set(&touch_detected_yet, 1);
-	}
-	else
-	{
-		atomic_set(&touch_detected_yet, 0);
-	}
-	
-	return;
-}
 
-static int read_cyttsp4_probe_flag(struct cyttsp4_core_platform_data *pdata,
-		struct device *dev)
-{
-	return atomic_read(&touch_detected_yet);
-}
 /* Button to keycode conversion */
 static u16 cyttsp4_btn_keys[] = {
 	/* use this table to map buttons to keycodes (see input.h) */
@@ -1111,8 +1063,6 @@ static struct cyttsp4_core_platform_data _cyttsp4_core_platform_data = {
 	.init = cyttsp4_init,
 	.power = cyttsp4_power,
 	.irq_stat = cyttsp4_irq_stat,
-	.set_touch_probe_flag = set_cyttsp4_probe_flag,
-	.read_touch_probe_flag = read_cyttsp4_probe_flag,
 	.sett = {
 		NULL,	/* Reserved */
 		NULL,	/* Command Registers */
@@ -1161,7 +1111,7 @@ struct touch_framework cyttsp4_framework = {
 
 static struct cyttsp4_mt_platform_data _cyttsp4_mt_platform_data = {
 	.frmwrk = &cyttsp4_framework,
-	.flags = 0x00,//0x40, //0x38,
+	.flags = 0x40, //0x38,
 	.inp_dev_name = CYTTSP4_MT_NAME,
 };
 

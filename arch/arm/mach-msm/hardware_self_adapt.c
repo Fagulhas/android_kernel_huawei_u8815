@@ -11,7 +11,7 @@
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
 #include <asm/setup.h>
-#include <linux/string.h>
+
 #include <asm/mach-types.h>
 #include "linux/hardware_self_adapt.h"
 
@@ -168,46 +168,19 @@ char *get_wifi_device_name(void)
   return wifi_device_id;                             
 } 
 
-/* get wifi firmware version */
-char *get_wifi_fw_ver(void)
-{                                                                                                        
-  hw_wifi_device_model wifi_device_model = WIFI_UNKNOW;  
-  char *wifi_fw_ver = NULL;                       
-                                                             
-  wifi_device_model = get_hw_wifi_device_model();  
-  if(WIFI_BROADCOM_4329 == wifi_device_model)                 
-  {                                                  
-	wifi_fw_ver = "4.218.248.27";
-  }
-  
-  else if(WIFI_BROADCOM_4330 == wifi_device_model)
-  {                                                  
-	wifi_fw_ver = "5.90.125.95.7";
-  }
-                                                 
-  else if(WIFI_QUALCOMM_6005 == wifi_device_model)            
-  { 
-    wifi_fw_ver = "3.2.0.260 api3"; 
-  }                                                  
-  else                                               
-  {                                                  
-    wifi_fw_ver = "UNKNOWN WIFI FW VER";          
-  }                                                  
-  return wifi_fw_ver;                             
-} 
 /* store bt device model and bt device name in bt_device_array[] */
 struct bt_device bt_device_array[] = 
 {
-    { BT_BCM4329, "1.1", "Unknown" },
-	{ BT_BCM4330, "1.2", "Unknown" },
-	{ BT_WCN2243, "2.1", "Release 5.00.1" },
-	{ BT_UNKNOWN, "Unknown", "Unknown" }
+    { BT_BCM4329, "1.1" },
+	{ BT_BCM4330, "1.2" },
+	{ BT_WCN2243, "2.1" },
+	{ BT_UNKNOWN, "Unknown" }
 };
 
 /* get bt device model by board id */
 hw_bt_device_model get_hw_bt_device_model(void)
 {
-    if(machine_is_msm8x25_C8950D() || machine_is_msm7x27a_U8815())
+    if(machine_is_msm8x25_C8950D())
     {
         return BT_BCM4330;
     }
@@ -235,25 +208,6 @@ char *get_bt_device_name(void)
     }
 	
 	return bt_device_array[i].dev_name;
-} 
-/* get bt firmware version */
-char *get_bt_fw_ver(void)
-{                   
-    hw_bt_device_model bt_device_model = BT_UNKNOWN;
-    int i = 0;
-
-    bt_device_model = get_hw_bt_device_model();
-
-    /* lookup bt_device_model in bt_device_array[] */
-    for(i = 0; i < BT_UNKNOWN; i++)
-    {
-        if(bt_device_model == bt_device_array[i].dev_model)
-        {
-            break; 
-        }
-    }
-	
-	return bt_device_array[i].fw_ver;
 } 
 
 /* modify spk mic function name */
@@ -342,16 +296,8 @@ hw_lcd_ctrl_bl_type get_hw_lcd_ctrl_bl_type(void)
 {
     hw_lcd_ctrl_bl_type ctrl_bl_type = CTRL_BL_BY_UNKNOW;
 
-	/*control backlight by MSM pwm*/
-	if (machine_is_msm7x27a_U8815())
-	{
-		ctrl_bl_type = CTRL_BL_BY_MSM;
-	}
-	/*control backlight by LCD output pwm*/
-	else
-	{
-		ctrl_bl_type = CTRL_BL_BY_LCD;
-	}
+	ctrl_bl_type = CTRL_BL_BY_LCD;
+
     return ctrl_bl_type;
 }
 /*
@@ -363,11 +309,7 @@ lcd_type get_hw_lcd_resolution_type(void)
 	/* when sub boardid equals HW_VER_SUB_V1 G520 support qhd */
 	hw_product_sub_type product_sub_type = get_hw_sub_board_id();
 
-    if ( machine_is_msm7x27a_U8815())
-	{
-		lcd_resolution = LCD_IS_WVGA;
-	}
-	else if ( machine_is_msm8x25_C8950D()
+	if( machine_is_msm8x25_C8950D()
         || machine_is_msm8x25_G610C()
 		|| (machine_is_msm8x25_G520U() && HW_VER_SUB_V1 == product_sub_type) )
 	{
@@ -420,31 +362,6 @@ lcd_panel_type get_lcd_panel_type(void)
 				break;
 		}
     }
-
-	else if( machine_is_msm7x27a_U8815() )
-
-	{
-		switch (lcd_id)
-		{
-			case LCD_HW_ID0:
-				hw_lcd_panel = MIPI_CMD_RSP61408_CHIMEI_WVGA;
-				break;
-			case LCD_HW_ID1:
-				hw_lcd_panel = MIPI_CMD_HX8369A_TIANMA_WVGA;
-				break;
-			case LCD_HW_ID4:
-				hw_lcd_panel = MIPI_CMD_RSP61408_BYD_WVGA;
-				break;
-			case LCD_HW_ID5:
-				hw_lcd_panel = MIPI_CMD_RSP61408_TRULY_WVGA;
-				break;
-			default:
-				/*no mipi LCD lead to block, so default lcd RGB */
-				hw_lcd_panel = LCD_HX8357B_TIANMA_HVGA;
-				break;
-		}
-	}
-
 	else
 	{
 		switch (lcd_id)
@@ -563,10 +480,6 @@ compass_gs_position_type  get_compass_gs_position(void)
 
 	{
 		compass_gs_position=COMPASS_NONE_GS_BOTTOM;
-	}
-    else if ( machine_is_msm7x27a_U8815() )
-	{
-		compass_gs_position=COMPASS_TOP_GS_TOP;
 	}
 	return compass_gs_position;
 }
@@ -895,7 +808,7 @@ void set_st303_gs_support(bool status)
 */
 bool rgb_led_is_supported(void)
 {
-	bool ret = true;
+	bool ret = false;
 
 	return ret;
 }
@@ -1015,7 +928,7 @@ char *get_compass_gs_position_name(void)
  */
 hw_wifi_device_type get_hw_wifi_device_type(void)
 {
-  if ( machine_is_msm8x25_C8950D() || machine_is_msm7x27a_U8815() )
+  if ( machine_is_msm8x25_C8950D())
   {
       return WIFI_BROADCOM;
   }
@@ -1034,7 +947,7 @@ hw_wifi_device_type get_hw_wifi_device_type(void)
  */
 tp_type get_touch_type(void)
 {
-	if( machine_is_msm8x25_C8950D() || machine_is_msm7x27a_U8815() )
+	if( machine_is_msm8x25_C8950D() )
 	{
 		return TP_COF;
 	}
@@ -1060,7 +973,7 @@ tp_update_type is_need_update_fw(void)
  */
 hw_wifi_device_model get_hw_wifi_device_model(void)
 {
-   if(machine_is_msm8x25_C8950D() || machine_is_msm7x27a_U8815() )
+   if(machine_is_msm8x25_C8950D())
   {
       return WIFI_BROADCOM_4330;
   }
@@ -1082,7 +995,7 @@ hw_ds_type get_hw_ds_type(void)
 {
     hw_ds_type ret = HW_NONES;
 
-    if( machine_is_msm8x25_C8950D() || machine_is_msm7x27a_U8815() )
+    if( machine_is_msm8x25_C8950D() )
     {
         ret = HW_NODS;
     }
@@ -1121,10 +1034,6 @@ hw_bt_wakeup_gpio_type get_hw_bt_wakeup_gpio_type(void)
     if (machine_is_msm8x25_C8950D() )
     {
         bt_wakeup_gpio_type = HW_BT_WAKEUP_GPIO_IS_27;
-    }
-    else if (machine_is_msm7x27a_U8815() )
-    {
-        bt_wakeup_gpio_type = HW_BT_WAKEUP_GPIO_IS_83;
     }
     	
     printk(KERN_INFO "the bt_wakeup_gpio_type is %d\n", bt_wakeup_gpio_type);
@@ -1201,6 +1110,10 @@ audio_property_type get_audio_dts_enable(void)
     {
         return DTS_ENABLE;
     }
+    else if (machine_is_msm8x25_G610C())
+    {
+        return DTS_SOUND_ENABLE;
+    }
     else
     {
         return DTS_DISABLE;
@@ -1237,7 +1150,7 @@ audio_property_type get_audio_mic_type(void)
 audio_property_type get_audio_fir_enabled(void)
 {
 
-    if(machine_is_msm8x25_C8950D() || machine_is_msm7x27a_U8815() )
+    if(machine_is_msm8x25_C8950D())
 
     {
         return FIR_DISABLE;
@@ -1249,7 +1162,7 @@ audio_property_type get_audio_fir_enabled(void)
 }
 audio_property_type get_audio_fm_type(void)
 {
-   if ( machine_is_msm8x25_C8950D() || machine_is_msm7x27a_U8815() )
+   if ( machine_is_msm8x25_C8950D() )
 
    {
        return FM_BROADCOM;
@@ -1309,11 +1222,8 @@ char* get_battery_manufacturer_info()
 	case BATTERY_RESISTANCE_MV_110_1:
 		pmanufacturer_name = "MAX";
 		break;
-	case BATTERY_RESISTANCE_MV_200:
-		pmanufacturer_name = "Sunwoda";
-		break;
 	case BATTERY_RESISTANCE_MV_470_1:
-		pmanufacturer_name = "SCUD";
+		pmanufacturer_name = "SAN";
 		break;
 	default:
 		break;
@@ -1333,30 +1243,4 @@ hw_camera_flash_number get_hw_camera_flash_number(void)
     }
     
     return ret;
-}
-
-static char g_back_camera_version[CAMERA_VER_LEN]  = {0};
-static char g_front_camera_version[CAMERA_VER_LEN] = {0};
-
-void set_camera_version(char *camera_ver, int slave_sensor)
-{
-	if(slave_sensor)
-	{
-		strncpy((char*)g_front_camera_version, camera_ver, CAMERA_VER_LEN - 1);
-
-	}
-	else
-	{
-		strncpy((char*)g_back_camera_version, camera_ver, CAMERA_VER_LEN - 1);	
-	}
-}
-
-/*the len of version must be ensure by the caller, it is better to be 2*CAMERA_VER_LEN */
-void get_camera_version(char *version)
-{
-	if(NULL != version)
-	{
-		sprintf(version, "%s-%s", g_front_camera_version, g_back_camera_version);
-	
-	}
 }

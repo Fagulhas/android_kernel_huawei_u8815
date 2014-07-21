@@ -155,7 +155,7 @@ enum {
 #define FILTER_SAMPLE_NUMBER	256		/* 256 = 1g */
 #define	GPIO_INT1		19
 #define GPIO_INT2		20
-#define GS_ST_TIMRER		(1000*1000000)		/*1000000s*/
+#define GS_ST_TIMRER		(1000)		/*1000ms*/
 
 #define ECS_IOCTL_READ_ACCEL_XYZ			_IOR(0xA1, 0x06, char[3])
 #define ECS_IOCTL_APP_SET_DELAY 			_IOW(0xA1, 0x18, short)

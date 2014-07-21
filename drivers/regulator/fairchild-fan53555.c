@@ -2,7 +2,7 @@
  * Copyright (c) Huawei Technologies Co., Ltd. 1998-2011. All rights reserved.
  *
  * File name: fairchild-fan53555.c
- * Author:  ChenDeng  IDÂ£Âº00202488
+ * Author:  ChenDeng  ID£º00202488
  *
  * Version: 0.1
  * Date: 2012/12/21
@@ -17,32 +17,12 @@
 #include <linux/i2c.h>
 #include <linux/regulator/driver.h>
 #include <linux/regmap.h>
-#include <linux/syscore_ops.h>
 #include <linux/regulator/fairchild-fan53555.h>
 
 extern const char *dcdc_type;
 
 /* registers */
 #define REG_FAN53555_PID		       0x03
-/* Add identification of 04 version and 09 version. */
-#define REG_FAN53555_RID		       0x04
-/* Chip ID and Verison */
-#define DIE_ID		0x0F	/* ID1 */
-#define DIE_REV		0x0F	/* ID2 */
-#define FAN53555_04_NAME "fan5355504"
-#define FAN53555_09_NAME "fan5355509"
-/* IC Type */
-enum {
-	FAN53555_CHIP_ID_00 = 0,
-	FAN53555_CHIP_ID_01,
-	FAN53555_CHIP_ID_02,
-	FAN53555_CHIP_ID_03,
-	FAN53555_CHIP_ID_04,
-	FAN53555_CHIP_ID_09 = 12,
-};
-
-#define FAN53555_DEF_VTG_UV	1100000	/* Default voltage */ 
-
 #define REG_FAN53555_PROGVSEL1		0x01
 #define REG_FAN53555_PROGVSEL0		0x00
 #define REG_FAN53555_CONTROL           0x02
@@ -92,16 +72,7 @@ struct fan53555_info {
 	unsigned int mode_bit;
 	int curr_voltage;
 	int slew_rate;
-	/* IC Type and Rev */
-	int chip_id;
-	int chip_rev;
-    unsigned int vsel_ctrl_val;
-	int restart_config_done;
-	struct syscore_ops fan53555_syscore;
-	struct mutex restart_lock;
 };
-
-static struct fan53555_info *fan53555;
 
 static void dump_registers(struct fan53555_info *dd,
 			unsigned int reg, const char *func)
@@ -126,27 +97,6 @@ static void fan53555_slew_delay(struct fan53555_info *dd,
 	dev_dbg(dd->dev, "Slew Delay = %d\n", delay);
 
 	udelay(delay);
-}
-
-/* Add fan53555_restart_config interface to set the voltage to default value. */
-static void fan53555_restart_config(void)
-{
-	int rc, set_val;
-
-	mutex_lock(&fan53555->restart_lock);
-
-	set_val = DIV_ROUND_UP(FAN53555_DEF_VTG_UV - FAN53555_MIN_VOLTAGE_UV,
-			FAN53555_STEP_VOLTAGE_UV);
-	rc = regmap_update_bits(fan53555->regmap, fan53555->vsel_reg,
-			FAN53555_VOUT_SEL_MASK, (set_val & FAN53555_VOUT_SEL_MASK));
-	if (rc)
-		dev_err(fan53555->dev, "Unable to set volatge rc(%d)", rc);
-	else
-		udelay(20);
-
-	fan53555->restart_config_done = true;
-
-	mutex_unlock(&fan53555->restart_lock);
 }
 
 static int fan53555_enable(struct regulator_dev *rdev)
@@ -210,17 +160,6 @@ static int fan53555_set_voltage(struct regulator_dev *rdev,
 	int rc, set_val, new_uV;
 	struct fan53555_info *dd = rdev_get_drvdata(rdev);
 
-    /* Add fan53555_restart_config interface to set the voltage to default value. */
-	mutex_lock(&dd->restart_lock);
-	/*
-	 * Do not allow any other voltage transitions after
-	 * restart configuration is done.
-	 */
-	if (dd->restart_config_done) {
-		dev_err(dd->dev, "Restart config done. Cannot set volatage\n");
-		rc = -EINVAL;
-		goto err_set_vtg;
-	}
 	set_val = DIV_ROUND_UP(min_uV - FAN53555_MIN_VOLTAGE_UV,
 					FAN53555_STEP_VOLTAGE_UV);
 	new_uV = (set_val * FAN53555_STEP_VOLTAGE_UV) +
@@ -232,8 +171,7 @@ static int fan53555_set_voltage(struct regulator_dev *rdev,
 	if ((new_uV - max_uV) > FAN53555_STEP_VOLTAGE_UV) {
 		dev_err(dd->dev, "Unable to set volatge (%d %d)\n",
 							min_uV, max_uV);
-		rc = -EINVAL;
-		goto err_set_vtg;
+		return -EINVAL;
 	}
 
 	rc = regmap_update_bits(dd->regmap, dd->vsel_reg,
@@ -241,7 +179,6 @@ static int fan53555_set_voltage(struct regulator_dev *rdev,
 	if (rc) {
 		dev_err(dd->dev, "Unable to set volatge (%d %d)\n",
 							min_uV, max_uV);
-		goto err_set_vtg;
 	} else {
 		fan53555_slew_delay(dd, dd->curr_voltage, new_uV);
 		dd->curr_voltage = new_uV;
@@ -249,8 +186,6 @@ static int fan53555_set_voltage(struct regulator_dev *rdev,
 
 	dump_registers(dd, dd->vsel_reg, __func__);
 
-err_set_vtg:
-	mutex_unlock(&dd->restart_lock);
 	return rc;
 }
 
@@ -471,37 +406,11 @@ static int __devinit fan53555_regulator_probe(struct i2c_client *client,
 		dev_err(&client->dev, "Unable to identify FAN53555, rc(%d)\n", rc);
 		return rc;
 	}
-	/* Add identification of 04 version and 09 version. */
-	dd->chip_id = val & DIE_ID;
-
-	rc = regmap_read(dd->regmap, REG_FAN53555_RID, &val);
-	if (rc) 
-	{
-        if (dd)
-        {
-            devm_kfree(&client->dev, dd);
-            dd = NULL;
-        }
-		dev_err(&client->dev, "Unable to identify FAN53555, rc(%d)\n", rc);
-		return rc;
-	}
-	dd->chip_rev = val & DIE_REV;
-	printk("--fan53555_regulator_probe: Read fan53555 chip(%d),rev(%d)\n", dd->chip_id, dd->chip_rev);
-
-	if (FAN53555_CHIP_ID_04 == dd->chip_id)
-	{
-           rdesc.name = FAN53555_04_NAME;
-	}
-	else if(FAN53555_CHIP_ID_09 == dd->chip_id)
-	{
-	    rdesc.name = FAN53555_09_NAME;
-	}
+	printk("--fan53555_regulator_probe: Read fan53555 ver(%d)\n", val);
 
 	dd->init_data = pdata->init_data;
 	dd->dev = &client->dev;
 	i2c_set_clientdata(client, dd);
-	dd->restart_config_done = false;
-	mutex_init(&dd->restart_lock);
 
 	rc = fan53555_init(dd, pdata);
 	if (rc) 
@@ -528,14 +437,6 @@ static int __devinit fan53555_regulator_probe(struct i2c_client *client,
 						PTR_ERR(dd->regulator));
 		return PTR_ERR(dd->regulator);
 	}
-	/* Register the shutdown interface. */
-	fan53555 = dd;
-	/*
-	 * Register for the syscore shutdown hook. This is to make sure
-	 * that the buck voltage is set to default before restart.
-	 */
-	dd->fan53555_syscore.shutdown = fan53555_restart_config;
-	register_syscore_ops(&dd->fan53555_syscore);
 
 	dcdc_type = rdesc.name;
 	return 0;
@@ -548,9 +449,6 @@ static int __devexit fan53555_regulator_remove(struct i2c_client *client)
        printk("--fan53555_regulator_remove called.\n");
 #endif
 	regulator_unregister(dd->regulator);
-	/* Unregister the shutdown interface. */
-	unregister_syscore_ops(&dd->fan53555_syscore);
-	mutex_destroy(&dd->restart_lock);
 
 	return 0;
 }

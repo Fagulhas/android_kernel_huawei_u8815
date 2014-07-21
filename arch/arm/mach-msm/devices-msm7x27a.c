@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1396,21 +1396,12 @@ static struct resource msm8625_resources_sdc3[] = {
 		.end	= MSM8625_INT_SDC3_1,
 		.flags	= IORESOURCE_IRQ,
 	},
-#ifdef CONFIG_HUAWEI_KERNEL
-    {
-        .name   = "sdcc_dma_chnl",
-        .start  = DMOV_SDC3_CHAN,
-        .end    = DMOV_SDC3_CHAN,
-        .flags  = IORESOURCE_DMA,
-    },
-#else
-    {
-        .name   = "sdcc_dma_chnl",
-        .start  = DMOV_NAND_CHAN,
-        .end    = DMOV_NAND_CHAN,
-        .flags  = IORESOURCE_DMA,
-    },
-#endif
+	{
+		.name	= "sdcc_dma_chnl",
+		.start	= DMOV_NAND_CHAN,
+		.end	= DMOV_NAND_CHAN,
+		.flags	= IORESOURCE_DMA,
+	},
 	{
 		.name	= "sdcc_dma_crci",
 		.start	= DMOV_SDC3_CRCI,
@@ -2286,7 +2277,7 @@ void __init msm_common_io_init(void)
 
 void __init msm8625_init_irq(void)
 {
-	//msm_gic_irq_extn_init();
+	msm_gic_irq_extn_init();
 	gic_init(0, GIC_PPI_START, MSM_QGIC_DIST_BASE,
 			(void *)MSM_QGIC_CPU_BASE);
 }

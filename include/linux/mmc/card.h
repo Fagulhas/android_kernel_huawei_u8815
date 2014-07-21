@@ -537,13 +537,8 @@ struct mmc_driver {
 	void (*remove)(struct mmc_card *);
 	int (*suspend)(struct mmc_card *);
 	int (*resume)(struct mmc_card *);
-#ifdef CONFIG_HUAWEI_KERNEL
-    void (*shutdown)(struct mmc_card *);
-#endif
 };
-#ifdef CONFIG_HUAWEI_KERNEL
-extern int mmc_suspend_extern(struct mmc_card *card);
-#endif
+
 extern int mmc_register_driver(struct mmc_driver *);
 extern void mmc_unregister_driver(struct mmc_driver *);
 

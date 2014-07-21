@@ -32,19 +32,16 @@
 #define ADD_VALUE			4
 #define PWM_LEVEL_ADJUST	226
 /*modify the min value*/
-#define BL_MIN_LEVEL 3
+#define BL_MIN_LEVEL 13
 #define G610C_BL_MIN_LEVEL 10
 #define G610C_BL_MAX_LEVEL 250
-#define PWM_LEVEL_ADJUST_LPG 100
 static struct msm_fb_data_type *mfd_local;
 static boolean backlight_set = FALSE;
 static atomic_t suspend_flag = ATOMIC_INIT(0);
 
-
 void msm_backlight_set(int level)
 {
     static uint8 last_level = 0;
-	level = ((level * PWM_LEVEL_ADJUST_LPG) / PWM_LEVEL );
 	if(level)
 	{
 		if (level < BL_MIN_LEVEL)        
@@ -117,8 +114,7 @@ void pwm_set_backlight(struct msm_fb_data_type *mfd)
 			mfd->bl_level = bl_level;
 		}
 	}
-	/* no need to change bl_level, if bl_level is zero!!!*/
-	if(machine_is_msm8x25_G610C() && bl_level)
+	if(machine_is_msm8x25_G610C())
 	{
 		//workaround for G610C
 		if(bl_level < G610C_BL_MIN_LEVEL)

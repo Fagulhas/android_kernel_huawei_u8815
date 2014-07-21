@@ -453,6 +453,10 @@ static int tianma_hx8369a_check_live_status(struct msm_fb_data_type *mfd)
 		mfd->is_panel_alive = FALSE;
 		pr_info("check_live_status: error, bl_abnormal=%d, reset_cnt=%d, monitor_status=0x%08x.\n", bl_abnormal, reset_cnt, monitor_status);
 	}
+	else
+	{
+		pr_info("check_live_status: bl_abnormal=%d, reset_cnt=%d, monitor_status=0x%08x.\n", bl_abnormal, reset_cnt, monitor_status);
+	}
 
 	return ((bl_abnormal != 0) ? TM_HX8369A_PANEL_DEAD : TM_HX8369A_PANEL_ALIVE);
 }

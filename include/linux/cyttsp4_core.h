@@ -106,10 +106,6 @@ struct cyttsp4_core_platform_data {
 		int on, struct device *dev, atomic_t *ignore_irq);
 	int (*irq_stat)(struct cyttsp4_core_platform_data *pdata,
 		struct device *dev);
-	void (*set_touch_probe_flag)(struct cyttsp4_core_platform_data *pdata,
-		int detected,struct device *dev);
-	int (*read_touch_probe_flag)(struct cyttsp4_core_platform_data *pdata,
-		struct device *dev);
 	struct touch_settings *sett[CY_TOUCH_SETTINGS_MAX];
 	struct cyttsp4_loader_platform_data *loader_pdata;
 };

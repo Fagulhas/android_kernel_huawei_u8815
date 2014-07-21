@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -140,6 +140,87 @@ static struct msm_camera_i2c_reg_conf ov5647_snap_settings[] = {
     {0x4837, 0x19},//MIPI pclk period
 };
 
+static struct msm_camera_i2c_reg_conf ov5647_prev_settings_flip[] = {
+	/*1280*960 Reference Setting 24M MCLK 2lane 280Mbps/lane 30fps
+	for back to preview*/
+	{0x3035, 0x21},//PLL   0x21 30fps   0x41 15fps
+	{0x3036, 0x66},//PLL,  0x64
+	{0x303c, 0x11},//PLL   
+	
+	{0x3821,0x07},//ISP mirror on, Sensor mirror on//0x01
+    {0x3820,0x41},//0x41},//} bit[1:2] = 0  //0x47
+
+    {0x3612, 0x59}, 
+    {0x3618, 0x00}, 
+    {0x380c, 0x09}, 
+    {0x380d, 0x70}, 
+    {0x380e, 0x04}, 
+    {0x380f, 0x66}, 
+    {0x3814, 0x31}, 
+    {0x3815, 0x31}, 
+    {0x3708, 0x64}, 
+    {0x3709, 0x52}, 
+    {0x3808, 0x05}, //X OUTPUT SIZE = 1296
+    {0x3809, 0x00}, 
+    {0x380a, 0x03}, //Y OUTPUT SIZE = 972
+    {0x380b, 0xc0}, 
+    {0x3800, 0x00}, 
+    {0x3801, 0x08}, 
+    {0x3802, 0x00}, 
+    {0x3803, 0x00}, 
+    {0x3804, 0x0a}, 
+    {0x3805, 0x37}, 
+    {0x3806, 0x07}, 
+    {0x3807, 0xa7}, 
+	
+    {0x4004, 0x02},//black line number
+
+	{0x4005, 0x18},//add
+    {0x4051, 0x8F},//add
+    
+    {0x4837, 0x19},     // 0x3035, 0x41    0x4837 37
+};
+
+static struct msm_camera_i2c_reg_conf ov5647_snap_settings_flip[] = {
+	/*2608*1952 Reference Setting 24M MCLK 2lane 280Mbps/lane 30fps*/
+    {0x3035, 0x21},
+    {0x3036, 0x66},
+    {0x303c, 0x11},
+
+   	{0x3821, 0x06},//ISP mirror of, Sensor mirror of 0x00  //0x00
+    {0x3820, 0x00},//0x0}, bit[1:2] = 0  //0x06
+	
+    {0x3612, 0x5b},
+    {0x3618, 0x04},
+    {0x380c, 0x0a},
+    {0x380d, 0xc0},
+    {0x380e, 0x07},
+    {0x380f, 0xb6},
+    {0x3814, 0x11},
+    {0x3815, 0x11},
+    {0x3708, 0x64},
+    {0x3709, 0x12},
+
+    /*2608 * 1952 */
+	{0x3808, 0x0a}, //X OUTPUT SIZE = 2608
+    {0x3809, 0x30},
+    {0x380a, 0x07}, //Y OUTPUT SIZE = 1952
+    {0x380b, 0xa0},
+    {0x3800, 0x00},
+    {0x3801, 0x04},
+    {0x3802, 0x00},
+    {0x3803, 0x00},
+    {0x3804, 0x0a},
+    {0x3805, 0x3b},
+    {0x3806, 0x07},
+    {0x3807, 0xa3},
+
+    {0x4004, 0x04},//black line number
+
+	{0x4005, 0x1a},// add
+	
+    {0x4837, 0x19},//MIPI pclk period
+};
 static struct msm_camera_i2c_reg_conf ov5647_video_60fps_settings[] = {
 	{0x3035, 0x21},
 	{0x3036, 0x38},
@@ -197,41 +278,35 @@ static struct msm_camera_i2c_reg_conf ov5647_video_90fps_settings[] = {
 	{0x3807, 0x9f},
 	{0x4004, 0x02},
 };
-/* this setting is the same as ov5647_snap_settings */
-static struct msm_camera_i2c_reg_conf ov5647_zsl_settings[] = {
-/*2608*1952 Reference Setting 24M MCLK 2lane 280Mbps/lane 30fps*/
-    {0x3035, 0x21},
-    {0x3036, 0x66},
-    {0x303c, 0x11},
-    {0x3821, 0x00},//ISP mirror of, Sensor mirror of 0x00  
-    {0x3820, 0x06},//0x0}, bit[1:2] = 0
-    {0x3612, 0x5b},
-    {0x3618, 0x04},
-    {0x380c, 0x0a},
-    {0x380d, 0xc0},
-    {0x380e, 0x07},
-    {0x380f, 0xb6},
-    {0x3814, 0x11},
-    {0x3815, 0x11},
-    {0x3708, 0x64},
-    {0x3709, 0x12},
-    /*2608 * 1952 */
-    {0x3808, 0x0a}, //X OUTPUT SIZE = 2608
-    {0x3809, 0x30},
-    {0x380a, 0x07}, //Y OUTPUT SIZE = 1952
-    {0x380b, 0xa0},
-    {0x3800, 0x00},
-    {0x3801, 0x04},
-    {0x3802, 0x00},
-    {0x3803, 0x00},
-    {0x3804, 0x0a},
-    {0x3805, 0x3b},
-    {0x3806, 0x07},
-    {0x3807, 0xa3},
-    {0x4004, 0x04},//black line number
 
-    {0x4005, 0x1a},// add
-    {0x4837, 0x19},//MIPI pclk period
+static struct msm_camera_i2c_reg_conf ov5647_zsl_settings[] = {
+	{0x3035, 0x21},
+	{0x3036, 0x4f},
+	{0x3821, 0x01},
+	{0x3820, 0x47},
+
+	{0x3612, 0x0b},
+	{0x3618, 0x04},
+	{0x380c, 0x0a},
+	{0x380d, 0x8c},
+	{0x380e, 0x07},
+	{0x380f, 0xb0},
+	{0x3814, 0x11},
+	{0x3815, 0x11},
+	{0x3709, 0x12},
+	{0x3808, 0x0a},
+	{0x3809, 0x30},
+	{0x380a, 0x07},
+	{0x380b, 0xa0},
+	{0x3800, 0x00},
+	{0x3801, 0x04},
+	{0x3802, 0x00},
+	{0x3803, 0x00},
+	{0x3804, 0x0a},
+	{0x3805, 0x3b},
+	{0x3806, 0x07},
+	{0x3807, 0xa3},
+	{0x4004, 0x04},
 };
 
 static struct msm_camera_i2c_reg_conf ov5647_recommend_settings[] = {
@@ -529,6 +604,18 @@ static struct msm_camera_i2c_conf_array ov5647_confs[] = {
 	{&ov5647_zsl_settings[0],
 	ARRAY_SIZE(ov5647_zsl_settings), 0, MSM_CAMERA_I2C_BYTE_DATA},
 };
+static struct msm_camera_i2c_conf_array ov5647_confs_flip[] = {
+	{&ov5647_snap_settings_flip[0],
+	ARRAY_SIZE(ov5647_snap_settings_flip), 0, MSM_CAMERA_I2C_BYTE_DATA},
+	{&ov5647_prev_settings_flip[0],
+	ARRAY_SIZE(ov5647_prev_settings_flip), 0, MSM_CAMERA_I2C_BYTE_DATA},
+	{&ov5647_video_60fps_settings[0],
+	ARRAY_SIZE(ov5647_video_60fps_settings), 0, MSM_CAMERA_I2C_BYTE_DATA},
+	{&ov5647_video_90fps_settings[0],
+	ARRAY_SIZE(ov5647_video_90fps_settings), 0, MSM_CAMERA_I2C_BYTE_DATA},
+	{&ov5647_zsl_settings[0],
+	ARRAY_SIZE(ov5647_zsl_settings), 0, MSM_CAMERA_I2C_BYTE_DATA},
+};
 static struct msm_camera_csi_params ov5647_csi_params = {
 	.data_format = CSI_10BIT,
 	.lane_cnt    = 2,
@@ -589,9 +676,9 @@ static struct msm_sensor_output_info_t ov5647_dimensions[] = {
 	{ /* For ZSL */
 		.x_output = 0xA30,  /*2608*/  /*for 5Mp*/
 		.y_output = 0x7A0,   /*1952*/
-		.line_length_pclk = 0xAC0,
-		.frame_length_lines = 0x7B6,
-		.vt_pixel_clk = 81600000,
+		.line_length_pclk = 0xA8C,
+		.frame_length_lines = 0x7B0,
+		.vt_pixel_clk = 37600000,
 		.op_pixel_clk = 159408000,
 		.binning_factor = 0x0,
 	},
@@ -1352,6 +1439,10 @@ int32_t ov5647_sensor_model_match(struct msm_sensor_ctrl_t *s_ctrl)
         BG_Ratio_Typical = 0x2C6;
 	}
 	
+    if(machine_is_msm8x25_G610C())
+    {
+        s_ctrl->msm_sensor_reg->mode_settings = &ov5647_confs_flip[0];
+    }
 	return 0;
 }
 

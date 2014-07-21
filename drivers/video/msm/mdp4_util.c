@@ -1,4 +1,4 @@
-/* Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2009-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -3300,17 +3300,4 @@ int mdp4_qseed_cfg(struct mdp_qseed_cfg_data *cfg)
 
 error:
 	return ret;
-}
-u32 mdp4_get_mixer_num(u32 panel_type)
-{
-	u32 mixer_num;
-	if ((panel_type == TV_PANEL) ||
-			(panel_type == DTV_PANEL))
-		mixer_num = MDP4_MIXER1;
-	else if (panel_type == WRITEBACK_PANEL) {
-		mixer_num = MDP4_MIXER2;
-	} else {
-		mixer_num = MDP4_MIXER0;
-	}
-	return mixer_num;
 }

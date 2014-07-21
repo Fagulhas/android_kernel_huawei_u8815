@@ -401,17 +401,17 @@ static void gs_work_func(struct work_struct *work)
 	 
 		if(x&0x200)/**/
 		{
-			x -= 1024; 		/*2\A1\AFs complement 10-bit numbers*/
+			x -= 1024; 		/*2¡¯s complement 10-bit numbers*/
 		}
 					
 		if(y&0x200)/**/
 		{
-			y -= 1024; 		/*2\A1\AFs complement 10-bit numbers*/  	 
+			y -= 1024; 		/*2¡¯s complement 10-bit numbers*/  	 
 		}
 	
 		if(z&0x200)/**/
 		{
-			z -= 1024; 		/*2\A1\AFs complement 10-bit numbers*/ 
+			z -= 1024; 		/*2¡¯s complement 10-bit numbers*/ 
 		}
 
 		memset((void*)compass_sensor_data, 0, sizeof(compass_sensor_data));
@@ -758,8 +758,7 @@ static int gs_resume(struct i2c_client *client)
 {
 	struct gs_data *gs = i2c_get_clientdata(client);
 	
-	bma250_set_mode(MODE_NORMAL); 
-	
+	bma250_set_mode(MODE_NORMAL); 	
 	if (!gs->use_irq)
 		hrtimer_start(&gs->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
 	else

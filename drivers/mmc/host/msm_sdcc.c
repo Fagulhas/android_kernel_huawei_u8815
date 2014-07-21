@@ -3,7 +3,7 @@
  *
  *  Copyright (C) 2007 Google Inc,
  *  Copyright (C) 2003 Deep Blue Solutions, Ltd, All Rights Reserved.
- *  Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
+ *  Copyright (c) 2009-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -5473,9 +5473,6 @@ msmsdcc_probe(struct platform_device *pdev)
 	{
         mmc->caps |= MMC_CAP_NEEDS_POLL;
 
-         /* we delete some lines here because we move the configuration for 
-         * our SD card slot power supply to the Modem side 
-         * according to a suggestion from QualComm*/
     }
 #endif
 	mmc->caps2 |= MMC_CAP2_INIT_BKOPS | MMC_CAP2_BKOPS;

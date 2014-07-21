@@ -405,7 +405,7 @@ static struct msm_pm_platform_data
 					.latency = 2,
 					.residency = 10,
 	},
-#if 0
+
 	/* picked latency & redisdency values from 7x30 */
 	[MSM_PM_MODE(1, MSM_PM_SLEEP_MODE_POWER_COLLAPSE_STANDALONE)] = {
 					.idle_supported = 1,
@@ -462,7 +462,7 @@ static struct msm_pm_platform_data
 					.latency = 2,
 					.residency = 10,
 	},
-#endif
+
 };
 
 static struct msm_pm_boot_platform_data msm_pm_8625_boot_pdata __initdata = {
@@ -696,6 +696,7 @@ static struct regulator_init_data ncp6335d_init_data = {
 	.consumer_supplies = ncp6335d_consumer_supplies,
 };
 
+/*rerutn back to qcom 3027*/
 static struct ncp6335d_platform_data ncp6335d_pdata = {
 	.init_data = &ncp6335d_init_data,
 	.default_vsel = NCP6335D_VSEL0,

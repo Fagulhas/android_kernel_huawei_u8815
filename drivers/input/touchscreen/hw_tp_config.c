@@ -365,13 +365,13 @@ uint8_t *get_tp_version_config(int module_id,u16 ic_type)
 				     temp_config = tp_y300_truly_config;
 				     break;
 				default: 
-				     temp_config = tp_y300_truly_config;	
+				     temp_config = tp_default_4_config;	
 				     break;
 			}  
 		}
 		else
 		{
-			 temp_config = tp_y300_truly_config;
+			 temp_config = tp_default_4_config;
 		}
 		printk(KERN_WARNING "COB matching config failed! now select the default config\n");
 	}

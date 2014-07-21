@@ -336,13 +336,6 @@ static int cyttsp4_setup_input_device(struct cyttsp4_device *ttsp)
 
 	dev_vdbg(dev, "%s: Initialize event signals\n", __func__);
 	__set_bit(EV_KEY, bd->input->evbit);
-	if(bd->si->si_ofs.num_btns<3)
-		{
-		__set_bit(KEY_BACK, bd->input->keybit);
-	      __set_bit(KEY_HOME, bd->input->keybit);
-	      __set_bit(KEY_MENU, bd->input->keybit);
-		}
-	else
 	for (i = 0; i < bd->si->si_ofs.num_btns; i++)
 		__set_bit(bd->si->btn[i].key_code, bd->input->keybit);
 

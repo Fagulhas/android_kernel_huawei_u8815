@@ -70,7 +70,7 @@ typedef  struct _usbsdms_read_toc_cmd_type
 #define VENDOR_EMOBILE  "emobile"
 #define COUNTRY_US   "us"
 #define VENDOR_TRACFONE  "tracfone"
-#define VENDOR_CC "consumercellular"
+
 extern void usb_port_switch_request(int usb_pid_index);
 
 void android_disable_send_uevent(bool disable);
