@@ -69,7 +69,7 @@ extern int load_888rle_image(char *filename);
 #endif
 #endif
 
-/* ÉŸ³ýŽË¶ÎŽúÂë */
+/* ɾ���˶δ��� */
 
 /*modify the number of framebuffer*/
 /*Add 4 framebuffer and delete the mem adapter strategy*/	
@@ -156,7 +156,7 @@ int msm_fb_config_cabc(struct msm_fb_data_type *mfd, struct msmfb_cabc_config ca
 int msm_fb_set_dynamic_gamma(struct msm_fb_data_type *mfd, enum danymic_gamma_mode gamma_mode);
 #endif
 
-/* ÉŸ³ýŽË¶ÎŽúÂë */
+/* ɾ���˶δ��� */
 
 #ifdef MSM_FB_ENABLE_DBGFS
 
@@ -1141,10 +1141,9 @@ static int msm_fb_blank_sub(int blank_mode, struct fb_info *info,
 				mfd->panel_power_on = TRUE;
 				up(&mfd->sem);
 				/* add qcom patch to work around lcd esd issue */
-				/* reduce schedule time from 5s to 3s */
 				mfd->is_panel_alive = TRUE;
 				schedule_delayed_work(&mfd->panel_live_status,
-					msecs_to_jiffies(3000));
+					msecs_to_jiffies(5000));
 
 /* ToDo: possible conflict with android which doesn't expect sw refresher */
 /*
@@ -1507,10 +1506,9 @@ static void mipi_dsi_check_live_status(struct work_struct *work)
 		if (mfd->is_panel_alive == FALSE)
 			schedule_work(&mfd->display_reset);
 
-		/* reduce schedule time from 5s to 3s */
 		if (mfd->panel_power_on && ret > 0)
 			schedule_delayed_work(&mfd->panel_live_status,
-					msecs_to_jiffies(3000));
+					msecs_to_jiffies(5000));
 	}
 }
 
@@ -2155,7 +2153,7 @@ static int msm_fb_pan_display(struct fb_var_screeninfo *var,
     static bool is_first_frame = TRUE;
 #endif
 
-/* ÉŸ³ýŽË¶ÎŽúÂë */
+/* ɾ���˶δ��� */
     
 	/*
 	 * If framebuffer is 2, io pen display is not allowed.
@@ -2668,7 +2666,7 @@ int mdp_blit(struct fb_info *info, struct mdp_blit_req *req)
 	}
 #endif
 
-/* ÉŸ³ýŽË¶ÎŽúÂë */
+/* ɾ���˶δ��� */
 
 	if (unlikely(req->src_rect.h == 0 || req->src_rect.w == 0)) {
 		printk(KERN_ERR "mpd_ppp: src img of zero size!\n");
@@ -3419,19 +3417,6 @@ static int msmfb_overlay_play_wait(struct fb_info *info, unsigned long *argp)
 	return ret;
 }
 
-static int msmfb_overlay_commit(struct fb_info *info, unsigned long *argp)
-{
-	int ret, ndx;
-
-	ret = copy_from_user(&ndx, argp, sizeof(ndx));
-	if (ret) {
-		pr_err("%s: ioctl failed\n", __func__);
-		return ret;
-	}
-
-	return mdp4_overlay_commit(info, ndx);
-}
-
 static int msmfb_overlay_play(struct fb_info *info, unsigned long *argp)
 {
 	int	ret;
@@ -3887,24 +3872,7 @@ static int msmfb_handle_pp_ioctl(struct msm_fb_data_type *mfd,
 
 	return ret;
 }
-static int msmfb_handle_metadata_ioctl(struct msm_fb_data_type *mfd,
-				struct msmfb_metadata *metadata_ptr)
-{
-	int ret;
-	switch (metadata_ptr->op) {
-#ifdef CONFIG_FB_MSM_MDP40
-	case metadata_op_base_blend:
-		ret = mdp4_update_base_blend(mfd,
-						&metadata_ptr->data.blend_cfg);
-		break;
-#endif
-	default:
-		pr_warn("Unsupported request to MDP META IOCTL.\n");
-		ret = -EINVAL;
-		break;
-	}
-	return ret;
-}
+
 static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 			unsigned long arg)
 {
@@ -3925,7 +3893,6 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 #endif
 	struct mdp_page_protection fb_page_protection;
 	struct msmfb_mdp_pp mdp_pp;
-	struct msmfb_metadata mdp_metadata;
 	int ret = 0;
 
 	switch (cmd) {
@@ -3938,11 +3905,6 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		break;
 	case MSMFB_OVERLAY_UNSET:
 		ret = msmfb_overlay_unset(info, argp);
-		break;
-	case MSMFB_OVERLAY_COMMIT:
-		down(&msm_fb_ioctl_ppp_sem);
-		ret = msmfb_overlay_commit(info, argp);
-		up(&msm_fb_ioctl_ppp_sem);
 		break;
 	case MSMFB_OVERLAY_PLAY:
 		ret = msmfb_overlay_play(info, argp);
@@ -4238,11 +4200,6 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 			ret = msm_fb_set_dynamic_gamma(mfd, gamma_setting_value);
 			last_gamma_setting = FALSE;
 		}
-	case MSMFB_METADATA_SET:
-		ret = copy_from_user(&mdp_metadata, argp, sizeof(mdp_metadata));
-		if (ret)
-			return ret;
-		ret = msmfb_handle_metadata_ioctl(mfd, &mdp_metadata);
 		break;
 #endif
 #ifdef CONFIG_FB_AUTO_CABC
@@ -4481,7 +4438,7 @@ EXPORT_SYMBOL(get_fb_phys_info);
 #ifdef CONFIG_HUAWEI_EVALUATE_POWER_CONSUMPTION 
 static void __exit msm_fb_exit(void)
 {
-/* ÉŸ³ýŽË¶ÎŽúÂë */
+/* ɾ���˶δ��� */
 
      /*lcd consume notify timer cancel*/
 	 del_timer(&bright_timer);
@@ -4517,7 +4474,7 @@ int __init msm_fb_init(void)
 	INIT_WORK(&light_notify_work, light_notify_work_func);  
 #endif
 
-/* ÉŸ³ýŽË¶ÎŽúÂë */
+/* ɾ���˶δ��� */
 
 	return 0;
 }

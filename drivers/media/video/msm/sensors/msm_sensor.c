@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -401,6 +401,8 @@ long msm_sensor_subdev_ioctl(struct v4l2_subdev *sd,
 {
 	struct msm_sensor_ctrl_t *s_ctrl = get_sctrl(sd);
 	void __user *argp = (void __user *)arg;
+	if (s_ctrl->sensor_state == MSM_SENSOR_POWER_DOWN)
+		return -EINVAL;
 	switch (cmd) {
 	case VIDIOC_MSM_SENSOR_CFG:
 		return s_ctrl->func_tbl->sensor_config(s_ctrl, argp);
@@ -882,7 +884,18 @@ int32_t msm_sensor_i2c_probe(struct i2c_client *client,
 		rc = msm_sensor_match_id(s_ctrl);
 	if (rc < 0)
 		goto probe_fail;
+	/*the codes below are to set the camera sensor name for project menu*/
+	if(s_ctrl->func_tbl->sensor_model_match)
+		rc = s_ctrl->func_tbl->sensor_model_match(s_ctrl);
 
+	if (rc < 0)
+		goto probe_fail;
+
+	if(s_ctrl->sensor_name)
+		strncpy((char *)s_ctrl->sensordata->sensor_name, s_ctrl->sensor_name, CAMERA_NAME_LEN -1);
+	printk("the name for project menu is %s\n", s_ctrl->sensordata->sensor_name);
+	if(s_ctrl->sensor_version)
+		set_camera_version((char*)s_ctrl->sensor_version, sdata->slave_sensor);
 #ifdef CONFIG_HUAWEI_HW_DEV_DCT
 	/* detect current device successful, set the flag as present */
 	switch(s_ctrl->sensordata->camera_type)
@@ -926,12 +939,7 @@ int32_t msm_sensor_i2c_probe(struct i2c_client *client,
 	camera_node_succee[camera_slave_sensor] = 1;
     /*remove the mclk_self_adapt and put it before sensor power up*/
 #endif
-	/*the codes below are to set the camera sensor name for project menu*/
-	if(s_ctrl->func_tbl->sensor_model_match)
-		s_ctrl->func_tbl->sensor_model_match(s_ctrl);
-	if(s_ctrl->sensor_name)
-		strncpy((char *)s_ctrl->sensordata->sensor_name, s_ctrl->sensor_name, CAMERA_NAME_LEN -1);
-	printk("the name for project menu is %s\n", s_ctrl->sensordata->sensor_name);
+	//remove lines
 	goto power_down;
 probe_fail:
 	pr_err("%s %s_i2c_probe failed\n", __func__, client->name);
@@ -939,7 +947,11 @@ power_down:
 	if (rc > 0)
 		rc = 0;
 	s_ctrl->func_tbl->sensor_power_down(s_ctrl);
+
     mdelay(10);
+
+	s_ctrl->sensor_state = MSM_SENSOR_POWER_DOWN;
+
 	return rc;
 }
 
@@ -949,10 +961,16 @@ int32_t msm_sensor_power(struct v4l2_subdev *sd, int on)
 	struct msm_sensor_ctrl_t *s_ctrl = get_sctrl(sd);
 	mutex_lock(s_ctrl->msm_sensor_mutex);
 	if (on) {
+		if(s_ctrl->sensor_state == MSM_SENSOR_POWER_UP) {
+			pr_err("%s: sensor already in power up state\n", __func__);
+			mutex_unlock(s_ctrl->msm_sensor_mutex);
+			return -EINVAL;
+		}
 		rc = s_ctrl->func_tbl->sensor_power_up(s_ctrl);
 		if (rc < 0) {
 			pr_err("%s: %s power_up failed rc = %d\n", __func__,
 				s_ctrl->sensordata->sensor_name, rc);
+			s_ctrl->sensor_state = MSM_SENSOR_POWER_DOWN;
 		} else {
 			if (s_ctrl->func_tbl->sensor_match_id)
 				rc = s_ctrl->func_tbl->sensor_match_id(s_ctrl);
@@ -967,10 +985,18 @@ int32_t msm_sensor_power(struct v4l2_subdev *sd, int on)
 					pr_err("%s: %s power_down failed\n",
 					__func__,
 					s_ctrl->sensordata->sensor_name);
+				s_ctrl->sensor_state = MSM_SENSOR_POWER_DOWN;
 			}
+			s_ctrl->sensor_state = MSM_SENSOR_POWER_UP;
 		}
 	} else {
+		if(s_ctrl->sensor_state == MSM_SENSOR_POWER_DOWN) {
+			pr_err("%s: sensor already in power down state\n",__func__);
+			mutex_unlock(s_ctrl->msm_sensor_mutex);
+			return -EINVAL;
+		}
 		rc = s_ctrl->func_tbl->sensor_power_down(s_ctrl);
+		s_ctrl->sensor_state = MSM_SENSOR_POWER_DOWN;
 	}
 	mutex_unlock(s_ctrl->msm_sensor_mutex);
 	return rc;

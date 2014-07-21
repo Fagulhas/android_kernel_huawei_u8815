@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -11,7 +11,7 @@
  *
  */
 
-#if (defined(CONFIG_HUAWEI_BT_WCN2243) || (!defined(CONFIG_HUAWEI_KERNEL)))
+#if (defined(HUAWEI_BT_BLUEZ_VER30) || (!defined(CONFIG_HUAWEI_KERNEL)))
 
 #include <linux/delay.h>
 #include <linux/rfkill.h>
@@ -1065,7 +1065,7 @@ reg_get_fail:
 
 #endif
 
-#if (defined(CONFIG_HUAWEI_BT_BCM43XX) && defined(CONFIG_HUAWEI_KERNEL))
+#if (defined(HUAWEI_BT_BTLA_VER30) && defined(CONFIG_HUAWEI_KERNEL))
 
 #include <linux/delay.h>
 #include <linux/rfkill.h>
@@ -1089,7 +1089,7 @@ reg_get_fail:
 #define GPIO_BT_TX         46
 
 /*wake signals*/
-#define GPIO_BT_WAKE_BT    107
+#define GPIO_BT_WAKE_BT    29
 #define GPIO_BT_WAKE_MSM   27 //bt wake msm gpio
 
 /*control signals*/

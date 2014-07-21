@@ -1111,7 +1111,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 		max_dtr = card->csd.max_dtr;
 	}
 
-#ifndef CONFIG_HUAWEI_NO_HYNIX_HACK
+#ifdef CONFIG_HUAWEI_KERNEL
 	/* Set clk to 26MHz to fix hynix emmc CMD6 timeout issue. */
 	mmc_set_clock(host, MMC_HIGH_26_MAX_DTR);
 #endif
@@ -1504,18 +1504,6 @@ static int mmc_suspend(struct mmc_host *host)
 
 	return err;
 }
-
-#ifdef CONFIG_HUAWEI_KERNEL
-int mmc_suspend_extern(struct mmc_card *card)
-{
-	BUG_ON(!card);
-	BUG_ON(!card->host);
-	
-	pr_debug("%s: %s\n", mmc_hostname(card->host), __func__);
-    
-	return mmc_suspend(card->host);
-}
-#endif
 
 /*
  * Resume callback from host.

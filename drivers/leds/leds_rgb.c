@@ -36,16 +36,18 @@
 #define RGB_PRINT(x...) do{}while(0)
 #endif
 
+/* Delete some lines to control leds used by GPIO */
 static void set_red_brightness(struct led_classdev *led_cdev,
 					enum led_brightness value)
 {
 	int ret = 0;
 
 	RGB_PRINT("%s: value = %d\n",__func__, value);
-#ifdef CONFIG_ARCH_MSM7X27A
-        ret = pmic_secure_mpp_config_i_sink(PM_MPP_3, PM_MPP__I_SINK__LEVEL_5mA, \
-            (!!value) ? PM_MPP__I_SINK__SWITCH_ENA : PM_MPP__I_SINK__SWITCH_DIS);
-#endif
+	
+	/*ap side control the gpio*/
+    gpio_tlmm_config(GPIO_CFG(GPIO_LED_RED, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
+    ret = gpio_direction_output(GPIO_LED_RED,(!!value) ? LED_ON : LED_OFF);
+
 	if(ret)
 	{
 		RGB_PRINT("%s: failed,ret=%d\n",__func__,ret);
@@ -61,10 +63,10 @@ static void set_green_brightness(struct led_classdev *led_cdev,
 	int ret = 0;
 	
 	RGB_PRINT("%s: value = %d\n",__func__, value);	
-#ifdef CONFIG_ARCH_MSM7X27A
-	    ret = pmic_secure_mpp_config_i_sink(PM_MPP_5, PM_MPP__I_SINK__LEVEL_5mA, \
-			(!!value) ? PM_MPP__I_SINK__SWITCH_ENA : PM_MPP__I_SINK__SWITCH_DIS);
-#endif
+	
+    gpio_tlmm_config(GPIO_CFG(GPIO_LED_GREEN, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
+    ret = gpio_direction_output(GPIO_LED_GREEN,(!!value) ? LED_ON : LED_OFF);
+
 	if(ret)
 	{
 		RGB_PRINT("%s: failed,ret=%d\n",__func__,ret);
@@ -81,10 +83,10 @@ static void set_blue_brightness(struct led_classdev *led_cdev,
 	int ret = 0;
 	
 	RGB_PRINT("%s: value = %d\n",__func__, value);
-#ifdef CONFIG_ARCH_MSM7X27A
-	ret = pmic_secure_mpp_config_i_sink(PM_MPP_8, PM_MPP__I_SINK__LEVEL_5mA, \
-			(!!value) ? PM_MPP__I_SINK__SWITCH_ENA : PM_MPP__I_SINK__SWITCH_DIS);
-#endif
+	
+    gpio_tlmm_config(GPIO_CFG(GPIO_LED_BLUE, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
+    ret = gpio_direction_output(GPIO_LED_BLUE,(!!value) ? LED_ON : LED_OFF);
+
 	if(ret)
 	{
 		RGB_PRINT("%s: failed,ret=%d\n",__func__,ret);
@@ -93,7 +95,6 @@ static void set_blue_brightness(struct led_classdev *led_cdev,
 
 	RGB_PRINT("%s: success\n",__func__);
 }
-
 static int rgb_leds_probe(struct platform_device *pdev)
 {
 	int rc = -ENODEV;
@@ -140,17 +141,23 @@ static int rgb_leds_probe(struct platform_device *pdev)
 		printk(KERN_ERR "rbg blue: led_classdev_register failed\n");
 		goto err_led2_classdev_register_failed;
 	}
+	gpio_request(GPIO_LED_RED, "red_led");
+	gpio_tlmm_config(GPIO_CFG(GPIO_LED_RED, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
 
+	gpio_request(GPIO_LED_GREEN, "green_led");
+	gpio_tlmm_config(GPIO_CFG(GPIO_LED_GREEN, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
+
+	gpio_request(GPIO_LED_BLUE, "blue_led");
+	gpio_tlmm_config(GPIO_CFG(GPIO_LED_BLUE, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
+	    
 	RGB_PRINT("led_classdev_register sucess\n");
 	
 	return 0;
-	
 err_led2_classdev_register_failed:
-	led_classdev_unregister(&p_rgb_data[2]);
-err_led1_classdev_register_failed:
 	led_classdev_unregister(&p_rgb_data[1]);
-err_led0_classdev_register_failed:
+err_led1_classdev_register_failed:
 	led_classdev_unregister(&p_rgb_data[0]);
+err_led0_classdev_register_failed:
 err_alloc_failed:
 	kfree(p_rgb_data);
 	return rc;

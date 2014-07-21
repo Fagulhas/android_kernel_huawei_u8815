@@ -368,19 +368,19 @@ static void gs_work_func(struct work_struct *work)
 
 		st303_DBG("Gs_st303:A  x : %d y : %d z : %d \n", x,y,z);
 	 
-		if(x&0x800)/*\B8\BA值*/
+		if(x&0x800)/*负值*/
 		{
-			x -= 4096; 		/*\B8\BA\CA\FD\B0\B4\D5詹\B9\C2\EB\BC\C6\CB\E3 */  
+			x -= 4096; 		/*负数按照补码计算 */  
 		}
 					
-		if(y&0x800)/*\B8\BA值*/
+		if(y&0x800)/*负值*/
 		{
-			y -= 4096; 		/*\B8\BA\CA\FD\B0\B4\D5詹\B9\C2\EB\BC\C6\CB\E3 */  	 
+			y -= 4096; 		/*负数按照补码计算 */  	 
 		}
 	
-		if(z&0x800)/*\B8\BA值*/
+		if(z&0x800)/*负值*/
 		{
-			z -= 4096; 		/*\B8\BA\CA\FD\B0\B4\D5詹\B9\C2\EB\BC\C6\CB\E3 */   
+			z -= 4096; 		/*负数按照补码计算 */   
 		}
 
 		tmp = -x;

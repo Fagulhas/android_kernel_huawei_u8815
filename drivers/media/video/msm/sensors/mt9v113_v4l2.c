@@ -159,13 +159,13 @@ static struct msm_camera_i2c_reg_conf mt9v113_recommend_settings_4[] =
 	{0x098C, 0xA40B}, 
 	{0x0990, 0x002A}, 
 	{0x098C, 0x2411}, 
-	{0x0990, 0x0088}, 
+	{0x0990, 0x0078}, /*banding*/
 	{0x098C, 0x2413}, 
-	{0x0990, 0x00A4}, 
+	{0x0990, 0x0090}, /*banding*/
 	{0x098C, 0x2415}, 
-	{0x0990, 0x0088}, 
+	{0x0990, 0x0078}, /*banding*/ 
 	{0x098C, 0x2417}, 
-	{0x0990, 0x00A4}, 
+	{0x0990, 0x0090}, /*banding*/
 	{0x098C, 0xA404}, 
 	{0x0990, 0x0010}, 
 	{0x098C, 0xA40D}, 
@@ -175,6 +175,7 @@ static struct msm_camera_i2c_reg_conf mt9v113_recommend_settings_4[] =
 	{0x098C, 0xA410}, 	
 	{0x0990, 0x000A}, 	
 
+	{0x33f4, 0x0043},
 	{0x364E, 0x0130},
 	{0x3650, 0x17EB},
 	{0x3652, 0x4B12},
@@ -394,6 +395,7 @@ static struct msm_camera_i2c_reg_conf mt9v113_recommend_settings_4_mirror_flip[]
 	{0x098C, 0xA410}, 	
 	{0x0990, 0x000A}, 	
 
+	{0x33f4, 0x0043},
 	{0x364E, 0x0130},
 	{0x3650, 0x17EB},
 	{0x3652, 0x4B12},
@@ -504,11 +506,11 @@ static struct msm_camera_i2c_reg_conf mt9v113_recommend_settings_4_mirror_flip[]
 static struct msm_camera_i2c_reg_conf mt9v113_recommend_settings_5[] =
 {      
 	{0x098C, 0xA20C}, 
-	{0x0990, 0x0012}, 
+	{0x0990, 0x0010}, 
 	{0x098C, 0xA215}, 
-	{0x0990, 0x0012}, 
+	{0x0990, 0x0010}, 
 	{0x098C, 0x2212}, 
-	{0x0990, 0x00c0}, //0x180
+	{0x0990, 0x0180}, 
 	{0x098C, 0xA24F}, 
 	{0x0990, 0x0038}, 
 
@@ -626,10 +628,10 @@ static struct msm_camera_i2c_reg_conf mt9v113_recommend_settings_5[] =
 	{0x0990, 0x170C}, 	
 	{0x098C, 0x2B2A}, 	
 	{0x0990, 0x3E80}, 	
-	{0x098C, 0xA109},
-	{0x0990, 0x0030},
-	{0x098C, 0xA103}, 	
-	{0x0990, 0x0006}, 
+	{0x098C, 0xA202}, 	// MCU_ADDRESS [AE_WINDOW_POS]
+	{0x0990, 0x0032}, 	// MCU_DATA_0
+	{0x098C, 0xA203}, 	// MCU_ADDRESS [AE_WINDOW_SIZE]
+	{0x0990, 0x00BB}, 	// MCU_DATA_0
 };
 
 static struct msm_camera_i2c_reg_conf mt9v113_recommend_settings_5_BYD[] =
@@ -1399,6 +1401,7 @@ static struct msm_sensor_ctrl_t mt9v113_s_ctrl = {
 	.func_tbl = &mt9v113_func_tbl,
 	.clk_rate = MSM_SENSOR_MCLK_24HZ,
 	.sensor_name = {0},
+	.sensor_version = "V01",
 };
 
 module_init(msm_sensor_init_module);

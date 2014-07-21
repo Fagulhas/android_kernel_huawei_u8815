@@ -24,8 +24,6 @@
 #define FALSE 0
 #endif
 
-#define LCD_ESD_CHECK_IGNORE_CNT    (10)
-
 struct sequence{
     uint32_t reg;
     uint32_t value;

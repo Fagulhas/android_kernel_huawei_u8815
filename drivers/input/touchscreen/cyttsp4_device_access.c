@@ -1393,7 +1393,7 @@ static ssize_t cyttsp4_ic_grpdata_store(struct device *dev,
 
 cyttsp4_ic_grpdata_store_exit:
 	mutex_unlock(&dad->sysfs_lock);
-	dev_err(dev, "%s: return size=%d\n", __func__, size);
+	dev_vdbg(dev, "%s: return size=%d\n", __func__, size);
 	return size;
 }
 
@@ -1457,176 +1457,151 @@ static int _cyttsp4_ret_scan_data_cmd(struct device *dev, int readOffset,
 }
 
 /*
-* SysFs grpdata show function implementation of group 6.
-* Prints contents of the touch parameters a row at a time.
-*/
+ * SysFs grpdata show function implementation of group 6.
+ * Prints contents of the touch parameters a row at a time.
+ */
 static ssize_t cyttsp4_get_panel_data_show(struct device *dev,
-				   struct device_attribute *attr, char *buf)
+		struct device_attribute *attr, char *buf)
 {
-		 struct cyttsp4_device_access_data *dad = dev_get_drvdata(dev);
-		 u8 return_buf[CY_CMD_CAT_RET_PANEL_DATA_RET_SZ];
- 
-		 int rc = 0;
-		 int rc1 = 0;
-		 int dataIdx = -1;
-		 int i = 0;
-		 int printIdx = -1;
-		 u8 cmdParam_ofs = dad->si->si_ofs.cmd_ofs + 1;
-		 int readByte = CY_CMD_CAT_RET_PANEL_DATA_RET_SZ
-							+ (dad->si->si_ofs.cmd_ofs + 1);
-		 int leftOverElement = 0;
-		 int returnedElement = 0;
-		 int readElementOffset = 0;
-		 u8 elementStartOffset = dad->si->si_ofs.cmd_ofs + 1
-							+ CY_CMD_CAT_RET_PANEL_DATA_RET_SZ;
-		 u8 elementSize = 1;
-		 int maxElmtSize = I2C_BUF_MAX_SIZE - elementStartOffset;
- 
-		 rc = cyttsp4_request_exclusive(dad->ttsp,
-							CY_DA_REQUEST_EXCLUSIVE_TIMEOUT);
-		 if (rc < 0) {
-				   dev_err(dev, "%s: Error on request exclusive r=%d\n",
-									 __func__, rc);
-				   goto cyttsp4_get_panel_data_show_err_release;
-		 }
- 
-		 if (dad->heatmap.scan_start) {
-				   /* Start scan */
-				   rc = _cyttsp4_exec_scan_cmd(dev);
-				   if (rc < 0)
-							goto cyttsp4_get_panel_data_show_err_release;
-		 }
-		 /* retrieve scan data */
-		 rc = _cyttsp4_ret_scan_data_cmd(dev, CY_CMD_IN_DATA_OFFSET_VALUE,
-							dad->heatmap.numElement, dad->heatmap.dataType,
-							return_buf);
- 
-		 if (rc < 0)
-				   goto cyttsp4_get_panel_data_show_err_release;
-		 if (return_buf[CY_CMD_OUT_STATUS_OFFSET] != CY_CMD_STATUS_SUCCESS)
-				   goto cyttsp4_get_panel_data_show_err_release;
- 
-		 /* read data */
-		 elementSize = (return_buf[CY_CMD_RET_PNL_OUT_DATA_FORMAT_OFFS] &
-							CY_CMD_RET_PANEL_ELMNT_SZ_MASK);
-		 readByte += (dad->heatmap.numElement *
-							elementSize);
- 
-		 if (readByte >= I2C_BUF_MAX_SIZE) {
-				   rc = cyttsp4_read(dad->ttsp, CY_MODE_CAT, 0, dad->ic_buf,
-									 I2C_BUF_MAX_SIZE);
-				   dataIdx = I2C_BUF_MAX_SIZE;
-		 } else {
-				   rc = cyttsp4_read(dad->ttsp, CY_MODE_CAT, 0, dad->ic_buf,
-									 readByte);
-				   dataIdx = readByte;
-		 }
-		 if (rc < 0) {
-				   dev_err(dev, "%s: Error on read r=%d\n", __func__, dataIdx);
-				   goto cyttsp4_get_panel_data_show_err_release;
-		 }
- 
-		 if (readByte < I2C_BUF_MAX_SIZE)
-				   goto cyttsp4_get_panel_data_show_err_release;
- 
-		 dev_err(dev, "%s: _cyttsp4_ret_scan_data_cmd(): elementStartOffset:%d, maxElmtSize:%d\n",
-				   __func__, elementStartOffset, maxElmtSize);
-		 dev_err(dev, "%s:_cyttsp4_ret_scan_data_cmd(): return_buf: 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
-				   __func__, return_buf[0], return_buf[1], return_buf[2], return_buf[3], return_buf[4]);
-		 dev_err(dev, "%s: dad->heatmap.numElement: 0x%x\n", __func__, dad->heatmap.numElement);
- 
- 
-		 maxElmtSize = maxElmtSize / elementSize;
-		 leftOverElement = dad->heatmap.numElement;
- 
-		 returnedElement =
-							return_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_H] * 256
-							+ return_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_L];
-		 returnedElement = (returnedElement > maxElmtSize) ?
-									 maxElmtSize : returnedElement;
- 
-		 leftOverElement -= returnedElement;
-		 readElementOffset += returnedElement;		  
- 
-		 
-		 do {
-				   /* get the data */
-				   rc = _cyttsp4_ret_scan_data_cmd(dev, readElementOffset,
-									 leftOverElement, dad->heatmap.dataType,
-									 return_buf);
-				   if (rc < 0)
-				   {
-							dev_err(dev, "%s: Error on reading scanData r=%d\n", __func__, rc);
-							goto cyttsp4_get_panel_data_show_err_release;
-				   }
- 
-				   dev_err(dev, "%s:_cyttsp4_ret_scan_data_cmd()2: return_buf: 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
-				   __func__, return_buf[0], return_buf[1], return_buf[2], return_buf[3], return_buf[4]);
- 
-				   if (return_buf[CY_CMD_OUT_STATUS_OFFSET]
-									 != CY_CMD_STATUS_SUCCESS)
-							goto cyttsp4_get_panel_data_show_err_release;
- 
-				   /* DO read */
-				   readByte = leftOverElement *
-							(elementSize);
- 
-				   dev_err(dev, "%s:_cyttsp4_ret_scan_data_cmd()2: readByte: 0x%x\n",	   __func__, readByte);
- 
-				   if (readByte >= (I2C_BUF_MAX_SIZE - elementStartOffset)) {
-							rc = cyttsp4_read(dad->ttsp, CY_MODE_CAT,
-											   elementStartOffset,
-											   dad->ic_buf + dataIdx,
-											   I2C_BUF_MAX_SIZE - elementStartOffset);
-							dataIdx += (I2C_BUF_MAX_SIZE - elementStartOffset);
-				   } else {
-							rc = cyttsp4_read(dad->ttsp, CY_MODE_CAT,
-											   elementStartOffset,
-											   dad->ic_buf + dataIdx, readByte);
-							dataIdx += readByte;
-				   }
-				   if (rc < 0) {
-							dev_err(dev, "%s: Error on read r=%d\n", __func__, rc);
-							goto cyttsp4_get_panel_data_show_err_release;
-				   }
-				   returnedElement =
-							return_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_H] * 256
-							+ return_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_L];
-				   returnedElement = (returnedElement > maxElmtSize) ?
-									 maxElmtSize : returnedElement;
-				   /* Update element status */
-				   leftOverElement -= returnedElement;
-				   readElementOffset += returnedElement;
-		 } while (leftOverElement > 0);
-		 /* update on the buffer */
-		 dad->ic_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_H + cmdParam_ofs] =
-				   HI_BYTE(readElementOffset);
-		 dad->ic_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_L + cmdParam_ofs] =
-				   LOW_BYTE(readElementOffset);
- 
+	struct cyttsp4_device_access_data *dad = dev_get_drvdata(dev);
+	u8 return_buf[CY_CMD_CAT_RET_PANEL_DATA_RET_SZ];
+
+	int rc = 0;
+	int rc1 = 0;
+	int dataIdx = -1;
+	int i = 0;
+	int printIdx = -1;
+	u8 cmdParam_ofs = dad->si->si_ofs.cmd_ofs + 1;
+	int readByte = CY_CMD_CAT_RET_PANEL_DATA_RET_SZ + cmdParam_ofs;
+	int leftOverElement = 0;
+	int returnedElement = 0;
+	int readElementOffset = 0;
+	u8 elementStartOffset = cmdParam_ofs + CY_CMD_CAT_RET_PANEL_DATA_RET_SZ;
+
+	rc = cyttsp4_request_exclusive(dad->ttsp,
+			CY_DA_REQUEST_EXCLUSIVE_TIMEOUT);
+	if (rc < 0) {
+		dev_err(dev, "%s: Error on request exclusive r=%d\n",
+				__func__, rc);
+		goto cyttsp4_get_panel_data_show_err_release;
+	}
+
+	if (dad->heatmap.scan_start)	{
+		/* Start scan */
+		rc = _cyttsp4_exec_scan_cmd(dev);
+		if (rc < 0)
+			goto cyttsp4_get_panel_data_show_err_release;
+	}
+	/* retrieve scan data */
+	rc = _cyttsp4_ret_scan_data_cmd(dev, CY_CMD_IN_DATA_OFFSET_VALUE,
+			dad->heatmap.numElement, dad->heatmap.dataType,
+			return_buf);
+
+	if (rc < 0)
+		goto cyttsp4_get_panel_data_show_err_release;
+	if (return_buf[CY_CMD_OUT_STATUS_OFFSET] != CY_CMD_STATUS_SUCCESS)
+		goto cyttsp4_get_panel_data_show_err_release;
+
+	/* read data */
+	readByte += (dad->heatmap.numElement *
+			(return_buf[CY_CMD_RET_PNL_OUT_DATA_FORMAT_OFFS] &
+				CY_CMD_RET_PANEL_ELMNT_SZ_MASK));
+
+	if (readByte >= I2C_BUF_MAX_SIZE) {
+		rc = cyttsp4_read(dad->ttsp, CY_MODE_CAT, 0, dad->ic_buf,
+				I2C_BUF_MAX_SIZE);
+		dataIdx = I2C_BUF_MAX_SIZE;
+	} else {
+		rc = cyttsp4_read(dad->ttsp, CY_MODE_CAT, 0, dad->ic_buf,
+				readByte);
+		dataIdx = readByte;
+	}
+	if (rc < 0) {
+		dev_err(dev, "%s: Error on read r=%d\n", __func__, readByte);
+		goto cyttsp4_get_panel_data_show_err_release;
+	}
+
+	if (readByte < I2C_BUF_MAX_SIZE)
+		goto cyttsp4_get_panel_data_show_err_release;
+
+	leftOverElement = dad->heatmap.numElement;
+	readElementOffset = 0;
+	returnedElement =
+		return_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_H] * 256
+		+ return_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_L];
+
+	leftOverElement -= returnedElement;
+	readElementOffset += returnedElement;
+	do {
+		/* get the data */
+		rc = _cyttsp4_ret_scan_data_cmd(dev, readElementOffset,
+				leftOverElement, dad->heatmap.dataType,
+				return_buf);
+		if (rc < 0)
+			goto cyttsp4_get_panel_data_show_err_release;
+
+		if (return_buf[CY_CMD_OUT_STATUS_OFFSET]
+				!= CY_CMD_STATUS_SUCCESS)
+			goto cyttsp4_get_panel_data_show_err_release;
+
+		/* DO read */
+		readByte = leftOverElement *
+			(return_buf[CY_CMD_RET_PNL_OUT_DATA_FORMAT_OFFS]
+				& CY_CMD_RET_PANEL_ELMNT_SZ_MASK);
+
+		if (readByte >= (I2C_BUF_MAX_SIZE - elementStartOffset)) {
+			rc = cyttsp4_read(dad->ttsp, CY_MODE_CAT,
+					elementStartOffset,
+					dad->ic_buf + dataIdx,
+					I2C_BUF_MAX_SIZE - elementStartOffset);
+			dataIdx += (I2C_BUF_MAX_SIZE - elementStartOffset);
+		} else {
+			rc = cyttsp4_read(dad->ttsp, CY_MODE_CAT,
+					elementStartOffset,
+					dad->ic_buf + dataIdx, readByte);
+			dataIdx += readByte;
+		}
+		if (rc < 0) {
+			dev_err(dev, "%s: Error on read r=%d\n", __func__, rc);
+			goto cyttsp4_get_panel_data_show_err_release;
+		}
+		returnedElement =
+			return_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_H] * 256
+			+ return_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_L];
+		/* Update element status */
+		leftOverElement -= returnedElement;
+		readElementOffset += returnedElement;
+
+	} while (leftOverElement > 0);
+	/* update on the buffer */
+	dad->ic_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_H + cmdParam_ofs] =
+		HI_BYTE(readElementOffset);
+	dad->ic_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_L + cmdParam_ofs] =
+		LOW_BYTE(readElementOffset);
+
 cyttsp4_get_panel_data_show_err_release:
-		 rc1 = cyttsp4_release_exclusive(dad->ttsp);
-		 if (rc1 < 0) {
-				   dev_err(dev, "%s: Error on release exclusive r=%d\n",
-									 __func__, rc1);
-				   goto cyttsp4_get_panel_data_show_err_sysfs;
-		 }
- 
-		 if (rc < 0)
-				   goto cyttsp4_get_panel_data_show_err_sysfs;
- 
-		 printIdx = 0;
-		 printIdx += scnprintf(buf, CY_MAX_PRBUF_SIZE, "CY_DATA:");
-		 for (i = 0; i < dataIdx; i++) {
-				   printIdx += scnprintf(buf + printIdx,
-									 CY_MAX_PRBUF_SIZE - printIdx,
-									 "%02X ", dad->ic_buf[i]);
-		 }
-		 printIdx += scnprintf(buf + printIdx, CY_MAX_PRBUF_SIZE - printIdx,
-							":(%d bytes)\n", dataIdx);
- 
+	rc1 = cyttsp4_release_exclusive(dad->ttsp);
+	if (rc1 < 0) {
+		dev_err(dev, "%s: Error on release exclusive r=%d\n",
+				__func__, rc1);
+		goto cyttsp4_get_panel_data_show_err_sysfs;
+	}
+
+	if (rc < 0)
+		goto cyttsp4_get_panel_data_show_err_sysfs;
+
+	printIdx = 0;
+	printIdx += scnprintf(buf, CY_MAX_PRBUF_SIZE, "CY_DATA:");
+	for (i = 0; i < dataIdx; i++) {
+		printIdx += scnprintf(buf + printIdx,
+				CY_MAX_PRBUF_SIZE - printIdx,
+				"%02X ", dad->ic_buf[i]);
+	}
+	printIdx += scnprintf(buf + printIdx, CY_MAX_PRBUF_SIZE - printIdx,
+			":(%d bytes)\n", dataIdx);
+
 cyttsp4_get_panel_data_show_err_sysfs:
-		 return printIdx;
+	return printIdx;
 }
 
 /*
@@ -1677,479 +1652,6 @@ cyttsp4_get_panel_data_store_exit:
 
 static DEVICE_ATTR(get_panel_data, S_IRUSR | S_IWUSR,
 	cyttsp4_get_panel_data_show, cyttsp4_get_panel_data_store);
-
-static struct device * access_dev = NULL;
-
-static int getHighPart(int num)
-{
-	switch(num)
-	{
-	case 1:
-		return 0xFF000000;		
-	case 2:
-		return 0xFFFF0000;
-	case 3:
-		return 0xFFFFFF00;
-	default:
-		return 0x0;
-		
-	}
-
-}
-
-#define    MAX_CAPACITANCE_LEN	7 * 315 
-static	int  g_capacitance_count = 0;
-static char *g_touch_capacitance = NULL;
-
-static void record_tp_capacitance(enum check_data_type type, int value)
-{
-	char buf[7] = {0};
-	sprintf(buf, "%d\t", value);
-	strcat(g_touch_capacitance, buf);
-	g_capacitance_count++;
-	if(0 == g_capacitance_count % 13)
-	{
-		strcat(g_touch_capacitance, "\n");
-	}
-
-	return;
-}
-
-static int out_of_range(enum check_data_type type, int value)
-{
-	record_tp_capacitance(type, value);
-	switch(type)
-	{
-	case CY_CHK_MUT_RAW:
-		if(value < -1800 || value > -600)
-		{
-			printk("%s:out_of_range 0 type=CY_CHK_MUT_RAW value = %d\n",__func__,value);
-			return 1;
-		}
-		break;
-	case CY_CHK_SELF_RAW:
-		if(value < -100 || value > 1300)
-		{
-			printk("%s:out_of_range 1 type=CY_CHK_SELF_RAW value = %d\n",__func__,value);
-			return 1;
-		}
-		break;
-	case CY_CHK_BUTTON:
-		if(value < -300 || value > 300)
-		{
-			printk("%s:out_of_range 2 type=CY_CHK_BUTTON value = %d\n",__func__,value);
-			return 1;
-		}
-		break;
-	default:
-		return 0;
-	}
-	
-	return 0;
-}
-
-
-#define B_ENDIAN 0
-#define L_ENDIAN 0x10
-
-static int cyttsp4_check_range(enum check_data_type type, int endian, int elementSize, 
-										struct cyttsp4_device_access_data* dad, int size)
-{
-	static int temp = 0;
-	int index;
-	int rc = 0;
-	printk("%s:endian = %d, elementSize = %d\n", __func__, endian, elementSize);
-	for(index = 8; index < size; ++index){
-		if(endian ==B_ENDIAN)
-		{	
-			printk("%s	index = %d data = %#x\n", __func__, index, dad->ic_buf[index]);
-			if(0 == index%elementSize)	//high byte
-			{	
-				if(dad->ic_buf[index]&0x80)	 //extend
-				{
-					temp |= getHighPart(4 -elementSize);
-				
-				}
-				temp |= dad->ic_buf[index] << 8*(elementSize -1);
-				if(elementSize ==1){
-					printk("%s:   temp = %d  type=%d\n", __func__, temp,type);
-					if(out_of_range(type, temp))
-					{
-						//return -1; modified for show all data 0315
-						rc = -1;
-					}
-					temp = 0;
-				}
-			
-			}else
-			{
-				temp |= dad->ic_buf[index] << 8*(elementSize -	index%elementSize - 1);
-				if(index%elementSize == elementSize -1)	//low byte
-				{	
-					printk("%s: temp = %d  type=%d\n", __func__, temp,type);
-					if(out_of_range(type, temp))
-					{
-						//return -1; modified for show all data 0315
-							rc = -1;
-					}
-					temp = 0;
-				}
-			}
-		}else {//little endian
-			if( index%elementSize == elementSize -1)
-			{	
-				printk("%s	index = %d data = %#x\n", __func__, index, dad->ic_buf[index]);
-				if(dad->ic_buf[index]&0x80)
-				{
-					temp |= getHighPart(4 -elementSize);				
-				}
-				temp |= dad->ic_buf[index] << 8*(elementSize -1);
-				printk("%s: temp = %d  type=%d\n", __func__, temp,type);
-				if(out_of_range(type, temp))
-				{
-					//return -1; modified for show all data 0315
-					rc = -1;
-				}
-
-				temp = 0;
-			}else
-			{
-				printk("%s index = %d data = %#x\n", __func__, index, dad->ic_buf[index]);
-				temp |= dad->ic_buf[index] << 8*( index%elementSize);
-			}
-		}
-	}
-
-
-	return rc;
-}
-
-typedef int (* retrieve_func)(struct device *dev, int readOffset,int numElement, u8 dataType, u8 *return_buf);
-/*return value:  >0 means success; <0 means failed; =0 means unknown*/
-static int cyttsp4_get_data_and_check(struct device* dev, retrieve_func ret_func, 
-												enum check_data_type type, int offset)
-{
-	struct cyttsp4_device_access_data *dad = dev_get_drvdata(dev);
-	u8 return_buf[CY_CMD_CAT_RET_PANEL_DATA_RET_SZ];
-	int rc = 0;
-	int dataIdx = 0;
-	u8 cmdParam_ofs = dad->si->si_ofs.cmd_ofs + 1;
-	int leftOverElement = 0;
-	int returnedElement = 0;
-	int readElementOffset = 0;
-	u8 elementStartOffset = cmdParam_ofs + CY_CMD_CAT_RET_PANEL_DATA_RET_SZ;
-	u8 elementSize = 0;
-	int endian = 0;
-	int readByte =cmdParam_ofs+ CY_CMD_CAT_RET_PANEL_DATA_RET_SZ;
-	int maxElmtSize = I2C_BUF_MAX_SIZE - elementStartOffset;
-
-	printk("%s:cmdParam_ofs = %d, elementStartOffset = %d\n", __func__, cmdParam_ofs, elementStartOffset);
-			
-	/* retrieve scan data */
-	rc = ret_func(dev, offset,
-			dad->heatmap.numElement, dad->heatmap.dataType,
-			return_buf);
-	if (rc < 0){
-		dev_err(dev, "%s: Error on reading scanData r=%d\n", __func__, rc);
-		return 0;
-	}
-	if (return_buf[CY_CMD_OUT_STATUS_OFFSET] != CY_CMD_STATUS_SUCCESS)
-		return 0;
-
-	elementSize = return_buf[CY_CMD_RET_PNL_OUT_DATA_FORMAT_OFFS] &
-				CY_CMD_RET_PANEL_ELMNT_SZ_MASK;
-	endian = return_buf[CY_CMD_RET_PNL_OUT_DATA_FORMAT_OFFS]&0x10;
-
-	/* read data */
-	readByte +=(dad->heatmap.numElement *elementSize);			
-	printk("%s:elementSize = %d, readByte = %d\n", __func__, elementSize, readByte);
-	
-	if (readByte >= I2C_BUF_MAX_SIZE) {
-			rc = cyttsp4_read(dad->ttsp, CY_MODE_CAT, 0, dad->ic_buf,I2C_BUF_MAX_SIZE);
-			dataIdx= I2C_BUF_MAX_SIZE;
-	}else {
-		rc = cyttsp4_read(dad->ttsp, CY_MODE_CAT, 0, dad->ic_buf,
-				readByte);
-		dataIdx = readByte;
-	}
-	if (rc < 0) {
-		dev_err(dev, "%s: Error on read r=%d\n", __func__, readByte);
-		return 0;
-	}
-	dev_err(dev, "%s: _cyttsp4_ret_scan_data_cmd(): elementStartOffset:%d, maxElmtSize:%d\n",
-				   __func__, elementStartOffset, maxElmtSize);
-	dev_err(dev, "%s:_cyttsp4_ret_scan_data_cmd(): return_buf: 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
-				   __func__, return_buf[0], return_buf[1], return_buf[2], return_buf[3], return_buf[4]);
-	dev_err(dev, "%s: dad->heatmap.numElement: 0x%x\n", __func__, dad->heatmap.numElement);
-
-	maxElmtSize = maxElmtSize / elementSize;
-	leftOverElement = dad->heatmap.numElement;
-
-	returnedElement =
-		return_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_H] * 256
-		+ return_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_L];
-	returnedElement = (returnedElement > maxElmtSize) ?
-									 maxElmtSize : returnedElement;
-
-	leftOverElement -= returnedElement;
-	readElementOffset += returnedElement;
-
-	printk("%s:leftOverElement = %d,readElementOffset=%d", __func__,leftOverElement,readElementOffset);
-	
-	 while (leftOverElement > 0){
-		/* get the data */
-		rc = ret_func(dev, readElementOffset,
-				leftOverElement, dad->heatmap.dataType,
-				return_buf);
-		if (rc < 0){
-			 dev_err(dev, "%s: Error on reading scanData r=%d\n", __func__, rc);
-			 return 0;
-		}
-			
-		if (return_buf[CY_CMD_OUT_STATUS_OFFSET]
-				!= CY_CMD_STATUS_SUCCESS)
-			return 0;
-
-		dev_err(dev, "%s:_cyttsp4_ret_scan_data_cmd()2: return_buf: 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
-				   __func__, return_buf[0], return_buf[1], return_buf[2], return_buf[3], return_buf[4]);
-
-		/* DO read */
-		readByte = leftOverElement *elementSize;
-		
-		printk("%s:_cyttsp4_ret_scan_data_cmd()2:leftOverElement = %d, readByte = %d\n", __func__, leftOverElement, readByte);
-
-		if (readByte >= (I2C_BUF_MAX_SIZE - elementStartOffset)) {
-			rc = cyttsp4_read(dad->ttsp, CY_MODE_CAT,
-					elementStartOffset,
-					dad->ic_buf + dataIdx,
-					I2C_BUF_MAX_SIZE - elementStartOffset);
-			dataIdx += (I2C_BUF_MAX_SIZE - elementStartOffset);
-		} else {
-			rc = cyttsp4_read(dad->ttsp, CY_MODE_CAT,
-					elementStartOffset,
-					dad->ic_buf + dataIdx, readByte);
-			dataIdx += readByte;
-		}
-		if (rc < 0) {
-			dev_err(dev, "%s: Error on read r=%d\n", __func__, rc);
-			return 0;
-		}
-		returnedElement =
-			return_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_H] * 256
-			+ return_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_L];
-		returnedElement = (returnedElement > maxElmtSize) ?
-									 maxElmtSize : returnedElement;
-		/* Update element status */
-		leftOverElement -= returnedElement;
-		readElementOffset += returnedElement;
-		
-		printk("%s:---2----returnedElement = %d, leftOverElement = %d,readElementOffset=%d\n", 
-					__func__, returnedElement, leftOverElement,readElementOffset);
-
-	}
-	/* update on the buffer */
-	dad->ic_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_H + cmdParam_ofs] =
-		HI_BYTE(readElementOffset);
-	dad->ic_buf[CY_CMD_RET_PNL_OUT_ELMNT_SZ_OFFS_L + cmdParam_ofs] =
-		LOW_BYTE(readElementOffset);
-
-	if (rc < 0)
-		goto cyttsp4_get_panel_data_show_err_sysfs;
-
-	
-	rc = cyttsp4_check_range(type, endian, elementSize, dad, dataIdx);
-	if(rc < 0)
-	{
-		dev_err(dev, "%s cyttsp4_check_range failed\n", __func__);
-		return -1;
-	}
-	printk("%s:dataIdx = %d\n", __func__, dataIdx);
-		
-	/*printIdx += scnprintf(buf + printIdx, CY_MAX_PRBUF_SIZE - printIdx,
-			":(%d bytes)\n", dataIdx);*/	
-cyttsp4_get_panel_data_show_err_sysfs:
-	return dataIdx;
-}
-
-
-/*return value:  >0 means success; <0 means failed; =0 means unknown*/
-static int cyttsp4_check_raw_data(struct device *dev)
-{
-	struct cyttsp4_device_access_data *dad = dev_get_drvdata(dev);
-	int rc = 0;
-	int i = 0;
-	int result = 0;
-	
-	enum check_data_type type;
-	
-	dev_err(dev,"%s: cyttsp4_check_raw_data\n",__func__);
-	for(i = 0; i < 3; ++i)
-	{
-		if(0 == i)
-		{	
-			type = CY_CHK_MUT_RAW;
-			dad->heatmap.numElement = 299;
-			dad->heatmap.dataType = CY_MUT_RAW;
-			dev_err(dev,"%s:cyttsp4_check_raw_data CY_CHK_MUT_RAW\n",__func__);
-		}
-		else if(1==i)
-		{	
-			type = CY_CHK_SELF_RAW;
-			dad->heatmap.numElement = 13;
-			dad->heatmap.dataType = CY_SELF_RAW;
-			dev_err(dev,"%s:cyttsp4_check_raw_data CY_CHK_SELF_RAW\n",__func__);
-		}
-		else
-		{
-			type = CY_CHK_BUTTON;
-			dad->heatmap.numElement = 3;
-			dad->heatmap.dataType = CY_BUTON_DATA;		
-			dev_err(dev, "%s:cyttsp4_check_raw_data CY_CHK_BUTTON\n",__func__);
-		}
-		/* Start scan */
-		rc = _cyttsp4_exec_scan_cmd(dev);
-		if (rc < 0)
-		{
-			return 0;
-		}
-		/* retrieve scan data */
-		rc = cyttsp4_get_data_and_check(dev,  _cyttsp4_ret_scan_data_cmd, type, CY_CMD_IN_DATA_OFFSET_VALUE);
-		/*if rc < 0, it means some data check  failed, but we hope it check all the data, so no return */
-		if(rc < 0)
-		{	
-			result = -1;
-			//return -1;
-		}
-	}
-	if(-1 == result)
-	{
-		return result;
-	}
-	else
-	{
-		return rc;
-	}
-}
-
-static inline void cyttsp4_out_to_buf(int ret, char ** buf)
-{
-	if(ret <0)
-	{	
-		*buf = "Fail";
-		printk("%s:the test result is %s\n", __func__,*buf);
-	}else if(ret > 0){
-		*buf = "Pass";
-		printk("%s:the test result is %s\n", __func__,*buf);
-	}else
-	{
-		*buf = "unknown";
-		printk("%s:the test result is %s\n", __func__,*buf);
-	}
-}
-
-int  cyttsp4_get_panel_data_check(char **buf)
-{
-	int rc = 0;
-	bool need_output = true;
-	char * grpnum = "15";
-	char * grpdata = "0x00,0x01,0x20";
-	char * back_to_op = "0,1,0";
-	struct cyttsp4_device_access_data *dad = dev_get_drvdata(access_dev);
-	struct device * dev = access_dev;
-	
-	rc = cyttsp4_ic_grpnum_store(dev, NULL, grpnum, strlen(grpnum));
-	if (rc < 0) {
-		rc = 0;//use this to justify what to output to the user-space buf
-		dev_err(dev, "%s: Error on cyttsp4_ic_grpnum_store r=%d\n",
-				__func__, rc);
-		goto exit;
-	}
-	rc = cyttsp4_ic_grpdata_store(dev, NULL, grpdata, strlen(grpdata));
-	if (rc < 0) {
-		rc = 0;//use this to justify what to output to the user-space buf
-		dev_err(dev, "%s: Error on cyttsp4_ic_grpdata_store r=%d\n",
-				__func__, rc);
-		goto exit;
-	}
-	
-	rc = cyttsp4_request_exclusive(dad->ttsp,
-			CY_DA_REQUEST_EXCLUSIVE_TIMEOUT);
-	if (rc < 0) {
-		rc = 0;//use this to justify what to output to the user-space buf
-		dev_err(dev, "%s: Error on request exclusive r=%d\n",
-				__func__, rc);
-		goto cyttsp4_get_panel_data_show_err_release;
-	}
-	rc = cyttsp4_check_raw_data(dev);
-	if(rc <= 0){	
-		goto cyttsp4_get_panel_data_show_err_release;
-	}
-	printk("%s:rc1 = %d\n", __func__, rc);
-	cyttsp4_out_to_buf(rc, buf);
-	need_output = false;
-cyttsp4_get_panel_data_show_err_release:
-	if(need_output){
-		cyttsp4_out_to_buf(rc, buf);
-	}
-	rc = cyttsp4_release_exclusive(dad->ttsp);
-	printk("%s:rc2 = %d\n", __func__, rc);
-	if (rc < 0) {
-		dev_err(dev, "%s: Error on release exclusive r=%d\n",
-				__func__, rc);		
-	}
-	/*back to operational*/
-	rc = cyttsp4_ic_grpdata_store(dev, NULL, back_to_op, strlen(back_to_op));
-	printk("%s:rc3 = %d\n", __func__, rc);
-	if (rc < 0) {
-		dev_err(dev, "%s: Error on cyttsp4_ic_grpdata_store r=%d\n",
-				__func__, rc);
-		goto exit;
-	}
- exit:
-	return rc;
-}
-
-/*touchpanel mmi test begin*/
-static char *touch_mmi_test_result = NULL;
-static ssize_t cyttsp4_touch_mmi_test_show(struct device *dev,
-				struct device_attribute *attr, char *buf)
-{
-	int rc = 0;
-	if (dev == NULL) {
-		pr_err("touch_mmi_test dev is null\n");
-		return -EINVAL;
-	}
-
-	/* if g_touch_capacitance is null, alloc memory for it*/
-	if(NULL == g_touch_capacitance)
-	{	
-		g_touch_capacitance = kzalloc(sizeof(char) * MAX_CAPACITANCE_LEN, GFP_KERNEL);
-		if(NULL == g_touch_capacitance)
-		{
-			return -EINVAL;
-		}
-	}
-
-	/*reset the g_capacitance_count and g_touch_capacitance */
-	g_capacitance_count= 0;
-	memset(g_touch_capacitance, 0, MAX_CAPACITANCE_LEN);
-	
-	rc = cyttsp4_get_panel_data_check(&touch_mmi_test_result);
-	if(rc < 0){
-		pr_err("cyttsp4_get_panel_data_check error\n");
-	}
-
-	printk("touch_mmi_test_result : %d\n", rc);
-	printk("touch_mmi_test_result : %s\n", touch_mmi_test_result);
-
-	/*if someting is error, we still want to report info, because it is useful for debugging*/
-	rc = sprintf(buf, "%s\n%s", touch_mmi_test_result,g_touch_capacitance);
-	kfree(g_touch_capacitance);
-	g_touch_capacitance = NULL;
-	return rc;
-}
-static DEVICE_ATTR(touch_mmi_test, 0664,
-				   cyttsp4_touch_mmi_test_show, NULL);
 
 #ifdef CONFIG_PM_SLEEP
 static int cyttsp4_device_access_suspend(struct device *dev)
@@ -2265,13 +1767,6 @@ static int cyttsp4_device_access_probe(struct cyttsp4_device *ttsp)
 		goto cyttsp4_device_access_probe_data_failed;
 	}
 
-	access_dev = dev;
-	rc = device_create_file(dev, &dev_attr_touch_mmi_test);
-	if (rc) {
-		dev_err(dev, "%s: Error, could not create fw_calibration\n",
-				__func__);
-		goto cyttsp4_create_touch_mmi_test_failed;
-	}
 	mutex_init(&dad->sysfs_lock);
 	init_waitqueue_head(&dad->wait_q);
 	dad->ttsp = ttsp;
@@ -2310,7 +1805,6 @@ static int cyttsp4_device_access_probe(struct cyttsp4_device *ttsp)
 	pm_runtime_disable(dev);
 	dev_set_drvdata(dev, NULL);
 	kfree(dad);
- cyttsp4_create_touch_mmi_test_failed:
  cyttsp4_device_access_probe_data_failed:
 	dev_err(dev, "%s failed.\n", __func__);
 	return rc;

@@ -478,7 +478,7 @@ static void ext4_journal_commit_callback(journal_t *journal, transaction_t *txn)
 #define MOUNT_FILE               "/proc/mounts"                  /* The mounted file path, it perhaps be /proc/fstab or /proc/mtab or others */
 #define LINE_MAX                 1024                            /* The max length of line_buf to save one line in the mounted file */
 #define CONTENT_MAX              512                             /* The max length of each field in one line */
-#define LOG_PATH                 "/.ext4_error_log"               /* We want to save the log file in this directory */
+#define LOG_PATH                 "/ext4_error_log"               /* We want to save the log file in this directory */
 
 /* When parse one line in the mounted file, the first field is block name,
    the second field is mounted directory, we need this struct to save this two field

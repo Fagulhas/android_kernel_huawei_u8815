@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -164,6 +164,11 @@ struct msm_sensor_csi_info {
 	uint8_t is_csic;
 };
 
+enum msm_sensor_state {
+	MSM_SENSOR_POWER_UP,
+	MSM_SENSOR_POWER_DOWN,
+};
+
 struct msm_sensor_ctrl_t {
 	struct  msm_camera_sensor_info *sensordata;
 	struct i2c_client *msm_sensor_client;
@@ -204,6 +209,8 @@ struct msm_sensor_ctrl_t {
 	struct clk *cam_clk;
 	long clk_rate;
 	char sensor_name[CAMERA_NAME_LEN];
+	enum msm_sensor_state sensor_state;
+	char sensor_version[CAMERA_VER_LEN];
 };
 
 void msm_sensor_start_stream(struct msm_sensor_ctrl_t *s_ctrl);

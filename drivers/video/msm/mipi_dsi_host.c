@@ -1,5 +1,5 @@
 
-/* Copyright (c) 2008-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2008-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1295,7 +1295,8 @@ int mipi_dsi_cmds_rx(struct msm_fb_data_type *mfd,
 		|| MIPI_CMD_OTM8009A_CHIMEI_WVGA == panel_type
 		|| MIPI_CMD_OTM8009A_CHIMEI_FWVGA == panel_type
 		|| MIPI_CMD_OTM8009A_TIANMA_FWVGA == panel_type
-		|| MIPI_CMD_OTM9608A_TIANMA_QHD == panel_type )
+		|| MIPI_CMD_OTM9608A_TIANMA_QHD == panel_type
+		|| MIPI_CMD_OTM9608A_BOE_QHD == panel_type )
 		mipi_set_tx_power_mode(0);//entry high speed mode  
 #endif
 	/* transmit read comamnd to client */
@@ -1320,7 +1321,8 @@ int mipi_dsi_cmds_rx(struct msm_fb_data_type *mfd,
 		|| MIPI_CMD_OTM8009A_CHIMEI_WVGA == panel_type
 		|| MIPI_CMD_OTM8009A_CHIMEI_FWVGA == panel_type
 		|| MIPI_CMD_OTM8009A_TIANMA_FWVGA == panel_type
-		|| MIPI_CMD_OTM9608A_TIANMA_QHD == panel_type )
+		|| MIPI_CMD_OTM9608A_TIANMA_QHD == panel_type
+		|| MIPI_CMD_OTM9608A_BOE_QHD == panel_type )
 		mipi_set_tx_power_mode(1);//entry low power mode  
 #endif
 	mipi_dsi_cmd_dma_rx(rp, cnt);
@@ -1369,7 +1371,8 @@ int mipi_dsi_cmds_rx(struct msm_fb_data_type *mfd,
 		|| MIPI_CMD_OTM8009A_CHIMEI_WVGA == panel_type
 		|| MIPI_CMD_OTM8009A_CHIMEI_FWVGA == panel_type
 		|| MIPI_CMD_OTM8009A_TIANMA_FWVGA == panel_type
-		|| MIPI_CMD_OTM9608A_TIANMA_QHD == panel_type )
+		|| MIPI_CMD_OTM9608A_TIANMA_QHD == panel_type
+		|| MIPI_CMD_OTM9608A_BOE_QHD == panel_type )
 		mipi_set_tx_power_mode(0);//entry high speed mode  
 #endif
 

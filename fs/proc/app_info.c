@@ -83,7 +83,6 @@ typedef struct
  */
 const s_board_hw_version_type s_board_hw_version_table[] =
 {  /* machine_arch_type        s_board_id           hw_version_id */
-   {MACH_TYPE_MSM7X27A_U8815, "MSM7227A_U8815", "HD1U861M "},
 
    {MACH_TYPE_MSM8X25_C8813,    "MSM8X25_C8813",    "HC1C8813M "},
    {MACH_TYPE_MSM8X25_C8950D,   "MSM8X25_C8950D",   "HC1C8950M "},
@@ -220,16 +219,6 @@ static void set_s_board_hw_version_special(char *hw_version_id,char *hw_version_
          return ;
     }
 
-	/* U8815 silk-screen display to VerB */
-    if((HW_VER_SUB_VB <= get_hw_sub_board_id()) 
-       &&(MACH_TYPE_MSM7X27A_U8815 == machine_arch_type))
-    {
-        memcpy(hw_version_id,"HD1U8815M ", BOARD_ID_LEN-1);
-        sprintf(hw_version_sub_ver, "VER.%c", 'A'+(char)get_hw_sub_board_id());
-        strcat(hw_version_id, hw_version_sub_ver);
-        hw_version_id[HW_VERSION-1] = '\0';
-
-    }
 }
 
 /* same as in proc_misc.c */
@@ -375,7 +364,6 @@ static int app_version_read_proc(char *page, char **start, off_t off,
 	"battery_id:\n%s\n"
 	"dcdc_type:\n%s\n",
 	 s_board_id, sub_ver, s_product_name, lcd_name, back_camera_name, front_camera_name,camera_version,ts_id,charge_flag, compass_gs_name,sensors_list_name, hw_version_id,wifi_device_name, wifi_fw_ver, bt_device_name, bt_fw_ver, audio_property, touch_info, battery_name, ((NULL == dcdc_type) ? "unknown" : dcdc_type));
-
 
 #else
 	len = snprintf(page, PAGE_SIZE, "APPSBOOT:\n"

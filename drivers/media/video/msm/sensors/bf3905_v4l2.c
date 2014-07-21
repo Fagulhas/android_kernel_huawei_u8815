@@ -25,6 +25,8 @@ static struct msm_camera_i2c_reg_conf bf3905_start_settings[] = {
 static struct msm_camera_i2c_reg_conf bf3905_stop_settings[] = {
 };
 
+// Delete 1 line
+
 static struct msm_camera_i2c_reg_conf bf3905_init_settings[] =
 {
 	{0x12,0x80},
@@ -69,7 +71,7 @@ static struct msm_camera_i2c_reg_conf bf3905_init_settings[] =
 	{0x60,0xe5},
 	{0x61,0xf2},
 	{0x6d,0xc0},
-	{0x1e,0x70},
+	{0x1e,0x40},//change 0x70 to 0x40, default set 0x40 for C8813Q display normally.
 	{0xd9,0x25},
 	{0xdf,0x26},
 	{0x16,0xa1},   //0xaf  wl 5.3
@@ -101,9 +103,9 @@ static struct msm_camera_i2c_reg_conf bf3905_init_settings[] =
 	{0x38,0x50}, 
 	{0x70,0x0b},
 	{0x71,0x0f},// 0e  yzx 4.17   0x3f  wl 5.3
-	{0x72,0x4c},
+	{0x72,0x1c},////0x4c zzg 20130914
 	{0x73,0x28},
-	{0x74,0x6d},
+	{0x74,0x2d}, ////0x6d zzg zzg 20130914
 	{0x75,0xaa},  //8a yzx  4.17
 	{0x76,0x28}, //  98  yzx  4.17
 	{0x77,0x2a},
@@ -388,6 +390,7 @@ int32_t bf3905_write_init_settings(struct msm_sensor_ctrl_t *s_ctrl)
 	int32_t rc=0, i;
 
 	printk("%s is called !\n", __func__);
+	// Delete 3 lines
 	
 	for (i = 0; i < s_ctrl->msm_sensor_reg->init_size; i++) 
 	{
@@ -396,6 +399,13 @@ int32_t bf3905_write_init_settings(struct msm_sensor_ctrl_t *s_ctrl)
 			s_ctrl->msm_sensor_reg->init_settings, i);
 		if (rc < 0)
 			break;
+	}
+
+	//write mirror and flip reg: 0x1e
+	if(HW_MIRROR_AND_FLIP == (get_hw_camera_mirror_type() >> 1))
+	{
+		// G520 should mirror and flip
+		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x1e, 0x70, MSM_CAMERA_I2C_BYTE_DATA);
 	}
 
 	return rc;
@@ -559,7 +569,7 @@ int32_t bf3905_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
            csi_config = 0;
       }
 	/* power up one time in standby mode */
-      if((false == data->standby_is_supported)
+      if((false == data->standby_is_supported) 
          || (0 == strcmp(data->sensor_name, ""))
          || (false == standby_mode))
       {
@@ -597,7 +607,7 @@ int32_t bf3905_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 		msm_sensor_enable_i2c_mux(data->sensor_platform_info->i2c_conf);
 
 	return rc;
-
+	
 config_gpio_failed:
 	msm_camera_enable_vreg(&s_ctrl->sensor_i2c_client->client->dev,
 			s_ctrl->sensordata->sensor_platform_info->cam_vreg,
@@ -610,7 +620,7 @@ enable_vreg_failed:
 		s_ctrl->reg_ptr, 0);
 config_vreg_failed:
 	msm_cam_clk_enable(&s_ctrl->sensor_i2c_client->client->dev,
-		clk_info, &s_ctrl->cam_clk, ARRAY_SIZE(clk_info), 0);
+		clk_info, &s_ctrl->cam_clk, ARRAY_SIZE(clk_info), 0);	
 enable_clk_failed:
 	msm_camera_request_gpio_table(data, 0);
 request_gpio_failed:
@@ -677,7 +687,8 @@ static struct msm_sensor_ctrl_t bf3905_s_ctrl = {
 	.sensor_v4l2_subdev_ops = &bf3905_subdev_ops,
 	.func_tbl = &bf3905_func_tbl,
 	.clk_rate = MSM_SENSOR_MCLK_24HZ,
-	.sensor_name = "23060075FF-BYD-B",
+	.sensor_name = "23060125FF-BYD-B",
+	.sensor_version = "V01",
 };
 
 module_init(msm_sensor_init_module);

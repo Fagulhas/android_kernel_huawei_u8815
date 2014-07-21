@@ -344,6 +344,7 @@ void process_mipi_table(struct msm_fb_data_type *mfd,struct dsi_buf *tp,
 			case MIPI_VIDEO_NT35512_BOE_WVGA:
 			/*Add nt35512 video mode for byd*/
 			case MIPI_VIDEO_NT35512_BYD_WVGA:
+			case MIPI_VIDEO_NT35517_BOE_5INCH_QHD:
 			case MIPI_CMD_NT35510_BOE_FWVGA:
 			case MIPI_CMD_NT35310_TIANMA_HVGA:
 			case MIPI_CMD_NT35310_BYD_HVGA:
@@ -352,7 +353,9 @@ void process_mipi_table(struct msm_fb_data_type *mfd,struct dsi_buf *tp,
 			case MIPI_CMD_OTM8009A_TIANMA_FWVGA:
 			case MIPI_CMD_NT35510_CHIMEI_WVGA:
 			case MIPI_CMD_OTM9608A_TIANMA_QHD:
+			case MIPI_CMD_OTM9608A_BOE_QHD:
 			case MIPI_CMD_NT35516_TRULY_QHD:
+			case MIPI_VIDEO_OTM9605A_TIANMA_QHD:
 				mipi_lcd_register_write(mfd,tp,reg,value,0);
 				break;
 			default:
@@ -758,7 +761,9 @@ int lcd_reset(void)
 		gpio_set_value(GPIO_OUT_129,1);
 	/* extend delay time for TIANMA OTM9608A LCD ESD issue */
 	#if LCD_OTM9608A_TIANMA_ESD_SIGN
-	if (MIPI_CMD_OTM9608A_TIANMA_QHD == panel_type)
+	if (MIPI_CMD_OTM9608A_TIANMA_QHD == panel_type
+		|| MIPI_CMD_OTM9608A_BOE_QHD == panel_type
+		|| MIPI_VIDEO_NT35517_BOE_5INCH_QHD == panel_type)
 	{
 		LCD_MDELAY(10);
 		gpio_set_value(GPIO_OUT_129,0);

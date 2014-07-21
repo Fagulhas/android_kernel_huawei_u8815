@@ -1558,7 +1558,7 @@ static struct mipi_dsi_platform_data mipi_dsi_pdata = {
 	.dsi_client_reset       = msm_fb_dsi_client_reset,
 	.get_lane_config	= msm_fb_get_lane_config,
 	.splash_is_enabled	= mipi_dsi_splash_is_enabled,
-	.dlane_swap		= 0x1, //Needed for u8815
+	.dlane_swap		= 0x0,
 };
 
 static char mipi_dsi_splash_is_enabled(void)

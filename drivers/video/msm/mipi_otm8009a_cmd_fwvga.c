@@ -1400,8 +1400,8 @@ static int mipi_cmd_otm8009a_check_live_status(struct msm_fb_data_type *mfd)
 	int ret_monitor = 0;
 	static uint32 check_cnt = 0;
 
-	/* do not check while booting, ignore the first LCD_ESD_CHECK_IGNORE_CNT times */
-	if (check_cnt < LCD_ESD_CHECK_IGNORE_CNT)
+	/* do not check while booting, ignore the first 5 times */
+	if (check_cnt < 5)
 	{
 		check_cnt++;
 		return CMI_OTM8009A_PANEL_ALIVE;
