@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-13, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -45,16 +45,13 @@ typedef enum
 {
     ACPU_NCP6335D_DC = 1,
 	ACPU_FAN5355504X_DC = 2,
-	ACPU_FAN5355509_DC = 3,
     ACPU_INVALID_DC = 0
 } acpu_dc_name_type;
 #endif
 
 #ifdef CONFIG_HUAWEI_KERNEL
 #include <linux/regulator/driver.h>
-/* Add FAN53555 09 version chip support. */
-#define REGULATOR_DC_FAN5355504 "fan5355504"
-#define REGULATOR_DC_FAN5355509 "fan5355509"
+#define REGULATOR_DC_FAN53555 "fan53555"
 #define REGULATOR_DC_NCP6335D "ncp6335d"
 #define STEP_VOLTAGE_FAN53555 12826
 #define STEP_VOLTAGE_NCP6335D 6250
@@ -99,8 +96,6 @@ extern struct regulator *cpu_core_voltage_handle;
 extern struct regulator *ncp6335d_handle;
 #endif
 
-extern struct regulator *ext_vreg_handle;
-
 static int msm_cpr_debug_mask;
 module_param_named(
 	debug_mask, msm_cpr_debug_mask, int, S_IRUGO | S_IWUSR
@@ -126,7 +121,6 @@ struct msm_cpr {
 	uint32_t floor;
 	uint32_t ceiling;
 	bool max_volt_set;
-	bool irq_done;
 	void __iomem *base;
 	unsigned int irq;
 	uint32_t cur_Vmin;
@@ -618,7 +612,6 @@ static irqreturn_t cpr_irq0_handler(int irq, void *dev_id)
 	struct msm_cpr *cpr = dev_id;
 	uint32_t reg_val, ctl_reg;
 
-	cpr->irq_done = false;
 	reg_val = cpr_read_reg(cpr, RBIF_IRQ_STATUS);
 	ctl_reg = cpr_read_reg(cpr, RBCPR_CTL);
 
@@ -648,7 +641,6 @@ static irqreturn_t cpr_irq0_handler(int irq, void *dev_id)
 		msm_cpr_debug(MSM_CPR_DEBUG_STEPS,
 			"CPR:IRQ %d occured for Mid Flag\n", irq);
 	}
-	cpr->irq_done = true;
 	return IRQ_HANDLED;
 }
 
@@ -889,11 +881,6 @@ static int msm_cpr_suspend(void)
 
 	/* Disable CPR measurement before IRQ to avoid pending interrupts */
 	cpr_disable(cpr);
-
-	/* Avoid suspend when regulator call (on i2c) sleeps */
-	if (cpr->irq_done == false)
-		return -EBUSY;
-
 	disable_irq(cpr->irq);
 
 	/* Clear all the interrupts */
@@ -928,13 +915,12 @@ void msm_cpr_pm_resume(void)
 }
 EXPORT_SYMBOL(msm_cpr_pm_resume);
 
-int msm_cpr_pm_suspend(void)
+void msm_cpr_pm_suspend(void)
 {
 	if (!enable || disable_cpr)
-		return 0;
+		return;
 
-	max_volt_count = 0;
-	return msm_cpr_suspend();
+	msm_cpr_suspend();
 }
 EXPORT_SYMBOL(msm_cpr_pm_suspend);
 #else
@@ -976,7 +962,6 @@ static int __devinit msm_cpr_probe(struct platform_device *pdev)
 	void __iomem *base;
 	struct resource *mem;
 	struct msm_cpr_mode *chip_data;
-	uint32_t curr_volt, new_volt;
 #ifdef CONFIG_HUAWEI_KERNEL
     smem_huawei_vender *smem_huawei_para_ptr = NULL;
     acpu_dc_name_type acpu_dc_info = ACPU_INVALID_DC;
@@ -1060,22 +1045,17 @@ static int __devinit msm_cpr_probe(struct platform_device *pdev)
 	cpr->base = base;
 
 	cpr->step_size = pdata->step_size;
-	cpr->irq_done = true;
 
 	spin_lock_init(&cpr->cpr_lock);
 
 	/* Initialize the Voltage domain for CPR */
-
 #ifdef CONFIG_HUAWEI_KERNEL
 	cpr->vreg_cx = cpu_core_voltage_handle;
 #else
-	if(ncp6335d_handle == NULL)
-	  cpr->vreg_cx = regulator_get(&pdev->dev, "vddx_cx");
-        else
-	  cpr->vreg_cx = ncp6335d_handle;
+	cpr->vreg_cx = ncp6335d_handle;
 #endif
 
-	if (IS_ERR(cpr->vreg_cx)) {
+	if (IS_ERR_OR_NULL(cpr->vreg_cx)) {
 		res = PTR_ERR(cpr->vreg_cx);
 		pr_err("could not get regulator: %d\n", res);
 		goto err_reg_get;
@@ -1083,18 +1063,11 @@ static int __devinit msm_cpr_probe(struct platform_device *pdev)
 	
 #ifdef CONFIG_HUAWEI_KERNEL
     /* Use regulator name to adapt different dcdc chip automatically. */
-    /* Identify FAN53555 04 and 09 version chip. */
-    if (0 == strcmp(REGULATOR_DC_FAN5355504, regulator_get_name(cpr->vreg_cx)))
+    if (0 == strcmp(REGULATOR_DC_FAN53555, regulator_get_name(cpr->vreg_cx)))
     {
 	    cpr->step_size = STEP_VOLTAGE_FAN53555;
         acpu_dc_info = ACPU_FAN5355504X_DC;
     }
-    /* Identify FAN53555 04 and 09 version chip. */
-	else if(0 == strcmp(REGULATOR_DC_FAN5355509, regulator_get_name(cpr->vreg_cx)))
-	{
-		cpr->step_size = STEP_VOLTAGE_FAN53555;
-        acpu_dc_info = ACPU_FAN5355509_DC;
-	}
 	else if(0 == strcmp(REGULATOR_DC_NCP6335D, regulator_get_name(cpr->vreg_cx)))
 	{
 		cpr->step_size = STEP_VOLTAGE_NCP6335D;
@@ -1109,47 +1082,6 @@ static int __devinit msm_cpr_probe(struct platform_device *pdev)
     smem_huawei_para_ptr->dc_chip_type = acpu_dc_info;
 	printk("(msm_cpr_probe) dc_name: <%s>, step_size=%d\n", regulator_get_name(cpr->vreg_cx), cpr->step_size);
 #endif
-
-	/*
-	 * Calculate the step size by adding 1mV to the current voltage.
-	 * This moves the voltage by one regulator step. Diff between original
-	 * and current voltage to get the real regulator step.
-	 */
-	if (cpr->vreg_cx == ext_vreg_handle) {
-		curr_volt = regulator_get_voltage(cpr->vreg_cx);
-		if (curr_volt < 0) {
-			pr_err("CPR: get voltage failed\n");
-			goto err_reg_get;
-		}
-
-		res = regulator_set_voltage(cpr->vreg_cx, curr_volt+1,
-								curr_volt+1);
-		if (res) {
-			pr_err("CPR: Unable to calculate voltage step_size\n");
-			goto err_reg_get;
-		}
-		new_volt = regulator_get_voltage(cpr->vreg_cx);
-		if (new_volt < 0) {
-			pr_err("CPR: get voltage failed\n");
-			goto err_reg_get;
-		}
-
-		if ((new_volt - curr_volt) > 0)
-			cpr->step_size = (new_volt - curr_volt);
-
-		pdata->cpr_mode_data->step_div
-			= DIV_ROUND_CLOSEST(pdata->step_size, cpr->step_size);
-
-		pdata->dn_threshold
-			= DIV_ROUND_UP((pdata->step_size
-					* (pdata->dn_threshold - 1)),
-					cpr->step_size) + 1;
-
-		pr_info("CPR: step_size: %d, step_div: %d, dn_threshold: %d\n",
-				cpr->step_size,
-				pdata->cpr_mode_data->step_div,
-				pdata->dn_threshold);
-	}
 
 	/* Initial configuration of CPR */
 	res = cpr_config(cpr);

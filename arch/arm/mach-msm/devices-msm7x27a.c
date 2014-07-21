@@ -1000,7 +1000,7 @@ void __init msm8x25_kgsl_3d0_init(void)
 			kgsl_3d0_pdata.pwrlevel[1].gpu_freq = 320000000;
 			kgsl_3d0_pdata.pwrlevel[1].bus_freq = 300000000;
 
-			kgsl_3d0_pdata.pwrlevel[2].gpu_freq = 245760000;
+			kgsl_3d0_pdata.pwrlevel[2].gpu_freq = 192000000;
 			kgsl_3d0_pdata.pwrlevel[2].bus_freq = 160000000;
 
 			kgsl_3d0_pdata.pwrlevel[3].gpu_freq = 133000000;
@@ -1396,21 +1396,12 @@ static struct resource msm8625_resources_sdc3[] = {
 		.end	= MSM8625_INT_SDC3_1,
 		.flags	= IORESOURCE_IRQ,
 	},
-#ifdef CONFIG_HUAWEI_KERNEL
-    {
-        .name   = "sdcc_dma_chnl",
-        .start  = DMOV_SDC3_CHAN,
-        .end    = DMOV_SDC3_CHAN,
-        .flags  = IORESOURCE_DMA,
-    },
-#else
-    {
-        .name   = "sdcc_dma_chnl",
-        .start  = DMOV_NAND_CHAN,
-        .end    = DMOV_NAND_CHAN,
-        .flags  = IORESOURCE_DMA,
-    },
-#endif
+	{
+		.name	= "sdcc_dma_chnl",
+		.start	= DMOV_NAND_CHAN,
+		.end	= DMOV_NAND_CHAN,
+		.flags	= IORESOURCE_DMA,
+	},
 	{
 		.name	= "sdcc_dma_crci",
 		.start	= DMOV_SDC3_CRCI,
@@ -2006,53 +1997,29 @@ static void __init msm_cpr_init(void)
 	pr_info("%s: cpr: turbo_quot: 0x%x\n", __func__, cpr_info->turbo_quot);
 	pr_info("%s: cpr: pvs_fuse: 0x%x\n", __func__, cpr_info->pvs_fuse);
 	pr_info("%s: cpr: floor_fuse: 0x%x\n", __func__, cpr_info->floor_fuse);
-	kfree(cpr_info);
-
-	if ((msm8625_cpu_id() == MSM8625A) || cpu_is_msm8625q())
-		msm_cpr_pdata.max_freq = 1209600;
-	else if (msm8625_cpu_id() == MSM8625) {
-		msm_cpr_pdata.max_freq = 1008000;
-		msm_cpr_mode_data.turbo_Vmin = 1175000;
-	}
-
 	pr_info("%s: cpr: nom_Vmin: %d, turbo_Vmin: %d\n", __func__,
 		msm_cpr_mode_data.nom_Vmin,
 		msm_cpr_mode_data.turbo_Vmin);
 	pr_info("%s: cpr: nom_Vmax: %d, turbo_Vmax: %d\n", __func__,
 		msm_cpr_mode_data.nom_Vmax,
 		msm_cpr_mode_data.turbo_Vmax);
+	kfree(cpr_info);
+
+	if ((msm8625_cpu_id() == MSM8625A) || cpu_is_msm8625q())
+		msm_cpr_pdata.max_freq = 1209600;
+	else if (msm8625_cpu_id() == MSM8625)
+		msm_cpr_pdata.max_freq = 1008000;
+
+	if (machine_is_qrd_skud_prime() || cpu_is_msm8625q()) {
+		msm_cpr_pdata.step_size = 6250;
+		msm_cpr_mode_data.step_div = 2;
+		msm_cpr_pdata.dn_threshold = 5;
+	}
 
 	if (cpu_is_msm8625())
 		platform_device_register(&msm8625_vp_device);
 
 	platform_device_register(&msm8625_device_cpr);
-}
-
-static struct resource pbus_resources[] = {
-{
-		.name   = "pbus_phys_addr",
-		.start  = MSM7XXX_PBUS_PHYS,
-		.end    = MSM7XXX_PBUS_PHYS + SZ_4K - 1,
-		.flags  = IORESOURCE_MEM,
-	},
-	{
-		.name	= "pbus_intr",
-		.start	= INT_PBUS_ARM11,
-		.flags	= IORESOURCE_IRQ,
-	},
-};
-
-struct platform_device msm_device_pbus = {
-	.name           = "msm_pbus",
-	.num_resources  = ARRAY_SIZE(pbus_resources),
-	.resource       = pbus_resources,
-};
-
-static void __init msm_pbus_init(void)
-{
-	if (cpu_is_msm8625() || cpu_is_msm8625q())
-		pbus_resources[1].start = MSM8625_INT_PBUS_ARM11;
-	platform_device_register(&msm_device_pbus);
 }
 
 static void __init msm_pm_memory_reserve(void)
@@ -2139,11 +2106,8 @@ static int __init msm_gpio_config_gps(void)
 	unsigned int gps_gpio = 7;
 	int ret = 0;
 
-	if (!machine_is_msm8625_evb() && !machine_is_msm8625q_evbd())
+	if (!machine_is_msm8625_evb())
 		return ret;
-
-	if (machine_is_msm8625q_evbd())
-		gps_gpio = 49;
 
 	ret = gpio_tlmm_config(GPIO_CFG(gps_gpio, 0, GPIO_CFG_OUTPUT,
 			GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
@@ -2231,7 +2195,6 @@ int __init msm7x2x_misc_init(void)
 
 	platform_device_register(&pl310_erp_device);
 
-	msm_pbus_init();
 	if (msm_gpio_config_gps() < 0)
 		pr_err("Error for gpio config for GPS gpio\n");
 
@@ -2286,7 +2249,7 @@ void __init msm_common_io_init(void)
 
 void __init msm8625_init_irq(void)
 {
-	//msm_gic_irq_extn_init();
+	msm_gic_irq_extn_init();
 	gic_init(0, GIC_PPI_START, MSM_QGIC_DIST_BASE,
 			(void *)MSM_QGIC_CPU_BASE);
 }

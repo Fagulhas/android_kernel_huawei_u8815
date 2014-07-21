@@ -32,19 +32,15 @@
 #define ADD_VALUE			4
 #define PWM_LEVEL_ADJUST	226
 /*modify the min value*/
-#define BL_MIN_LEVEL 3
-#define G610C_BL_MIN_LEVEL 10
-#define G610C_BL_MAX_LEVEL 250
-#define PWM_LEVEL_ADJUST_LPG 100
+#define BL_MIN_LEVEL 13
+
 static struct msm_fb_data_type *mfd_local;
 static boolean backlight_set = FALSE;
 static atomic_t suspend_flag = ATOMIC_INIT(0);
 
-
 void msm_backlight_set(int level)
 {
     static uint8 last_level = 0;
-	level = ((level * PWM_LEVEL_ADJUST_LPG) / PWM_LEVEL );
 	if(level)
 	{
 		if (level < BL_MIN_LEVEL)        
@@ -85,7 +81,6 @@ void cabc_backlight_set(struct msm_fb_data_type * mfd)
 
 void pwm_set_backlight(struct msm_fb_data_type *mfd)
 {
-	uint32 bl_level = mfd->bl_level;
 	/*< Delete unused variable */
 	lcd_panel_type lcd_panel = get_lcd_panel_type();
 	/*When all the device are resume that can turn the light*/
@@ -100,34 +95,6 @@ void pwm_set_backlight(struct msm_fb_data_type *mfd)
 	{
 		/* Improve brightness for CMI OTM8009A, 67 is default, 79 is experimental value */
 		mfd->bl_level *= (79 / 67);
-	}
-	else if (MIPI_CMD_OTM8009A_TIANMA_FWVGA == lcd_panel)
-	{
-		/* if bl_level bigger than 160(experimental value) */
-		if (bl_level > 160)
-		{
-			/* increase bl_level by multiplying 79/67(experimental value) */
-			bl_level = (bl_level * 79 / 67);
-			if (bl_level > PWM_LEVEL)
-			{
-				bl_level = PWM_LEVEL;
-			}
-
-			//pr_info("%s: cur_bl_level = %d, new_bl_level = %d\n", __func__, mfd->bl_level, bl_level);
-			mfd->bl_level = bl_level;
-		}
-	}
-	/* no need to change bl_level, if bl_level is zero!!!*/
-	if(machine_is_msm8x25_G610C() && bl_level)
-	{
-		//workaround for G610C
-		if(bl_level < G610C_BL_MIN_LEVEL)
-			bl_level = G610C_BL_MIN_LEVEL;
-		else if(bl_level > G610C_BL_MAX_LEVEL)
-			bl_level = G610C_BL_MAX_LEVEL;
-
-		//printk("%s: cur_bl_level = %d, new_bl_level = %d \n", __func__,mfd->bl_level,bl_level);
-		mfd->bl_level = bl_level;
 	}
 	if (get_hw_lcd_ctrl_bl_type() == CTRL_BL_BY_MSM)
 	{

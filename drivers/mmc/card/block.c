@@ -1115,16 +1115,6 @@ static int mmc_blk_err_check(struct mmc_card *card,
 	struct request *req = mq_mrq->req;
 	int ecc_err = 0;
 
-	int gen_err = 0;
-	
-#ifdef CONFIG_HUAWEI_KERNEL
-    int need_retry = 0;
-	if(EMMC_SANDISK_MANFID == card->cid.manfid)
-	{
-		pr_debug("[HW]:EMMC_SANDISK_MANFID:Retry Function.");
-	}
-#endif
-
 	/*
 	 * sbc.error indicates a problem with the set block count
 	 * command.  No data will have been transferred.
@@ -1170,15 +1160,6 @@ static int mmc_blk_err_check(struct mmc_card *card,
 		int i = 0;
 		unsigned long timeout = jiffies + HZ * SEND_STATUS_TIMEOUT;
 		u32 status;
-		if(EMMC_TOSHIBA_MANFID == card->cid.manfid)
-		{
-			pr_debug("[HW]:EMMC_TOSHIBA_MANFID:Retry Function.");
-			/* Check stop command(CMD12)response */
-			if (brq->mrq.stop && (brq->mrq.stop->resp[0]&R1_ERROR)) {
-				pr_err("[HW]:EMMC_TOSHIBA_MANFID:R1_ERROR in CMD12 response, need retry.\n");
-				return MMC_BLK_RETRY;
-			}
-		}
 		do {
 			int err = get_card_status(card, &status, 5);
 			if (err) {
@@ -1200,22 +1181,6 @@ static int mmc_blk_err_check(struct mmc_card *card,
 				return MMC_BLK_ABORT;
 		    }
 			i++;            
-			if(EMMC_TOSHIBA_MANFID == card->cid.manfid)
-			{
-				if(status & R1_ERROR) {
-					gen_err = 1;
-				}
-			}			
-#ifdef CONFIG_HUAWEI_KERNEL
-            if(EMMC_SANDISK_MANFID == card->cid.manfid)
-            {
-			    /* Bit 19 and Bit 20 set means VDET error, need retry this command */
-                if(status & (R1_ERROR|R1_CC_ERROR)) {
-                    need_retry = 1;
-                }
-            }
-#endif            
-
 			/*
 			 * Some cards mishandle the status bits,
 			 * so make sure to check both the busy
@@ -1223,27 +1188,6 @@ static int mmc_blk_err_check(struct mmc_card *card,
 			 */
 		} while (!(status & R1_READY_FOR_DATA) ||
 			 (R1_CURRENT_STATE(status) == R1_STATE_PRG));
-
-		if(EMMC_TOSHIBA_MANFID == card->cid.manfid)
-		{
-			/* if error occur,retry operation executes */
-			if(gen_err){
-				pr_err("[HW]:EMMC_TOSHIBA_MANFID:R1_ERROR in CMD13 response, need retry.\n");
-				return MMC_BLK_RETRY;
-			}
-		}
-#ifdef CONFIG_HUAWEI_KERNEL
-        if(EMMC_SANDISK_MANFID == card->cid.manfid)
-        {
-            /* if error occur,retry operation executes */
-            if(need_retry){
-                pr_err("[HW]:EMMC_SANDISK_MANFID:R1_ERROR and R1_CC_ERROR in CMD13 response, need retry.\n");
-                return MMC_BLK_RETRY;
-            }
-        }
-#endif        
-
-		
 	}
 
 	if (brq->data.error) {

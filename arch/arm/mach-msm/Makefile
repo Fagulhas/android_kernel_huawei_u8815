@@ -403,6 +403,3 @@ obj-$(CONFIG_DEBUG_FS) += msm_cpr-debug.o
 endif
 obj-$(CONFIG_MSM_FIQ) += msm7k_fiq.o
 obj-$(CONFIG_MSM_FIQ) += msm7k_fiq_handler.o
-obj-$(CONFIG_MSM_PBUS) += pbus_support.o
-
-CFLAGS_pm2.o = -Wno-implicit-function-declaration

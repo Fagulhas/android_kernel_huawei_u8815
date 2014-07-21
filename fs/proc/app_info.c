@@ -3,7 +3,6 @@
  *
  *
  * Changes:
- * mazhenhua      :  for read appboot version and flash id.
  */
 
 #include <linux/types.h>
@@ -83,14 +82,15 @@ typedef struct
  */
 const s_board_hw_version_type s_board_hw_version_table[] =
 {  /* machine_arch_type        s_board_id           hw_version_id */
-   {MACH_TYPE_MSM7X27A_U8815, "MSM7227A_U8815", "HD1U861M "},
 
-   {MACH_TYPE_MSM8X25_C8813,    "MSM8X25_C8813",    "HC1C8813M "},
-   {MACH_TYPE_MSM8X25_C8950D,   "MSM8X25_C8950D",   "HC1C8950M "},
+   {MACH_TYPE_MSM8X25_C8813,    "MSM8X25_C8813",	"HC1C8813M "},
+ 
+   {MACH_TYPE_MSM8X25_C8950D,   "MSM8X25_C8950D",	"HC1C8950M "},
+
    {MACH_TYPE_MSM8X25_U8951,    "MSM8X25_U8951",    "HD2U8951M "},
    {MACH_TYPE_MSM8X25_G520U,    "MSM8X25_G520U",    "HD1G520M "},
-   {MACH_TYPE_MSM8X25_C8813Q,   "MSM8X25_C8813Q",   "HC1G510DQM "},
-   {MACH_TYPE_MSM8X25_G610C,    "MSM8X25_G610C",    "HC1G610M "},
+   {MACH_TYPE_MSM8X25_C8813Q,    "MSM8X25_C8813Q",   "HC1G510QM "},
+   {MACH_TYPE_MSM8X25_G610C,    "MSM8X25_G610-C00",    "HC1G610M "},
 };
 void set_s_board_hw_version(char *s_board_id,char *hw_version_id)
 {  
@@ -126,7 +126,6 @@ void set_s_product_version(char *s_product_name)
     int board_id           = machine_arch_type - MACH_ID_START_NUM;
     unsigned int temp_num  = 0;
     unsigned int table_num = 0;
-    unsigned int str_len = 0;
     char product_ver[16]   = {0};
     hw_product_sub_type product_sub_type = get_hw_sub_board_id();
 
@@ -169,30 +168,6 @@ void set_s_product_version(char *s_product_name)
         }    
         strcat(s_product_name, product_ver);
     }
-    else if ( IS_8X25Q_CDMA(board_id) )
-    {   
-        printk("app_info 3 : sub: %d\n", (product_sub_type & HW_VER_PRODUCT_MASK));
-        if (MACH_TYPE_MSM8X25_G610C == machine_arch_type)  // is G610C products
-        {
-            str_len = strlen(s_product_name);
-            s_product_name[str_len-1] = 0;
-            printk("app_info 4 : str_len = %d\n", str_len);
-            printk("app_info 4 : s_product_name = %s\n", s_product_name);
-            // is dual card 
-            if ( HW_VER_SUB_V0 == (product_sub_type & HW_VER_PRODUCT_MASK) 
-                 ||HW_VER_SUB_V1 == (product_sub_type & HW_VER_PRODUCT_MASK) )
-            {
-                sprintf(product_ver, "%s", "-C00");
-            }
-            // is Single card 
-            else if ( HW_VER_SUB_V4 == (product_sub_type & HW_VER_PRODUCT_MASK) 
-                 ||HW_VER_SUB_V5 == (product_sub_type & HW_VER_PRODUCT_MASK) )
-            {
-                sprintf(product_ver, "%s", "-C10");
-            }      
-            strcat(s_product_name, product_ver);
-        }
-    }
 
 }
 /*===========================================================================
@@ -220,16 +195,6 @@ static void set_s_board_hw_version_special(char *hw_version_id,char *hw_version_
          return ;
     }
 
-	/* U8815 silk-screen display to VerB */
-    if((HW_VER_SUB_VB <= get_hw_sub_board_id()) 
-       &&(MACH_TYPE_MSM7X27A_U8815 == machine_arch_type))
-    {
-        memcpy(hw_version_id,"HD1U8815M ", BOARD_ID_LEN-1);
-        sprintf(hw_version_sub_ver, "VER.%c", 'A'+(char)get_hw_sub_board_id());
-        strcat(hw_version_id, hw_version_sub_ver);
-        hw_version_id[HW_VERSION-1] = '\0';
-
-    }
 }
 
 /* same as in proc_misc.c */
@@ -310,9 +275,7 @@ static int app_version_read_proc(char *page, char **start, off_t off,
 	char * touch_info = NULL;
 	char * battery_name = NULL;
 	char *wifi_device_name = NULL;
-	char *wifi_fw_ver = NULL;
 	char *bt_device_name = NULL;
-	char *bt_fw_ver = NULL;
 	char audio_property[AUDIO_PROPERTY_LEN] = {0};
 	char s_board_id[BOARD_ID_LEN + BOARD_ID_SUB_VER_LEN] = {0};
     char s_product_name[BOARD_ID_LEN + BOARD_ID_SUB_VER_LEN] = {0};
@@ -321,9 +284,7 @@ static int app_version_read_proc(char *page, char **start, off_t off,
 	char hw_version_sub_ver[HW_VERSION_SUB_VER] = {0};	
 	char *compass_gs_name = NULL;
 	char *sensors_list_name = NULL;
-	char camera_version[2 * CAMERA_VER_LEN] = {0};
-	
-    get_camera_version(camera_version);
+
     set_s_board_hw_version(s_board_id,hw_version_id);
     set_s_product_version(s_product_name);
     sprintf(sub_ver, ".Ver%X", (char)get_hw_sub_board_id());
@@ -333,9 +294,7 @@ static int app_version_read_proc(char *page, char **start, off_t off,
 	sensors_list_name = get_sensors_list_name();
 	lcd_name = get_lcd_panel_name();
 	wifi_device_name = get_wifi_device_name();
-	wifi_fw_ver = get_wifi_fw_ver();
 	bt_device_name = get_bt_device_name();
-	bt_fw_ver = get_bt_fw_ver();
 	get_audio_property(audio_property);
 
 	touch_info = get_touch_info();
@@ -360,22 +319,18 @@ static int app_version_read_proc(char *page, char **start, off_t off,
 	"lcd_id:\n%s\n"
 	"External_camera:\n%s\n"
 	"Internal_camera:\n%s\n"
-	"Camera_version:\n%s\n"
 	"ts_id:\n%d\n"
 	"charge_flag:\n%d\n"
 	"compass_gs_position:\n%s\n"
 	"sensors_list:\n%s\n"
 	"hw_version:\n%s\n"
     "wifi_chip:\n%s\n"
-    "wifi_fw_ver:\n%s\n"
     "bt_chip:\n%s\n"
-     "bt_fw_ver:\n%s\n"
 	"audio_property:\n%s\n"
 	"touch_info:\n%s\n"
 	"battery_id:\n%s\n"
 	"dcdc_type:\n%s\n",
-	 s_board_id, sub_ver, s_product_name, lcd_name, back_camera_name, front_camera_name,camera_version,ts_id,charge_flag, compass_gs_name,sensors_list_name, hw_version_id,wifi_device_name, wifi_fw_ver, bt_device_name, bt_fw_ver, audio_property, touch_info, battery_name, ((NULL == dcdc_type) ? "unknown" : dcdc_type));
-
+	 s_board_id, sub_ver, s_product_name, lcd_name, back_camera_name, front_camera_name, ts_id,charge_flag, compass_gs_name,sensors_list_name, hw_version_id,wifi_device_name, bt_device_name, audio_property, touch_info, battery_name, ((NULL == dcdc_type) ? "unknown" : dcdc_type));
 
 #else
 	len = snprintf(page, PAGE_SIZE, "APPSBOOT:\n"

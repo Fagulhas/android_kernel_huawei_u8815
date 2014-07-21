@@ -1233,9 +1233,8 @@ static int mipi_cmd_nt35516_qhd_pt_init(void)
 	struct msm_panel_info *pinfo = NULL;
 	
 	lcd_panel_qhd = get_lcd_panel_type();
-	if ((MIPI_CMD_NT35516_TIANMA_QHD != lcd_panel_qhd) &&
-		(MIPI_CMD_NT35516_CHIMEI_QHD != lcd_panel_qhd) &&
-		(MIPI_CMD_NT35516_TRULY_QHD != lcd_panel_qhd))
+	if (MIPI_CMD_NT35516_TIANMA_QHD != lcd_panel_qhd &&
+		MIPI_CMD_NT35516_CHIMEI_QHD != lcd_panel_qhd)
 	{
 		return 0;
 	}

@@ -993,25 +993,12 @@ static void dbs_input_disconnect(struct input_handle *handle)
 	input_unregister_handle(handle);
 	kfree(handle);
 }
-static const struct input_device_id dbs_ids[] = {
-/*{ .driver_info = 1 },*/
-	{
-		.flags = INPUT_DEVICE_ID_MATCH_EVBIT |
-			 INPUT_DEVICE_ID_MATCH_ABSBIT,
-		.evbit = { BIT_MASK(EV_ABS) },
-		.absbit = { [BIT_WORD(ABS_MT_POSITION_X)] =
-		            BIT_MASK(ABS_MT_POSITION_X) |
-		            BIT_MASK(ABS_MT_POSITION_Y) },
-	}, /* multi-touch touchscreen */
-	{
-		.flags = INPUT_DEVICE_ID_MATCH_KEYBIT |
-			 INPUT_DEVICE_ID_MATCH_ABSBIT,
-		.keybit = { [BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH) },
-		.absbit = { [BIT_WORD(ABS_X)] =
-			    BIT_MASK(ABS_X) | BIT_MASK(ABS_Y) },
-	}, /* touchpad */
 
+static const struct input_device_id dbs_ids[] = {
+	{ .driver_info = 1 },
+	{ },
 };
+
 static struct input_handler dbs_input_handler = {
 	.event		= dbs_input_event,
 	.connect	= dbs_input_connect,

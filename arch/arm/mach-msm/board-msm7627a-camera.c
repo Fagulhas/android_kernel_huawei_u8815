@@ -35,12 +35,14 @@
 #define GPIO_SKU3_CAM_5MP_SHDN_N   5         /* PWDN */
 #define GPIO_SKU3_CAM_5MP_CAMIF_RESET   6    /* (board_is(EVT))?123:121 RESET */
 #define GPIO_SKU3_CAM_5MP_CAM_DRIVER_PWDN 30
+
 #define GPIO_SKUD_CAM_5MP_SHDN_N   23      /* PWDN */
 #define GPIO_SKUD_CAM_5MP_CAMIF_RESET   79 /* (board_is(EVT))?123:121 RESET */
 #define GPIO_SKUD_CAM_5MP_CAM_VCM_PWDN 16
 #define GPIO_SKUD_CAM_1MP_PWDN 85
 #define GPIO_SKUD_CAM_LED_EN 34
 #define GPIO_SKUD_CAM_LED_FLASH_EN 48
+
 #define GPIO_SKU7_CAM_VGA_SHDN    91
 #define GPIO_SKU7_CAM_5MP_SHDN_N   93         /* PWDN */
 #define GPIO_SKU7_CAM_5MP_CAMIF_RESET   23   /* (board_is(EVT))?123:121 RESET */
@@ -147,6 +149,7 @@ static struct msm_camera_gpio_conf gpio_conf_ov7692 = {
 	.gpio_no_mux = 1,
 };
 #endif
+
 #ifdef CONFIG_OV5648
 static struct msm_camera_gpio_conf gpio_conf_ov5648 = {
 	.camera_off_table = camera_off_gpio_table,
@@ -217,7 +220,6 @@ static struct camera_vreg_t ov8825_gpio_vreg[] = {
 	{"cam_ov8825_avdd", REG_GPIO, 0, 0, 0},
 	{"cam_ov8825_vdd", REG_GPIO, 0, 0, 0},
 };
-
 #endif
 #ifdef CONFIG_OV7692
 static struct camera_vreg_t ov7692_gpio_vreg[] = {
@@ -303,12 +305,10 @@ static struct msm_actuator_info msm_act_main_cam_4_info = {
 	.vcm_pwd        = 7,
 	.vcm_enable     = 1,
 };
-
 static struct gpio s5k4e1_cam_req_gpio[] = {
 	{49, GPIOF_DIR_OUT, "CAM_RESET"},
 	{119, GPIOF_DIR_OUT, "CAM_PWD"},
 };
-
 static struct msm_gpio_set_tbl s5k4e1_cam_gpio_req_init_tbl[] = {
 	{119, GPIOF_OUT_INIT_LOW, 1000},  // s5k4e1 pwd will be pull low before power on
 };
@@ -446,6 +446,7 @@ static struct msm_camera_sensor_info msm_camera_sensor_ov7695_data = {
 	.sensor_type = YUV_SENSOR,
 };
 #endif
+
 #ifdef CONFIG_HUAWEI_SENSOR_MT9P017
 /*add the actuator info for mt9p017*/
 static struct msm_actuator_info msm_act_main_cam_6_info = {
@@ -539,6 +540,7 @@ static struct msm_camera_sensor_info msm_camera_sensor_ov7695_raw_data = {
 	.sensor_type = BAYER_SENSOR,
 };
 #endif
+
 #ifdef CONFIG_OV5647
 
 static struct msm_actuator_info msm_act_main_cam_5_info = {
@@ -563,7 +565,6 @@ static struct msm_gpio_set_tbl ov5647_cam_gpio_set_tbl[] = {
 	{119, GPIOF_OUT_INIT_HIGH, 1000},
 	{49, GPIOF_OUT_INIT_HIGH, 30000},
 };
-
 static struct msm_gpio_set_tbl ov5647_cam_gpio_config_tbl_power_down[] = {
 	{49, GPIOF_OUT_INIT_LOW,   1000},
 	{119, GPIOF_OUT_INIT_LOW,  1000},
@@ -615,6 +616,7 @@ static struct msm_camera_sensor_platform_info sensor_board_info_ov5647 = {
 	.num_vreg = ARRAY_SIZE(msm_cam_vreg),
 	.gpio_conf = &gpio_conf_ov5647,
 };
+
 
 /*static struct msm_camera_sensor_flash_src msm_flash_src_ov5647 = {
 	.flash_sr_type = MSM_CAMERA_FLASH_SRC_LED1,
@@ -687,6 +689,7 @@ static struct msm_camera_sensor_info msm_camera_sensor_ov5648_data = {
 	.actuator_info = &msm_act_main_cam_7_info,
 };
 #endif
+
 static struct msm_camera_gpio_conf gpio_conf_ov8825 = {
 	.camera_off_table = camera_off_gpio_table,
 	.camera_on_table = camera_on_gpio_table,
@@ -1365,9 +1368,9 @@ static void __init msm7x27a_init_cam(void)
 			ov7692_gpio_vreg;
 		sensor_board_info_ov7692.num_vreg =
 			ARRAY_SIZE(ov7692_gpio_vreg);
-#endif
-#ifdef CONFIG_OV5647
-		sensor_board_info_ov5647.cam_vreg =
+#endif	
+#ifdef CONFIG_OV5647	
+                sensor_board_info_ov5647.cam_vreg =
 			ov5647_gpio_vreg;
 		sensor_board_info_ov5647.num_vreg =
 			ARRAY_SIZE(ov5647_gpio_vreg);
@@ -1578,6 +1581,7 @@ static struct i2c_board_info i2c_camera_devices[] = {
 	{
 		I2C_BOARD_INFO("sc628a", 0x6E),
 	},
+
 };
 #endif
 static struct i2c_board_info i2c_camera_devices_qpr_skud[] = {
@@ -1778,6 +1782,7 @@ static void evb_camera_gpio_cfg(void)
 			__func__, msm_camera_sensor_ov7692_data.sensor_pwd);
 #endif
 }
+
 static void skud_camera_gpio_cfg(void)
 {
 	int rc = 0;
@@ -2645,6 +2650,7 @@ static void camera_sensor_pwd_config(void)
 	}
 }
 #endif
+
 void camera_af_software_powerdown(struct i2c_client *client)
 {
 	int rc = 0;
@@ -2669,6 +2675,7 @@ void camera_af_software_powerdown(struct i2c_client *client)
 	}
 }
 EXPORT_SYMBOL(camera_af_software_powerdown);
+
 void __init msm7627a_camera_init(void)
 {
 
@@ -2699,15 +2706,13 @@ void __init msm7627a_camera_init(void)
 			|| machine_is_msm8625_evt()
 			|| machine_is_msm7627a_qrd3()
 			|| machine_is_msm8625_qrd7()) {
-
 #ifndef CONFIG_MSM_CAMERA_V4L2
 		lcd_camera_power_init();
 #endif
-
 #ifdef CONFIG_OV5647
 		evb_camera_gpio_cfg();
 #endif
-	}
+}
 
 	if(machine_is_qrd_skud_prime() ||
 		machine_is_msm8625q_skud()||

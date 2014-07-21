@@ -23,7 +23,6 @@
 #include <linux/slab.h>
 #include <linux/regmap.h>
 #include <linux/regulator/fan53555.h>
-#include <linux/delay.h>
 
 /* Voltage setting */
 #define FAN53555_VSEL0		0x00
@@ -52,7 +51,6 @@
 #define FAN53555_ENABLE			BIT(7)
 
 #define FAN53555_NVOLTAGES	64	/* Numbers of voltages */
-#define FAN53555_DEF_VTG_UV	1100000	/* Default voltage */
 
 /* IC Type */
 enum {
@@ -62,7 +60,7 @@ enum {
 	FAN53555_CHIP_ID_03,
 	FAN53555_CHIP_ID_04,
 	FAN53555_CHIP_ID_05,
-	FAN53555_CHIP_ID_09 = 12,
+	FAN53555_CHIP_ID_09 = 9,
 };
 
 struct fan53555_device_info {
@@ -82,79 +80,30 @@ struct fan53555_device_info {
 	unsigned int vsel_step;
 	/* Voltage slew rate limiting */
 	unsigned int slew_rate;
-	unsigned int slew_delay;
 	/* Sleep voltage cache */
 	unsigned int sleep_vol_cache;
 	int curr_voltage;
-	unsigned int vsel_ctrl_val;
 };
-
-static struct fan53555_device_info *fan53555;
 
 static void dump_registers(struct fan53555_device_info *di,
 			unsigned int reg, const char *func)
 {
-#ifdef DEBUG
 	unsigned int val = 0;
 
 	regmap_read(di->regmap, reg, &val);
 	dev_dbg(di->dev, "%s: FAN53555: Reg = %x, Val = %x\n", func, reg, val);
-#endif
 }
-
-static void fan53555_slew_delay(struct fan53555_device_info *di,
-					int prev_uV, int new_uV)
-{
-	u8 val;
-	int delay;
-
-	val = abs(prev_uV - new_uV) / fan53555->vsel_step;
-	delay =  ((val * di->slew_delay) / 1000) + 1;
-
-	dev_dbg(di->dev, "Slew Delay = %d\n", delay);
-
-	udelay(delay);
-}
-
-int fan53555_restart_config()
-{
-	int rc, set_val;
-
-	if (!fan53555) {
-		pr_err("%s: Fairchild FAN53555 driver not intialized\n",
-								__func__);
-		return -ENODEV;
-	}
-
-	set_val = DIV_ROUND_UP(FAN53555_DEF_VTG_UV - fan53555->vsel_min,
-			fan53555->vsel_step);
-	rc = regmap_update_bits(fan53555->regmap, fan53555->vol_reg,
-			VSEL_NSEL_MASK, (set_val & VSEL_NSEL_MASK));
-	if (rc)
-		dev_err(fan53555->dev, "Unable to set volatge rc(%d)", rc);
-	else
-		udelay(20);
-
-	return rc;
-}
-EXPORT_SYMBOL(fan53555_restart_config);
 
 static int fan53555_enable(struct regulator_dev *rdev)
 {
 	int ret;
-	unsigned int temp = 0;
 	struct fan53555_device_info *di = rdev_get_drvdata(rdev);
 
-	temp = di->vsel_ctrl_val & ~FAN53555_ENABLE;
-	temp |= FAN53555_ENABLE;
-
-	ret = regmap_write(di->regmap, di->vol_reg, temp);
-	if (ret) {
+	ret = regmap_update_bits(di->regmap, di->vol_reg,
+				FAN53555_ENABLE, FAN53555_ENABLE);
+	if (ret)
 		dev_err(di->dev, "Unable to enable regualtor rc(%d)", ret);
-		return ret;
-	}
 
-	di->vsel_ctrl_val = temp;
 	dump_registers(di, di->vol_reg, __func__);
 
 	return ret;
@@ -163,18 +112,13 @@ static int fan53555_enable(struct regulator_dev *rdev)
 static int fan53555_disable(struct regulator_dev *rdev)
 {
 	int ret;
-	unsigned int temp = 0;
 	struct fan53555_device_info *di = rdev_get_drvdata(rdev);
 
-	temp = di->vsel_ctrl_val & ~FAN53555_ENABLE;
-
-	ret = regmap_write(di->regmap, di->vol_reg, temp);
-	if (ret) {
+	ret = regmap_update_bits(di->regmap, di->vol_reg,
+					FAN53555_ENABLE, 0);
+	if (ret)
 		dev_err(di->dev, "Unable to disable regualtor rc(%d)", ret);
-		return ret;
-	}
 
-	di->vsel_ctrl_val = temp;
 	dump_registers(di, di->vol_reg, __func__);
 
 	return ret;
@@ -204,7 +148,6 @@ static int fan53555_set_voltage(struct regulator_dev *rdev,
 {
 	struct fan53555_device_info *di = rdev_get_drvdata(rdev);
 	int ret, set_val, new_uV;
-	unsigned int temp = 0;
 
 	set_val = DIV_ROUND_UP(min_uV - di->vsel_min, di->vsel_step);
 	new_uV = (set_val * di->vsel_step) + di->vsel_min;
@@ -215,20 +158,15 @@ static int fan53555_set_voltage(struct regulator_dev *rdev,
 		return -EINVAL;
 	}
 
-	temp = di->vsel_ctrl_val & ~VSEL_NSEL_MASK;
-	temp |= (set_val & VSEL_NSEL_MASK);
-
-	ret = regmap_write(di->regmap, di->vol_reg, temp);
+	ret = regmap_update_bits(di->regmap, di->vol_reg,
+		VSEL_NSEL_MASK, (set_val & VSEL_NSEL_MASK));
 	if (ret) {
 		dev_err(di->dev, "Unable to set volatge (%d %d)\n",
 							min_uV, max_uV);
 		return ret;
-	} else {
-		fan53555_slew_delay(di, di->curr_voltage, new_uV);
-		di->curr_voltage = new_uV;
-		di->vsel_ctrl_val = temp;
 	}
 
+	di->curr_voltage = new_uV;
 	dump_registers(di, di->vol_reg, __func__);
 
 	return ret;
@@ -292,8 +230,7 @@ static struct regulator_desc rdesc = {
 static int fan53555_device_setup(struct fan53555_device_info *di,
 				struct fan53555_platform_data *pdata)
 {
-	unsigned int reg, data, mask, val;
-	int ret;
+	unsigned int reg, data, mask;
 
 	/* Setup voltage control register */
 	switch (pdata->sleep_vsel_id) {
@@ -328,30 +265,14 @@ static int fan53555_device_setup(struct fan53555_device_info *di,
 			"Chip ID[%d]\n not supported!\n", di->chip_id);
 		return -EINVAL;
 	}
-
-	/* get the current programmed voltage */
-	ret = regmap_read(di->regmap, di->vol_reg, &val);
-	if (ret) {
-		dev_err(di->dev, "Unable to get volatge rc(%d)", ret);
-		return ret;
-	}
-	di->vsel_ctrl_val = val;
-	di->curr_voltage = ((val & VSEL_NSEL_MASK) * di->vsel_step)
-						+ di->vsel_min;
-
 	/* Init slew rate */
-	if (pdata->slew_rate & 0x7) {
+	if (pdata->slew_rate & 0x7)
 		di->slew_rate = pdata->slew_rate;
-		di->slew_delay = (di->vsel_step >> 6) * (1 << di->slew_rate);
-	} else {
+	else
 		di->slew_rate = FAN53555_SLEW_RATE_64MV;
-		di->slew_delay = 200;
-	}
-
 	reg = FAN53555_CONTROL;
 	data = di->slew_rate << CTL_SLEW_SHIFT;
 	mask = CTL_SLEW_MASK;
-
 	return regmap_update_bits(di->regmap, reg, mask, data);
 }
 
@@ -419,15 +340,6 @@ static int __devinit fan53555_regulator_probe(struct i2c_client *client,
 		return PTR_ERR(di->regulator);
 	}
 
-	fan53555 = di;
-
-	dump_registers(di, FAN53555_VSEL0, __func__);
-	dump_registers(di, FAN53555_VSEL1, __func__);
-	dump_registers(di, FAN53555_CONTROL, __func__);
-	dump_registers(di, FAN53555_ID1, __func__);
-	dump_registers(di, FAN53555_ID2, __func__);
-	dump_registers(di, FAN53555_MONITOR, __func__);
-
 	return ret;
 
 }
@@ -459,7 +371,7 @@ static int __init fan53555_regulator_init(void)
 	return i2c_add_driver(&fan53555_regulator_driver);
 }
 /* Revisit the code to decide the actual sequence */
-fs_initcall(fan53555_regulator_init);
+subsys_initcall(fan53555_regulator_init);
 
 static void __exit fan53555_regulator_exit(void)
 {

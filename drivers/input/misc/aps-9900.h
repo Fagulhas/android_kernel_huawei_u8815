@@ -87,8 +87,8 @@
 
 #define U8655_WAVE  35
 #define U8655_WINDOW  115
-#define U8815_WAVE  90
-#define U8815_WINDOW 200
+#define U8815_WAVE  150
+#define U8815_WINDOW 150
 #define C8655_WAVE  40
 #define C8655_WINDOW 225
 
@@ -112,9 +112,6 @@
 #define G510C_WINDOW 290
 #define H867G_WAVE 74
 #define H867G_WINDOW 221
-/* the values below are all experience value */
-#define G610C_WAVE 90
-#define G610C_WINDOW 200
 /* delete this part */
 /* delete some lines */
 
@@ -129,13 +126,6 @@ static uint16_t lsensor_adc_table_g510[LSENSOR_MAX_LEVEL] = {
 /* the values below are all experience value */
 static uint16_t lsensor_adc_table_g510c[LSENSOR_MAX_LEVEL] = {
 	12,	30,	210, 560, 860, 1200, 1500
-};
-/* the values below are all experience value */
-static uint16_t lsensor_adc_table_g610c[LSENSOR_MAX_LEVEL] = {
-	29, 56, 260, 625, 795, 965, 1300
-};
-static uint16_t lsensor_adc_table_u8815[LSENSOR_MAX_LEVEL] = {
-	29, 56, 260, 625, 795, 965, 1300
 };
 /* delete some lines */
 #endif /* _LINUX_APS_9900_H */

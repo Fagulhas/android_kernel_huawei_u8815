@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -48,12 +48,11 @@
 #include <mach/msm_battery.h>
 #include <linux/smsc911x.h>
 #include <linux/atmel_maxtouch.h>
+/* update Qcomm original  base line , delete 1 line for fmem disable and avoid deadlock*/
 #include <linux/msm_adc.h>
 #include <linux/i2c-gpio.h>
 #include <linux/regulator/onsemi-ncp6335d.h>
 #include <linux/ion.h>
-#include <linux/dma-contiguous.h>
-#include <linux/dma-mapping.h>
 #include "devices.h"
 #include "timer.h"
 #include "board-msm7x27a-regulator.h"
@@ -71,13 +70,8 @@
 #ifdef CONFIG_HUAWEI_KERNEL
 #include <linux/hardware_self_adapt.h>
 /*added for virtualkeys*/
-#ifdef CONFIG_INPUT_HW_ATE
-char buf_virtualkey[500];
-ssize_t  buf_vkey_size=0;
-#else
 static char buf_virtualkey[500];
 static ssize_t  buf_vkey_size=0;
-#endif
 #endif
 
 #ifdef CONFIG_HUAWEI_KERNEL
@@ -90,8 +84,7 @@ static ssize_t  buf_vkey_size=0;
 #endif
 
 #define PMEM_KERNEL_EBI1_SIZE	0x3A000
-#define MSM_PMEM_AUDIO_SIZE	0xF0000
-#define BOOTLOADER_BASE_ADDR	0x10000
+#define MSM_PMEM_AUDIO_SIZE	0x1F4000
 
 #if defined(CONFIG_GPIO_SX150X)
 enum {
@@ -306,20 +299,13 @@ static unsigned int get_pmem_adsp_size(void)
 #endif
 
 #ifdef CONFIG_ION_MSM
-#define MSM_ION_HEAP_NUM        5
+#define MSM_ION_HEAP_NUM        4
 static struct platform_device ion_dev;
 static int msm_ion_camera_size;
 static int msm_ion_audio_size;
 static int msm_ion_sf_size;
-static int msm_ion_camera_size_carving;
 #endif
 
-#define CAMERA_HEAP_BASE	0x0
-#ifdef CONFIG_CMA
-#define CAMERA_HEAP_TYPE	ION_HEAP_TYPE_DMA
-#else
-#define CAMERA_HEAP_TYPE	ION_HEAP_TYPE_CARVEOUT
-#endif
 
 static struct android_usb_platform_data android_usb_pdata = {
 	.update_pid_and_serial_num = usb_diag_update_pid_and_serial_num,
@@ -562,7 +548,7 @@ static struct msm_pm_platform_data
 					.latency = 2,
 					.residency = 10,
 	},
-#if 0
+
 	/* picked latency & redisdency values from 7x30 */
 	[MSM_PM_MODE(1, MSM_PM_SLEEP_MODE_POWER_COLLAPSE_STANDALONE)] = {
 					.idle_supported = 1,
@@ -619,7 +605,7 @@ static struct msm_pm_platform_data
 					.latency = 2,
 					.residency = 10,
 	},
-#endif
+
 };
 
 static struct msm_pm_boot_platform_data msm_pm_8625_boot_pdata __initdata = {
@@ -632,6 +618,7 @@ static struct android_pmem_platform_data android_pmem_adsp_pdata = {
 	.allocator_type = PMEM_ALLOCATORTYPE_BITMAP,
 	.cached = 1,
 	.memory_type = MEMTYPE_EBI1,
+	/*  update Qcomm original  base line , delete 3 lines for fmem disable and avoid deadlock*/
 };
 
 static struct platform_device android_pmem_adsp_device = {
@@ -905,6 +892,9 @@ static void msm7x27a_cfg_uart2dm_serial(void)
 static void msm7x27a_cfg_uart2dm_serial(void) { }
 #endif
 
+/*  update Qcomm original  base line , delete 6 lines for fmem disable and avoid deadlock*/
+
+
 /* delete uart1 serial port */
 #ifdef CONFIG_HUAWEI_KERNEL
 static struct platform_device *rumi_sim_devices[] __initdata = {
@@ -960,6 +950,7 @@ static struct platform_device *common_devices[] __initdata = {
 	&android_pmem_device,
 	&android_pmem_adsp_device,
 	&android_pmem_audio_device,
+    /*  update Qcomm original  base line , delete 1 line for fmem disable and avoid deadlock*/
 	&msm_device_nand,
 	&msm_device_snd,
 	&msm_device_cad,
@@ -1031,17 +1022,10 @@ static void fix_sizes(void)
 
 	if (get_ddr_size() > SZ_512M)
 		pmem_adsp_size = CAMERA_ZSL_SIZE;
-
 #ifdef CONFIG_ION_MSM
-	msm_ion_audio_size = MSM_PMEM_AUDIO_SIZE;
-	msm_ion_sf_size = pmem_mdp_size;
-#ifdef CONFIG_CMA
-	msm_ion_camera_size = CAMERA_ZSL_SIZE;
-	msm_ion_camera_size_carving = 0;
-#else
 	msm_ion_camera_size = pmem_adsp_size;
-	msm_ion_camera_size_carving = msm_ion_camera_size;
-#endif
+	msm_ion_audio_size = (MSM_PMEM_AUDIO_SIZE + PMEM_KERNEL_EBI1_SIZE);
+	msm_ion_sf_size = pmem_mdp_size;
 #endif
 }
 
@@ -1051,29 +1035,16 @@ static struct ion_co_heap_pdata co_ion_pdata = {
 	.adjacent_mem_id = INVALID_HEAP_ID,
 	.align = PAGE_SIZE,
 };
-
-static struct ion_co_heap_pdata co_mm_ion_pdata = {
-	.adjacent_mem_id = INVALID_HEAP_ID,
-	.align = PAGE_SIZE,
-};
-
-static u64 msm_dmamask = DMA_BIT_MASK(32);
-
-static struct platform_device ion_cma_device = {
-	.name = "ion-cma-device",
-	.id = -1,
-	.dev = {
-		.dma_mask = &msm_dmamask,
-		.coherent_dma_mask = DMA_BIT_MASK(32),
-	}
-};
 #endif
 
 /**
  * These heaps are listed in the order they will be allocated.
  * Don't swap the order unless you know what you are doing!
  */
-struct ion_platform_heap msm7x27a_heaps[] = {
+static struct ion_platform_data ion_pdata = {
+	.nr = MSM_ION_HEAP_NUM,
+	.has_outer_cache = 1,
+	.heaps = {
 		{
 			.id	= ION_SYSTEM_HEAP_ID,
 			.type	= ION_HEAP_TYPE_SYSTEM,
@@ -1083,13 +1054,12 @@ struct ion_platform_heap msm7x27a_heaps[] = {
 		/* PMEM_ADSP = CAMERA */
 		{
 			.id	= ION_CAMERA_HEAP_ID,
-			.type	= CAMERA_HEAP_TYPE,
+			.type	= ION_HEAP_TYPE_CARVEOUT,
 			.name	= ION_CAMERA_HEAP_NAME,
 			.memory_type = ION_EBI_TYPE,
-			.extra_data = (void *)&co_mm_ion_pdata,
-			.priv	= (void *)&ion_cma_device.dev,
+			.extra_data = (void *)&co_ion_pdata,
 		},
-		/* AUDIO HEAP 1*/
+		/* PMEM_AUDIO */
 		{
 			.id	= ION_AUDIO_HEAP_ID,
 			.type	= ION_HEAP_TYPE_CARVEOUT,
@@ -1105,23 +1075,8 @@ struct ion_platform_heap msm7x27a_heaps[] = {
 			.memory_type = ION_EBI_TYPE,
 			.extra_data = (void *)&co_ion_pdata,
 		},
-		/* AUDIO HEAP 2*/
-		{
-			.id	= ION_AUDIO_HEAP_BL_ID,
-			.type	= ION_HEAP_TYPE_CARVEOUT,
-			.name	= ION_AUDIO_BL_HEAP_NAME,
-			.memory_type = ION_EBI_TYPE,
-			.extra_data = (void *)&co_ion_pdata,
-			.base = BOOTLOADER_BASE_ADDR,
-		},
-
 #endif
-};
-
-static struct ion_platform_data ion_pdata = {
-	.nr = MSM_ION_HEAP_NUM,
-	.has_outer_cache = 1,
-	.heaps = msm7x27a_heaps,
+	}
 };
 
 static struct platform_device ion_dev = {
@@ -1148,9 +1103,14 @@ static void __init size_pmem_devices(void)
 {
 #ifdef CONFIG_ANDROID_PMEM
 #ifndef CONFIG_MSM_MULTIMEDIA_USE_ION
+
+    /*  update Qcomm original  base line , delete 2 lines for fmem disable and avoid deadlock*/
 	android_pmem_adsp_pdata.size = pmem_adsp_size;
 	android_pmem_pdata.size = pmem_mdp_size;
 	android_pmem_audio_pdata.size = pmem_audio_size;
+
+    /*  update Qcomm original  base line , delete 19 lines for fmem disable and avoid deadlock*/
+
 #endif
 #endif
 }
@@ -1182,18 +1142,16 @@ static void __init size_ion_devices(void)
 {
 #ifdef CONFIG_MSM_MULTIMEDIA_USE_ION
 	ion_pdata.heaps[1].size = msm_ion_camera_size;
-	ion_pdata.heaps[2].size = PMEM_KERNEL_EBI1_SIZE;
+	ion_pdata.heaps[2].size = msm_ion_audio_size;
 	ion_pdata.heaps[3].size = msm_ion_sf_size;
-	ion_pdata.heaps[4].size = msm_ion_audio_size;
 #endif
 }
 
 static void __init reserve_ion_memory(void)
 {
 #if defined(CONFIG_ION_MSM) && defined(CONFIG_MSM_MULTIMEDIA_USE_ION)
-	msm7x27a_reserve_table[MEMTYPE_EBI1].size += PMEM_KERNEL_EBI1_SIZE;
-	msm7x27a_reserve_table[MEMTYPE_EBI1].size +=
-		msm_ion_camera_size_carving;
+	msm7x27a_reserve_table[MEMTYPE_EBI1].size += msm_ion_camera_size;
+	msm7x27a_reserve_table[MEMTYPE_EBI1].size += msm_ion_audio_size;
 	msm7x27a_reserve_table[MEMTYPE_EBI1].size += msm_ion_sf_size;
 #endif
 }
@@ -1266,8 +1224,6 @@ extern unsigned long get_mempools_pstart_addr(void);
 static void __init msm7x27a_reserve(void)
 {
 	reserve_info = &msm7x27a_reserve_info;
-	memblock_remove(MSM8625_NON_CACHE_MEM, SZ_2K);
-	memblock_remove(BOOTLOADER_BASE_ADDR, msm_ion_audio_size);
 	msm_reserve();
 
 #ifdef CONFIG_SRECORDER_MSM
@@ -1281,28 +1237,19 @@ static void __init msm7x27a_reserve(void)
     }
 #endif /* CONFIG_SRECORDER_MSM */
 	memblock_remove(MSM8625_NON_CACHE_MEM, SZ_2K);
-
-#ifdef CONFIG_CMA
-	dma_declare_contiguous(
-			&ion_cma_device.dev,
-			msm_ion_camera_size,
-			CAMERA_HEAP_BASE,
-			0x26000000);
-#endif
 }
 
 
-/* \B4硕未\FA\C2氡蝗玕B2\BF\D2频\BDstatic void __init msm7x27a_reserve(void)\BA\AF\CA\FD前\C3\E6 */
+/* 此段代码被全部移到static void __init msm7x27a_reserve(void)函数前面 */
 
 static void __init msm8625_reserve(void)
 {
 	msm7x27a_reserve();
 
-/* \B4硕未\FA\C2氡蝗玕B2\BF\D2频\BD\B5\C4实\CF直\BB\D2频\BDstatic void __init msm7x27a_reserve(void)\BA\AF\CA\FD\C0\EF\C3\E6实\CF\D6 */
+/* 此段代码被全部移到的实现被移到static void __init msm7x27a_reserve(void)函数里面实现 */
 
 	memblock_remove(MSM8625_CPU_PHYS, SZ_8);
 	memblock_remove(MSM8625_WARM_BOOT_PHYS, SZ_32);
-	msm7x27a_reserve();
 }
 
 static void __init msm7x27a_device_i2c_init(void)
@@ -1462,25 +1409,15 @@ static struct kobj_attribute melfas_virtual_keys_attr = {
 	.show = &virtualkey_show,
 };
 #endif
-#ifdef CYTTSP4_VIRTUAL_KEYS
-static struct kobj_attribute cyttsp4_virtualkeys_attr = {
-	.attr = {
-		.name = "virtualkeys.cyttsp4_mt",
-		.mode = S_IRUGO,
-	},
-	.show = &virtualkey_show,
-};
-#endif
+
 static struct attribute *virtualkey_properties_attrs[] = {
 	&synaptics_virtual_keys_attr.attr,
 	#ifdef CONFIG_HUAWEI_MELFAS_TOUCHSCREEN
 	&melfas_virtual_keys_attr.attr,
 	#endif
-	#ifdef CYTTSP4_VIRTUAL_KEYS
-	&cyttsp4_virtualkeys_attr.attr,
-	#endif
 	NULL
 };
+
 static struct attribute_group virtualkey_properties_attr_group = {
 	.attrs = virtualkey_properties_attrs,
 };
@@ -1632,7 +1569,7 @@ static void __init msm7x2x_init(void)
 #ifndef CONFIG_HUAWEI_CAMERA
     msm7x27a_cfg_smsc911x();
 #endif
-#if (defined(CONFIG_HUAWEI_BT_BCM43XX) && defined(CONFIG_HUAWEI_KERNEL))
+#if (defined(HUAWEI_BT_BTLA_VER30) && defined(CONFIG_HUAWEI_KERNEL))
     /*before bt probe, config the bt_wake_msm gpio*/
     bt_wake_msm_config();
 #endif
@@ -1756,16 +1693,6 @@ MACHINE_START(MSM8625_SURF, "QCT MSM8625 SURF")
 	.timer          = &msm_timer,
 	.init_early     = msm7x2x_init_early,
 	.handle_irq	= gic_handle_irq,
-MACHINE_END
-MACHINE_START(MSM7X27A_U8815, "MSM7x27a U8815 BOARD")
-    .atag_offset    = PHYS_OFFSET + 0x100,
-    .map_io         = msm_common_io_init,
-    .reserve        = msm7x27a_reserve,
-    .init_irq       = msm_init_irq,
-    .init_machine   = msm7x2x_init,
-    .timer          = &msm_timer,
-    .init_early     = msm7x2x_init_early,
-    .handle_irq     = vic_handle_irq,
 MACHINE_END
 MACHINE_START(MSM8X25_U8951, "MSM8x25 U8951 BOARD")
 	.atag_offset    = PHYS_OFFSET + 0x100,

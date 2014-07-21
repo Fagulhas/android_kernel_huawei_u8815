@@ -940,8 +940,7 @@ static ssize_t fsg_store_file(struct device *dev, struct device_attribute *attr,
      * if the code is included, usb mass storage can't be turned off
      * when connected with the mac host 
      */
-
-#if !defined(CONFIG_USB_G_ANDROID)
+#if !defined (CONFIG_USB_ANDROID_MASS_STORAGE) && !defined(CONFIG_HUAWEI_KERNEL)
 	/* disabled in android because we need to allow closing the backing file
 	 * if the media was removed
 	 */

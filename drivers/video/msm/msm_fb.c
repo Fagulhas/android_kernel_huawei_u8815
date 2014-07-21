@@ -3,7 +3,7 @@
  * Core MSM framebuffer driver.
  *
  * Copyright (C) 2007 Google Incorporated
- * Copyright (c) 2008-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2008-2012, Code Aurora Forum. All rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -69,7 +69,7 @@ extern int load_888rle_image(char *filename);
 #endif
 #endif
 
-/* ÉŸ³ýŽË¶ÎŽúÂë */
+/* ɾ���˶δ��� */
 
 /*modify the number of framebuffer*/
 /*Add 4 framebuffer and delete the mem adapter strategy*/	
@@ -144,9 +144,7 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 static int msm_fb_mmap(struct fb_info *info, struct vm_area_struct * vma);
 static int mdp_bl_scale_config(struct msm_fb_data_type *mfd,
 						struct mdp_bl_scale_data *data);
-#ifndef CONFIG_HUAWEI_KERNEL
 static void msm_fb_scale_bl(__u32 *bl_lvl);
-#endif
 
 /*function declare*/
 #ifdef CONFIG_FB_AUTO_CABC
@@ -156,7 +154,7 @@ int msm_fb_config_cabc(struct msm_fb_data_type *mfd, struct msmfb_cabc_config ca
 int msm_fb_set_dynamic_gamma(struct msm_fb_data_type *mfd, enum danymic_gamma_mode gamma_mode);
 #endif
 
-/* ÉŸ³ýŽË¶ÎŽúÂë */
+/* ɾ���˶δ��� */
 
 #ifdef MSM_FB_ENABLE_DBGFS
 
@@ -178,7 +176,6 @@ struct msmfb_cabc_config last_cabc_mode;
 boolean last_cabc_setting = FALSE;
 boolean last_gamma_setting = FALSE;
 /*delete some lines*/
-static __u64 frame_count_suspend = 0x1FFFFFFFF;
 #endif
 #ifdef CONFIG_HUAWEI_EVALUATE_POWER_CONSUMPTION
 static int bright = -1;
@@ -271,9 +268,7 @@ static void msm_fb_set_bl_brightness(struct led_classdev *led_cdev,
 		last_backlight_setting = FALSE;
 	}
 #else
-	down(&mfd->sem);
 	msm_fb_set_backlight(mfd, bl_lvl);
-	up(&mfd->sem);
 #endif
 }
 
@@ -427,81 +422,6 @@ static void msm_fb_remove_sysfs(struct platform_device *pdev)
 static void bl_workqueue_handler(struct work_struct *work);
 #endif
 
-static ssize_t msm_fb_xres(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	ssize_t ret = strnlen(buf, PAGE_SIZE);
-	struct fb_info *fbi = dev_get_drvdata(dev);
-	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)fbi->par;
-
-	ret = snprintf(buf, PAGE_SIZE, "%d\n", mfd->panel_info.xres);
-	buf[strnlen(buf, PAGE_SIZE) + 1] = '\0';
-	return ret;
-}
-static DEVICE_ATTR(xres, S_IRUGO, msm_fb_xres, NULL);
-static struct attribute *xres_fs_attrs[] = {
-	&dev_attr_xres.attr,
-	NULL,
-};
-static struct attribute_group xres_fs_attr_group = {
-	.attrs = xres_fs_attrs,
-};
-
-static ssize_t msm_fb_yres(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	ssize_t ret = strnlen(buf, PAGE_SIZE);
-	struct fb_info *fbi = dev_get_drvdata(dev);
-	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)fbi->par;
-
-	ret = snprintf(buf, PAGE_SIZE, "%d\n", mfd->panel_info.yres);
-	buf[strnlen(buf, PAGE_SIZE) + 1] = '\0';
-	return ret;
-}
-static DEVICE_ATTR(yres, S_IRUGO, msm_fb_yres, NULL);
-static struct attribute *yres_fs_attrs[] = {
-	&dev_attr_yres.attr,
-	NULL,
-};
-static struct attribute_group yres_fs_attr_group = {
-	.attrs = yres_fs_attrs,
-};
-
-static int msm_fb_resolution_sysfs(struct platform_device *pdev)
-{
-	int rc;
-	struct msm_fb_data_type *mfd = platform_get_drvdata(pdev);
-
-	if (!mfd) {
-		pr_err("%s: mfd not found\n", __func__);
-		return -ENODEV;
-	}
-	if (!mfd->fbi) {
-		pr_err("%s: mfd->fbi not found\n", __func__);
-		return -ENODEV;
-	}
-	if (!mfd->fbi->dev) {
-		pr_err("%s: mfd->fbi->dev not found\n", __func__);
-		return -ENODEV;
-	}
-	rc = sysfs_create_group(&mfd->fbi->dev->kobj,
-		&xres_fs_attr_group);
-	if (rc) {
-		pr_err("%s: sysfs group creation failed, rc=%d\n",
-			__func__, rc);
-		return rc;
-	}
-
-	rc = sysfs_create_group(&mfd->fbi->dev->kobj,
-		&yres_fs_attr_group);
-	if (rc) {
-		pr_err("%s: sysfs group creation failed, rc=%d\n",
-			__func__, rc);
-		return rc;
-	}
-	return 0;
-}
-
 static int msm_fb_probe(struct platform_device *pdev)
 {
 	struct msm_fb_data_type *mfd;
@@ -586,7 +506,6 @@ static int msm_fb_probe(struct platform_device *pdev)
 
 	pdev_list[pdev_list_cnt++] = pdev;
 	msm_fb_create_sysfs(pdev);
-	msm_fb_resolution_sysfs(pdev);
 	/* add qcom patch to work around lcd esd issue */
 	INIT_DELAYED_WORK(&mfd->panel_live_status, mipi_dsi_check_live_status);
 	INIT_WORK(&mfd->display_reset, mipi_dsi_reset_display);
@@ -917,21 +836,9 @@ static void msmfb_early_suspend(struct early_suspend *h)
 	struct msm_fb_data_type *mfd = container_of(h, struct msm_fb_data_type,
 						early_suspend);
 	struct msm_fb_panel_data *pdata = NULL;
-/*clear framebuffer to ZERO*/
-#if defined(CONFIG_FB_MSM_MDP303)
-	struct fb_info *fbi = mfd->fbi;
-
-	memset((void *)fbi->screen_base, 0x00, fbi->fix.smem_len);
-
-/* Clean cache before dma */
-	dma_cache_pre_ops((void *)fbi->screen_base, fbi->fix.smem_len, DMA_TO_DEVICE);
-#endif
 
 	msm_fb_suspend_sub(mfd);
 
-	//save the last frame count
-	pr_info("%s: frame count = %d\n",__func__,mfd->panel_info.frame_count);
-	frame_count_suspend = mfd->panel_info.frame_count;
 	pdata = (struct msm_fb_panel_data *)mfd->pdev->dev.platform_data;
 	if (hdmi_prim_display &&
 		(mfd->panel_info.type == HDMI_PANEL ||
@@ -975,29 +882,21 @@ static int mdp_bl_scale_config(struct msm_fb_data_type *mfd,
 						struct mdp_bl_scale_data *data)
 {
 	int ret = 0;
-	int curr_bl;
-	down(&mfd->sem);
-	curr_bl = mfd->bl_level;
+	int curr_bl = mfd->bl_level;
 	bl_scale = data->scale;
 	bl_min_lvl = data->min_lvl;
 	pr_debug("%s: update scale = %d, min_lvl = %d\n", __func__, bl_scale,
 								bl_min_lvl);
 
-#ifndef CONFIG_HUAWEI_KERNEL
 	/* update current backlight to use new scaling*/
-	if (mfd->panel_power_on && bl_updated)
-		msm_fb_set_backlight(mfd, curr_bl);
-#endif
-	up(&mfd->sem);
+	msm_fb_set_backlight(mfd, curr_bl);
 
 	return ret;
 }
 
-#ifndef CONFIG_HUAWEI_KERNEL
 static void msm_fb_scale_bl(__u32 *bl_lvl)
 {
 	__u32 temp = *bl_lvl;
-	pr_debug("%s: input = %d, scale = %d", __func__, temp, bl_scale);
 	if (temp >= bl_min_lvl) {
 		/* bl_scale is the numerator of scaling fraction (x/1024)*/
 		temp = ((*bl_lvl) * bl_scale) / 1024;
@@ -1006,19 +905,14 @@ static void msm_fb_scale_bl(__u32 *bl_lvl)
 		if (temp < bl_min_lvl)
 			temp = bl_min_lvl;
 	}
-	pr_debug("%s: output = %d", __func__, temp);
 
 	(*bl_lvl) = temp;
 }
-#endif
 
-/*must call this function from within mfd->sem*/
 void msm_fb_set_backlight(struct msm_fb_data_type *mfd, __u32 bkl_lvl)
 {
 	struct msm_fb_panel_data *pdata;
-#ifndef CONFIG_HUAWEI_KERNEL
 	__u32 temp = bkl_lvl;
-#endif
 
 /* Remove qcom backlight mechanism,user our own */
 #ifndef CONFIG_HUAWEI_KERNEL
@@ -1030,27 +924,23 @@ void msm_fb_set_backlight(struct msm_fb_data_type *mfd, __u32 bkl_lvl)
 	}
 #endif
 
+	msm_fb_scale_bl(&temp);
 	pdata = (struct msm_fb_panel_data *)mfd->pdev->dev.platform_data;
 
 	if ((pdata) && (pdata->set_backlight)) {
 #ifndef CONFIG_HUAWEI_KERNEL
-		msm_fb_scale_bl(&temp);
+		down(&mfd->sem);
 		if (bl_level_old == temp) {
+			up(&mfd->sem);
 			return;
 		}
 		mfd->bl_level = temp;
 		pdata->set_backlight(mfd);
 		mfd->bl_level = bkl_lvl;
 		bl_level_old = temp;
+		up(&mfd->sem);
 #else
 		if (bl_level_old == bkl_lvl) {
-			return;
-		}
-		/*if lcd gram don't refresh, we just record bl_level and return.*/
-		if(machine_is_msm8x25_G610C() && frame_count_suspend == mfd->panel_info.frame_count)
-		{
-			mfd->bl_level = bkl_lvl;
-			pr_info("%s:cur framecount=%d, lcd don't refresh gram!!!\n",__func__, mfd->panel_info.frame_count);
 			return;
 		}
 		if (get_hw_lcd_ctrl_bl_type() == CTRL_BL_BY_LCD)
@@ -1137,9 +1027,7 @@ static int msm_fb_blank_sub(int blank_mode, struct fb_info *info,
          #endif            
 			ret = pdata->on(mfd->pdev);
 			if (ret == 0) {
-				down(&mfd->sem);
 				mfd->panel_power_on = TRUE;
-				up(&mfd->sem);
 				/* add qcom patch to work around lcd esd issue */
 				/* reduce schedule time from 5s to 3s */
 				mfd->is_panel_alive = TRUE;
@@ -1235,17 +1123,14 @@ static int msm_fb_blank_sub(int blank_mode, struct fb_info *info,
 #endif
 			mfd->op_enable = FALSE;
 			curr_pwr_state = mfd->panel_power_on;
-			down(&mfd->sem);
 			mfd->panel_power_on = FALSE;
-						
+			cancel_delayed_work_sync(&mfd->backlight_worker);
 			/* add qcom patch to work around lcd esd issue */
 			cancel_delayed_work_sync(&mfd->panel_live_status);
 /* Remove qcom backlight mechanism,user our own */
 #ifndef CONFIG_HUAWEI_KERNEL
 			bl_updated = 0;
 #endif
-			up(&mfd->sem);
-			cancel_delayed_work_sync(&mfd->backlight_worker);
 
 			msleep(16);
 			ret = pdata->off(mfd->pdev);
@@ -2127,15 +2012,14 @@ static void bl_workqueue_handler(struct work_struct *work)
 				struct msm_fb_data_type, backlight_worker);
 	struct msm_fb_panel_data *pdata = mfd->pdev->dev.platform_data;
 
-	down(&mfd->sem);
-	if ((pdata) && (pdata->set_backlight) && (!bl_updated)
-					&& mfd->panel_power_on) {
+	if ((pdata) && (pdata->set_backlight) && (!bl_updated)) {
+		down(&mfd->sem);
 		mfd->bl_level = unset_bl_level;
 		pdata->set_backlight(mfd);
 		bl_level_old = unset_bl_level;
 		bl_updated = 1;
+		up(&mfd->sem);
 	}
-	up(&mfd->sem);
 }
 #endif
 
@@ -2146,16 +2030,16 @@ static int msm_fb_pan_display(struct fb_var_screeninfo *var,
 	struct mdp_dirty_region *dirtyPtr = NULL;
 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)info->par;
 /* < lishubin update baseline to J version begin */
-
-	/*use this var to control lcd backlight*/
-	struct msm_fb_panel_data *pdata = NULL;
+#ifndef CONFIG_HUAWEI_KERNEL
+	struct msm_fb_panel_data *pdata;
+#endif
 /* lishubin update baseline to J version end > */
 
 #ifdef CONFIG_HUAWEI_KERNEL
     static bool is_first_frame = TRUE;
 #endif
 
-/* ÉŸ³ýŽË¶ÎŽúÂë */
+/* ɾ���˶δ��� */
     
 	/*
 	 * If framebuffer is 2, io pen display is not allowed.
@@ -2232,7 +2116,6 @@ static int msm_fb_pan_display(struct fb_var_screeninfo *var,
 		mdp_set_dma_pan_info(info, NULL, TRUE);
 		if (msm_fb_blank_sub(FB_BLANK_UNBLANK, info, mfd->op_enable)) {
 			pr_err("%s: can't turn on display!\n", __func__);
-			up(&msm_fb_pan_sem);
 			return -EINVAL;
 		}
 	}
@@ -2267,21 +2150,6 @@ static int msm_fb_pan_display(struct fb_var_screeninfo *var,
 	}
 #endif
 
-	/*if it is the first frame when lcd on from off. we delay 30ms for lcd gram refresh then open backlith.*/
-	if(machine_is_msm8x25_G610C()
-		&& (frame_count_suspend == mfd->panel_info.frame_count))
-	{
-		msleep(30);
-		frame_count_suspend = 0x1FFFFFFFF;
-
-		pdata = (struct msm_fb_panel_data *)mfd->pdev->dev.platform_data;
-		if ((pdata) && (pdata->set_backlight)) {
-			down(&mfd->sem);
-			pdata->set_backlight(mfd);
-			up(&mfd->sem);
-			pr_info("%s: frame_count_suspend = 0x%llx, set bl_level = %d\n",__func__, frame_count_suspend, mfd->bl_level);
-		}
-	}
 	++mfd->panel_info.frame_count;
 	return 0;
 }
@@ -2668,7 +2536,7 @@ int mdp_blit(struct fb_info *info, struct mdp_blit_req *req)
 	}
 #endif
 
-/* ÉŸ³ýŽË¶ÎŽúÂë */
+/* ɾ���˶δ��� */
 
 	if (unlikely(req->src_rect.h == 0 || req->src_rect.w == 0)) {
 		printk(KERN_ERR "mpd_ppp: src img of zero size!\n");
@@ -3419,19 +3287,6 @@ static int msmfb_overlay_play_wait(struct fb_info *info, unsigned long *argp)
 	return ret;
 }
 
-static int msmfb_overlay_commit(struct fb_info *info, unsigned long *argp)
-{
-	int ret, ndx;
-
-	ret = copy_from_user(&ndx, argp, sizeof(ndx));
-	if (ret) {
-		pr_err("%s: ioctl failed\n", __func__);
-		return ret;
-	}
-
-	return mdp4_overlay_commit(info, ndx);
-}
-
 static int msmfb_overlay_play(struct fb_info *info, unsigned long *argp)
 {
 	int	ret;
@@ -3887,24 +3742,7 @@ static int msmfb_handle_pp_ioctl(struct msm_fb_data_type *mfd,
 
 	return ret;
 }
-static int msmfb_handle_metadata_ioctl(struct msm_fb_data_type *mfd,
-				struct msmfb_metadata *metadata_ptr)
-{
-	int ret;
-	switch (metadata_ptr->op) {
-#ifdef CONFIG_FB_MSM_MDP40
-	case metadata_op_base_blend:
-		ret = mdp4_update_base_blend(mfd,
-						&metadata_ptr->data.blend_cfg);
-		break;
-#endif
-	default:
-		pr_warn("Unsupported request to MDP META IOCTL.\n");
-		ret = -EINVAL;
-		break;
-	}
-	return ret;
-}
+
 static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 			unsigned long arg)
 {
@@ -3925,7 +3763,6 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 #endif
 	struct mdp_page_protection fb_page_protection;
 	struct msmfb_mdp_pp mdp_pp;
-	struct msmfb_metadata mdp_metadata;
 	int ret = 0;
 
 	switch (cmd) {
@@ -3938,11 +3775,6 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		break;
 	case MSMFB_OVERLAY_UNSET:
 		ret = msmfb_overlay_unset(info, argp);
-		break;
-	case MSMFB_OVERLAY_COMMIT:
-		down(&msm_fb_ioctl_ppp_sem);
-		ret = msmfb_overlay_commit(info, argp);
-		up(&msm_fb_ioctl_ppp_sem);
 		break;
 	case MSMFB_OVERLAY_PLAY:
 		ret = msmfb_overlay_play(info, argp);
@@ -4238,11 +4070,6 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 			ret = msm_fb_set_dynamic_gamma(mfd, gamma_setting_value);
 			last_gamma_setting = FALSE;
 		}
-	case MSMFB_METADATA_SET:
-		ret = copy_from_user(&mdp_metadata, argp, sizeof(mdp_metadata));
-		if (ret)
-			return ret;
-		ret = msmfb_handle_metadata_ioctl(mfd, &mdp_metadata);
 		break;
 #endif
 #ifdef CONFIG_FB_AUTO_CABC
@@ -4481,7 +4308,7 @@ EXPORT_SYMBOL(get_fb_phys_info);
 #ifdef CONFIG_HUAWEI_EVALUATE_POWER_CONSUMPTION 
 static void __exit msm_fb_exit(void)
 {
-/* ÉŸ³ýŽË¶ÎŽúÂë */
+/* ɾ���˶δ��� */
 
      /*lcd consume notify timer cancel*/
 	 del_timer(&bright_timer);
@@ -4517,7 +4344,7 @@ int __init msm_fb_init(void)
 	INIT_WORK(&light_notify_work, light_notify_work_func);  
 #endif
 
-/* ÉŸ³ýŽË¶ÎŽúÂë */
+/* ɾ���˶δ��� */
 
 	return 0;
 }

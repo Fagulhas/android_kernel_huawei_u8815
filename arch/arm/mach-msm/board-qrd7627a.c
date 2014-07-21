@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -31,13 +31,11 @@
 #include <linux/memblock.h>
 #include <linux/input/ft5x06_ts.h>
 #include <linux/msm_adc.h>
+#include <linux/fmem.h>
 #include <linux/regulator/msm-gpio-regulator.h>
 #include <linux/ion.h>
 #include <linux/i2c-gpio.h>
 #include <linux/regulator/onsemi-ncp6335d.h>
-#include <linux/regulator/fan53555.h>
-#include <linux/dma-contiguous.h>
-#include <linux/dma-mapping.h>
 #include <asm/mach/mmc.h>
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
@@ -68,8 +66,7 @@
 #include "board-msm7627a.h"
 
 #define PMEM_KERNEL_EBI1_SIZE	0x3A000
-#define MSM_PMEM_AUDIO_SIZE	0xF0000
-#define BOOTLOADER_BASE_ADDR    0x10000
+#define MSM_PMEM_AUDIO_SIZE	0x1F4000
 #define BAHAMA_SLAVE_ID_FM_REG 0x02
 #define FM_GPIO	83
 #define BT_PCM_BCLK_MODE  0x88
@@ -167,20 +164,12 @@ static struct platform_device msm8625q_i2c_gpio = {
 #define CAMERA_ZSL_SIZE		(SZ_1M * 60)
 
 #ifdef CONFIG_ION_MSM
-#define MSM_ION_HEAP_NUM	5
+#define MSM_ION_HEAP_NUM	4
 static struct platform_device ion_dev;
 static int msm_ion_camera_size;
 static int msm_ion_audio_size;
 static int msm_ion_sf_size;
-static int msm_ion_camera_size_carving;
 #endif
-#endif
-
-#define CAMERA_HEAP_BASE        0x0
-#ifdef CONFIG_CMA
-#define CAMERA_HEAP_TYPE	ION_HEAP_TYPE_DMA
-#else
-#define CAMERA_HEAP_TYPE	ION_HEAP_TYPE_CARVEOUT
 #endif
 
 static struct android_usb_platform_data android_usb_pdata = {
@@ -405,7 +394,7 @@ static struct msm_pm_platform_data
 					.latency = 2,
 					.residency = 10,
 	},
-#if 0
+
 	/* picked latency & redisdency values from 7x30 */
 	[MSM_PM_MODE(1, MSM_PM_SLEEP_MODE_POWER_COLLAPSE_STANDALONE)] = {
 					.idle_supported = 1,
@@ -462,7 +451,7 @@ static struct msm_pm_platform_data
 					.latency = 2,
 					.residency = 10,
 	},
-#endif
+
 };
 
 static struct msm_pm_boot_platform_data msm_pm_8625_boot_pdata __initdata = {
@@ -475,6 +464,9 @@ static struct android_pmem_platform_data android_pmem_adsp_pdata = {
 	.allocator_type = PMEM_ALLOCATORTYPE_BITMAP,
 	.cached = 1,
 	.memory_type = MEMTYPE_EBI1,
+	.request_region = request_fmem_c_region,
+	.release_region = release_fmem_c_region,
+	.reusable = 1,
 };
 
 static struct platform_device android_pmem_adsp_device = {
@@ -575,6 +567,14 @@ static struct platform_device msm_adc_device = {
 	},
 };
 
+static struct fmem_platform_data fmem_pdata;
+
+static struct platform_device fmem_device = {
+	.name = "fmem",
+	.id = 1,
+	.dev = { .platform_data = &fmem_pdata },
+};
+
 #define GPIO_VREG_INIT(_id, _reg_name, _gpio_label, _gpio, _active_low) \
 	[GPIO_VREG_ID_##_id] = { \
 		.init_data = { \
@@ -612,14 +612,12 @@ static struct regulator_consumer_supply vreg_consumers_EXT_1P8V[] = {
 
 static struct regulator_consumer_supply vreg_consumers_EXT_2P85V_EVBD[] = {
 	REGULATOR_SUPPLY("cam_ov5648_avdd", "0-006c"),
-	REGULATOR_SUPPLY("cam_ov8825_avdd", "0-000d"),
 	REGULATOR_SUPPLY("cam_ov7695_avdd", "0-0042"),
 	REGULATOR_SUPPLY("lcd_vdd", "mipi_dsi.1"),
 };
 
 static struct regulator_consumer_supply vreg_consumers_EXT_1P8V_EVBD[] = {
 	REGULATOR_SUPPLY("cam_ov5648_vdd", "0-006c"),
-	REGULATOR_SUPPLY("cam_ov8825_vdd", "0-000d"),
 	REGULATOR_SUPPLY("cam_ov7695_vdd", "0-0042"),
 	REGULATOR_SUPPLY("lcd_vddi", "mipi_dsi.1"),
 };
@@ -670,6 +668,7 @@ static struct platform_device evbd_vreg_gpio_ext_1p8v __devinitdata = {
 			&msm_gpio_regulator_pdata[GPIO_VREG_ID_EXT_1P8V_EVBD],
 	},
 };
+
 /* Regulator configuration for the NCP6335D buck */
 struct regulator_consumer_supply ncp6335d_consumer_supplies[] = {
 	REGULATOR_SUPPLY("ncp6335d", NULL),
@@ -703,46 +702,10 @@ static struct ncp6335d_platform_data ncp6335d_pdata = {
 	.rearm_disable = 1,
 };
 
-/* Regulator configuration for the FAN53555 buck */
-struct regulator_consumer_supply fan53555_consumer_supplies[] = {
-	REGULATOR_SUPPLY("fan53555", NULL),
-	/* TO DO: NULL entry needs to be fixed once
-	 * we fix the cross-dependencies.
-	*/
-	REGULATOR_SUPPLY("vddx_cx", NULL),
-};
-
-static struct regulator_init_data fan53555_init_data = {
-	.constraints	= {
-		.name		= "fan53555",
-		.min_uV		= 603000,
-		.max_uV		= 1411000,
-		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE |
-				REGULATOR_CHANGE_STATUS |
-				REGULATOR_CHANGE_MODE,
-		.valid_modes_mask = REGULATOR_MODE_NORMAL |
-				REGULATOR_MODE_FAST,
-		.initial_mode	= REGULATOR_MODE_NORMAL,
-		.always_on	= 1,
-	},
-	.num_consumer_supplies = ARRAY_SIZE(fan53555_consumer_supplies),
-	.consumer_supplies = fan53555_consumer_supplies,
-};
-
-static struct fan53555_platform_data fan53555_pdata = {
-	.regulator = &fan53555_init_data,
-	.slew_rate = FAN53555_SLEW_RATE_64MV,
-	.sleep_vsel_id = FAN53555_VSEL_ID_1,
-};
-
 static struct i2c_board_info i2c2_info[] __initdata = {
 	{
 		I2C_BOARD_INFO("ncp6335d", 0x38 >> 1),
 		.platform_data = &ncp6335d_pdata,
-	},
-	{
-		I2C_BOARD_INFO("fan53555", 0xC0 >> 1),
-		.platform_data = &fan53555_pdata,
 	},
 };
 
@@ -759,6 +722,7 @@ static struct platform_device *common_devices[] __initdata = {
 	&asoc_msm_dai0,
 	&asoc_msm_dai1,
 	&msm_adc_device,
+	&fmem_device,
 #ifdef CONFIG_ION_MSM
 	&ion_dev,
 #endif
@@ -829,16 +793,9 @@ static void fix_sizes(void)
 					|| machine_is_msm8625q_skud())
 			pmem_mdp_size = 0;
 	}
-
 #ifdef CONFIG_ION_MSM
-	msm_ion_audio_size = MSM_PMEM_AUDIO_SIZE;
-#ifdef CONFIG_CMA
-	msm_ion_camera_size = CAMERA_ZSL_SIZE;
-	msm_ion_camera_size_carving = 0;
-#else
 	msm_ion_camera_size = pmem_adsp_size;
-	msm_ion_camera_size_carving = msm_ion_camera_size;
-#endif
+	msm_ion_audio_size = (MSM_PMEM_AUDIO_SIZE + PMEM_KERNEL_EBI1_SIZE);
 	msm_ion_sf_size = pmem_mdp_size;
 #endif
 }
@@ -849,29 +806,16 @@ static struct ion_co_heap_pdata co_ion_pdata = {
 	.adjacent_mem_id = INVALID_HEAP_ID,
 	.align = PAGE_SIZE,
 };
-
-static struct ion_co_heap_pdata co_mm_ion_pdata = {
-	.adjacent_mem_id = INVALID_HEAP_ID,
-	.align = PAGE_SIZE,
-};
-
-static u64 msm_dmamask = DMA_BIT_MASK(32);
-
-static struct platform_device ion_cma_device = {
-	.name = "ion-cma-device",
-	.id = -1,
-	.dev = {
-		.dma_mask = &msm_dmamask,
-		.coherent_dma_mask = DMA_BIT_MASK(32),
-	}
-};
 #endif
 
 /**
  * These heaps are listed in the order they will be allocated.
  * Don't swap the order unless you know what you are doing!
  */
-struct ion_platform_heap msm7627a_heaps[] = {
+static struct ion_platform_data ion_pdata = {
+	.nr = MSM_ION_HEAP_NUM,
+	.has_outer_cache = 1,
+	.heaps = {
 		{
 			.id	= ION_SYSTEM_HEAP_ID,
 			.type	= ION_HEAP_TYPE_SYSTEM,
@@ -881,13 +825,12 @@ struct ion_platform_heap msm7627a_heaps[] = {
 		/* PMEM_ADSP = CAMERA */
 		{
 			.id	= ION_CAMERA_HEAP_ID,
-			.type	= CAMERA_HEAP_TYPE,
+			.type	= ION_HEAP_TYPE_CARVEOUT,
 			.name	= ION_CAMERA_HEAP_NAME,
 			.memory_type = ION_EBI_TYPE,
-			.extra_data = (void *)&co_mm_ion_pdata,
-			.priv	= (void *)&ion_cma_device.dev,
+			.extra_data = (void *)&co_ion_pdata,
 		},
-		/* AUDIO HEAP 1*/
+		/* PMEM_AUDIO */
 		{
 			.id	= ION_AUDIO_HEAP_ID,
 			.type	= ION_HEAP_TYPE_CARVEOUT,
@@ -903,23 +846,8 @@ struct ion_platform_heap msm7627a_heaps[] = {
 			.memory_type = ION_EBI_TYPE,
 			.extra_data = (void *)&co_ion_pdata,
 		},
-		/* AUDIO HEAP 2*/
-		{
-			.id    = ION_AUDIO_HEAP_BL_ID,
-			.type  = ION_HEAP_TYPE_CARVEOUT,
-			.name  = ION_AUDIO_BL_HEAP_NAME,
-			.memory_type = ION_EBI_TYPE,
-			.extra_data = (void *)&co_ion_pdata,
-			.base = BOOTLOADER_BASE_ADDR,
-		},
-
 #endif
-};
-
-static struct ion_platform_data ion_pdata = {
-	.nr = MSM_ION_HEAP_NUM,
-	.has_outer_cache = 1,
-	.heaps = msm7627a_heaps,
+	}
 };
 
 static struct platform_device ion_dev = {
@@ -955,10 +883,31 @@ static void __init size_pmem_devices(void)
 #ifdef CONFIG_ANDROID_PMEM
 #ifndef CONFIG_MSM_MULTIMEDIA_USE_ION
 	unsigned int i;
+	unsigned int reusable_count = 0;
 
 	android_pmem_adsp_pdata.size = pmem_adsp_size;
 	android_pmem_pdata.size = pmem_mdp_size;
 	android_pmem_audio_pdata.size = pmem_audio_size;
+
+	fmem_pdata.size = 0;
+	fmem_pdata.align = PAGE_SIZE;
+
+	/* Find pmem devices that should use FMEM (reusable) memory.
+	 */
+	for (i = 0; i < ARRAY_SIZE(pmem_pdata_array); ++i) {
+		struct android_pmem_platform_data *pdata = pmem_pdata_array[i];
+
+		if (!reusable_count && pdata->reusable)
+			fmem_pdata.size += pdata->size;
+
+		reusable_count += (pdata->reusable) ? 1 : 0;
+
+		if (pdata->reusable && reusable_count > 1) {
+			pr_err("%s: Too many PMEM devices specified as reusable. PMEM device %s was not configured as reusable.\n",
+				__func__, pdata->name);
+			pdata->reusable = 0;
+		}
+	}
 #endif
 #endif
 }
@@ -989,19 +938,17 @@ static void __init size_ion_devices(void)
 {
 #ifdef CONFIG_MSM_MULTIMEDIA_USE_ION
 	ion_pdata.heaps[1].size = msm_ion_camera_size;
-	ion_pdata.heaps[2].size = PMEM_KERNEL_EBI1_SIZE;
+	ion_pdata.heaps[2].size = msm_ion_audio_size;
 	ion_pdata.heaps[3].size = msm_ion_sf_size;
-	ion_pdata.heaps[4].size = msm_ion_audio_size;
 #endif
 }
 
 static void __init reserve_ion_memory(void)
 {
 #if defined(CONFIG_ION_MSM) && defined(CONFIG_MSM_MULTIMEDIA_USE_ION)
-	msm7627a_reserve_table[MEMTYPE_EBI1].size += PMEM_KERNEL_EBI1_SIZE;
+	msm7627a_reserve_table[MEMTYPE_EBI1].size += msm_ion_camera_size;
+	msm7627a_reserve_table[MEMTYPE_EBI1].size += msm_ion_audio_size;
 	msm7627a_reserve_table[MEMTYPE_EBI1].size += msm_ion_sf_size;
-	msm7627a_reserve_table[MEMTYPE_EBI1].size +=
-		msm_ion_camera_size_carving;
 #endif
 }
 
@@ -1028,16 +975,8 @@ static struct reserve_info msm7627a_reserve_info __initdata = {
 static void __init msm7627a_reserve(void)
 {
 	reserve_info = &msm7627a_reserve_info;
-	memblock_remove(MSM8625_NON_CACHE_MEM, SZ_2K);
-	memblock_remove(BOOTLOADER_BASE_ADDR, msm_ion_audio_size);
 	msm_reserve();
-#ifdef CONFIG_CMA
-	dma_declare_contiguous(
-			&ion_cma_device.dev,
-			msm_ion_camera_size,
-			CAMERA_HEAP_BASE,
-			0x26000000);
-#endif
+	memblock_remove(MSM8625_NON_CACHE_MEM, SZ_2K);
 }
 
 static void __init msm8625_reserve(void)
@@ -1239,6 +1178,7 @@ static void __init msm_qrd_init(void)
 					|| machine_is_msm8625q_skud())
 		i2c_register_board_info(2, i2c2_info,
 				ARRAY_SIZE(i2c2_info));
+
 
 #if defined(CONFIG_BT) && defined(CONFIG_MARIMBA_CORE)
     /* qcomm QRD phone concerned not need by hw product*/

@@ -156,8 +156,6 @@ typedef enum
 	MIPI_CMD_OTM8009A_CHIMEI_FWVGA,
 	MIPI_CMD_OTM8009A_TIANMA_FWVGA,
 	MIPI_CMD_NT35510_CHIMEI_WVGA,
-	MIPI_CMD_OTM9608A_TIANMA_QHD,
-	MIPI_CMD_NT35516_TRULY_QHD,
 	LCD_MAX_NUM,
 	LCD_NONE =0xFF
 }lcd_panel_type;
@@ -280,11 +278,11 @@ typedef enum
    BT_WCN2243,
    BT_UNKNOWN,	
 } hw_bt_device_model;
+
 struct bt_device
 {
     hw_bt_device_model dev_model;
     char *dev_name;
-    char *fw_ver;
 };
 
 typedef enum
@@ -332,11 +330,11 @@ typedef enum
     SPK_MAIN_MIC = 0x10000,
     SPK_SUB_MIC = 0x20000,
     DTS_ENABLE = 0x100000,
-    DTS_SOUND_ENABLE = 0x200000,
     DTS_DISABLE = 0x0,
     
     AUDIO_TYPE_MAX = 0xffffffff
 }audio_property_type;
+
 audio_property_type get_audio_dts_enable(void);
 audio_property_type get_audio_spkmic_type(void);
 audio_property_type get_audio_speaker_type(void);
@@ -394,7 +392,7 @@ bool camera_is_supported(void);
 void set_camera_support(bool status);
 void set_sensors_list(int sensor);
 bool board_support_flash(void);
-void set_board_support_flash(bool support_flash);
+
 /*
  *  return: 0 ----not support bcm wifi
  *          1 ----support bcm wifi
@@ -409,10 +407,8 @@ int board_support_ofn(bool * ofn_support);
 char *get_compass_gs_position_name(void);
 char *get_sensors_list_name(void);
 char *get_wifi_device_name(void);
-char *get_wifi_fw_ver(void);
 hw_bt_device_model get_hw_bt_device_model(void);
 char *get_bt_device_name(void);
-char *get_bt_fw_ver(void);
 lcd_panel_type get_lcd_panel_type(void);
 hw_lcd_ctrl_bl_type get_hw_lcd_ctrl_bl_type(void);
 lcd_type get_hw_lcd_resolution_type(void);
@@ -455,7 +451,6 @@ bool qwerty_is_supported(void);
  */
 char *get_touch_info(void);
 char *get_synaptics_touch_info(void);
-char * get_cyttsp4_touch_info(void);
 #ifdef CONFIG_HUAWEI_MELFAS_TOUCHSCREEN
 char *get_melfas_touch_info(void);
 #else
@@ -502,7 +497,4 @@ typedef enum
 hw_battery_id_mv get_battery_resistance_id(void);
 char* get_battery_manufacturer_info(void);
 #endif
-#define CAMERA_VER_LEN  10
-void set_camera_version(char *camera_ver, int slave_sensor);
-void get_camera_version(char *version);
 

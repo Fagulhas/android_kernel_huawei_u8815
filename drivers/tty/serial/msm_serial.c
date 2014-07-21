@@ -565,7 +565,6 @@ static int msm_startup(struct uart_port *port)
 		return -ENXIO;
 	}
 #endif	
-
 #ifndef CONFIG_PM_RUNTIME
 	msm_init_clock(port);
 #endif

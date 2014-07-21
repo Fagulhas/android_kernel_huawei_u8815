@@ -593,9 +593,8 @@ static void msm_pm_config_hw_after_power_up(void)
 			/*
 			 * Program the top csr to put the core1 into GDFS.
 			 */
-
-			msm_pm_configure_top_csr();
 			#endif
+			msm_pm_configure_top_csr();
 		}
 	} else {
 		__raw_writel(0, APPS_PWRDOWN);
@@ -913,17 +912,15 @@ static int msm_pm_power_collapse
 
 	memset(msm_pm_smem_data, 0, sizeof(*msm_pm_smem_data));
 
-	if (msm_cpr_ops && msm_cpr_ops->cpr_suspend()) {
-		ret = -EAGAIN;
-		goto power_collapse_bail;
-	}
-
 	if (cpu_is_msm8625() || cpu_is_msm8625q()) {
 		/* Program the SPM */
 		ret = msm_spm_set_low_power_mode(MSM_SPM_MODE_POWER_COLLAPSE,
 									false);
 		WARN_ON(ret);
 	}
+
+	if (msm_cpr_ops)
+		msm_cpr_ops->cpr_suspend();
 
 	msm_pm_irq_extns->enter_sleep1(true, from_idle,
 						&msm_pm_smem_data->irq_mask);
@@ -934,7 +931,6 @@ static int msm_pm_power_collapse
 
 	msm_pm_smem_data->sleep_time = sleep_delay;
 	msm_pm_smem_data->resources_used = sleep_limit;
-
 	/* Enter PWRC/PWRC_SUSPEND */
 
 	if (from_idle)
@@ -969,9 +965,7 @@ static int msm_pm_power_collapse
 			__func__);
 		goto power_collapse_early_exit;
 	}
-
 	*(uint32_t *)(virt_start_ptr + 0x30) = 0x3;
-
 	/* DEM Master in RSA */
 
 	MSM_PM_DEBUG_PRINT_STATE("msm_pm_power_collapse(): PWRC RSA");
@@ -988,7 +982,6 @@ static int msm_pm_power_collapse
 
 	msm_pm_config_hw_before_power_down();
 	MSM_PM_DEBUG_PRINT_STATE("msm_pm_power_collapse(): pre power down");
-
 	saved_acpuclk_rate = acpuclk_power_collapse();
 	MSM_PM_DPRINTK(MSM_PM_DEBUG_CLOCK, KERN_INFO,
 		"%s(): change clock rate (old rate = %lu)\n", __func__,
@@ -998,7 +991,6 @@ static int msm_pm_power_collapse
 		msm_pm_config_hw_after_power_up();
 		goto power_collapse_early_exit;
 	}
-
 	/* save the AHB clock registers */
 	if (cpu_is_msm8625q()) {
 		msm8x25q_ahb.sel = readl_relaxed(A11S_CLK_SEL_ADDR);
@@ -1007,9 +999,7 @@ static int msm_pm_power_collapse
 
 	msm_pm_boot_config_before_pc(smp_processor_id(),
 			virt_to_phys(msm_pm_collapse_exit));
-
 	*(uint32_t *)(virt_start_ptr + 0x30) = 0x4;
-
 #ifdef CONFIG_VFP
 	if (from_idle)
 		vfp_pm_suspend();
@@ -1054,7 +1044,7 @@ static int msm_pm_power_collapse
 						continue;
 					per_cpu(power_collapsed, cpu) = 1;
 				}
-
+				/* remove one line */
 				/*
 				 * override DBGNOPOWERDN and program the GDFS
 				 * count val
@@ -1070,7 +1060,7 @@ static int msm_pm_power_collapse
 						continue;
 					per_cpu(power_collapsed, cpu) = 1;
 				}
-
+				/* remove one line */
 				/*
 				 * override DBGNOPOWERDN and program the GDFS
 				 * count val
@@ -1116,7 +1106,6 @@ static int msm_pm_power_collapse
 	MSM_PM_DPRINTK(MSM_PM_DEBUG_SUSPEND | MSM_PM_DEBUG_POWER_COLLAPSE,
 		KERN_INFO,
 		"%s(): msm_pm_collapse returned %d\n", __func__, collapsed);
-
 	MSM_PM_DPRINTK(MSM_PM_DEBUG_CLOCK, KERN_INFO,
 		"%s(): restore clock rate to %lu\n", __func__,
 		saved_acpuclk_rate);
@@ -1124,7 +1113,6 @@ static int msm_pm_power_collapse
 			SETRATE_PC) < 0)
 		printk(KERN_ERR "%s(): failed to restore clock rate(%lu)\n",
 			__func__, saved_acpuclk_rate);
-
 	msm_pm_irq_extns->exit_sleep1(msm_pm_smem_data->irq_mask,
 		msm_pm_smem_data->wakeup_reason,
 		msm_pm_smem_data->pending_irqs);
@@ -1202,7 +1190,7 @@ static int msm_pm_power_collapse
 	}
 
 	*(uint32_t *)(virt_start_ptr + 0x30) = 0x16;
-
+//remove qc code
 	/* DEM Master == RUN */
 
 	MSM_PM_DEBUG_PRINT_STATE("msm_pm_power_collapse(): WFPI RUN");
@@ -1292,11 +1280,11 @@ power_collapse_restore_gpio_bail:
 
 	MSM_PM_DEBUG_PRINT_STATE("msm_pm_power_collapse(): RUN");
 
+//remove qc code
 	*(uint32_t *)(virt_start_ptr + 0x30) = 0x23;
 
 	if (collapsed)
 		smd_sleep_exit();
-
 	if (msm_cpr_ops)
 		msm_cpr_ops->cpr_resume();
 
@@ -1307,7 +1295,6 @@ power_collapse_restore_gpio_bail:
 									false);
 		WARN_ON(ret);
 	}
-
 power_collapse_bail:
 	*(uint32_t *)(virt_start_ptr + 0x30) = 0x25;
 	*(uint32_t *)(virt_start_ptr + 0x34) = 0x0;

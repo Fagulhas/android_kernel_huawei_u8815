@@ -721,17 +721,6 @@ static struct sequence otm8009a_fwvga_tianma_lcd_init_table[] =
 	{0x000FF,MIPI_GEN_COMMAND,0},
 	{0x00001,TYPE_PARAMETER,0},
 
-	/* optimize display performance, 854 * 15/16 == 320h */
-	{0x00000,MIPI_DCS_COMMAND,0},
-	{0x00000,TYPE_PARAMETER,0},
-	{0x00035,MIPI_DCS_COMMAND,0},
-	{0x00000,TYPE_PARAMETER,0},
-	{0x00000,MIPI_DCS_COMMAND,0},
-	{0x00000,TYPE_PARAMETER,0},
-	{0x00044,MIPI_DCS_COMMAND,0},
-	{0x00003,TYPE_PARAMETER,0},
-	{0x00019,TYPE_PARAMETER,0},  // start with 0
-
 	{0x00000,MIPI_DCS_COMMAND,0},
 	{0x00000,TYPE_PARAMETER,0},
 	{0x00036,MIPI_GEN_COMMAND,0},
@@ -797,7 +786,6 @@ static struct sequence otm8009a_fwvga_tianma_lcd_init_table[] =
 	{0x000C5,MIPI_GEN_COMMAND,0},
 	{0x000A9,TYPE_PARAMETER,0},
 
-	/* move RC6B1 to end */
 
 	{0x00000,MIPI_DCS_COMMAND,0},
 	{0x00090,TYPE_PARAMETER,0},
@@ -1677,9 +1665,13 @@ static int __init mipi_cmd_otm8009a_fwvga_init(void)
 		pinfo->fb_num = 3;
         /* increase the DSI bit clock to 490 MHz */
 		/* to resolve EMI issue */
-		if (machine_is_msm8x25_G520U() && MIPI_CMD_OTM8009A_CHIMEI_FWVGA == lcd_panel_fwvga)
+		/* to resolve EMI issue for tianma otm8009a */
+		if (machine_is_msm8x25_G520U()
+			&& (MIPI_CMD_OTM8009A_CHIMEI_FWVGA == lcd_panel_fwvga
+				|| MIPI_CMD_OTM8009A_TIANMA_FWVGA == lcd_panel_fwvga) )
 		{
 			pinfo->clk_rate = 455000000;  // 455M
+			LCD_DEBUG("%s: MIPI CLK RATE is 455M\n", __func__);
 		}
 		else
 		{
@@ -1707,7 +1699,10 @@ static int __init mipi_cmd_otm8009a_fwvga_init(void)
 		pinfo->mipi.wr_mem_continue = 0x3c;
 		pinfo->mipi.wr_mem_start = 0x2c;
 		/* to resolve EMI issue */
-		if (machine_is_msm8x25_G520U() && MIPI_CMD_OTM8009A_CHIMEI_FWVGA == lcd_panel_fwvga)
+		/* to resolve EMI issue for tianma otm8009a */
+		if (machine_is_msm8x25_G520U()
+			&& (MIPI_CMD_OTM8009A_CHIMEI_FWVGA == lcd_panel_fwvga
+				|| MIPI_CMD_OTM8009A_TIANMA_FWVGA == lcd_panel_fwvga) )
 		{
 			pinfo->mipi.dsi_phy_db = &g520_dsi_cmd_mode_phy_db_otm8009a_fwvga;
 		}

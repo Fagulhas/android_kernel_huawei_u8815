@@ -33,7 +33,6 @@
 #define CAMERA_FLASH_CUR_DIV 10
 #endif
 
-#include "linux/hardware_self_adapt.h"
 struct i2c_client *sx150x_client;
 
 #define CAMERA_LED_TORCH_MA 50
@@ -76,9 +75,7 @@ void register_led_set_state( int (* func)(unsigned led_state) )
 	flash_probed_succeed.set_led_state = func;
 	if (func)
 	{
-		/* if flash chip probed succeed, we think it support flash */
-		set_board_support_flash(true);
-		printk("%s : Register succeed.\n", __func__);
+		CDBG("%s : Register succeed.\n", __func__);
 	}
 	else
 	{

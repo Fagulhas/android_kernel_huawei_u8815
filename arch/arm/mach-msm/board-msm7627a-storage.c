@@ -320,8 +320,7 @@ static unsigned int msm7627a_sdcc_slot_status(struct device *dev)
 			if ( machine_is_msm8x25_U8951() ||
 				machine_is_msm8x25_C8813() ||
 				machine_is_msm8x25_G520U() ||
-				machine_is_msm8x25_C8813Q()||
-				machine_is_msm8x25_G610C()
+                machine_is_msm8x25_C8813Q()
 				)
 			{
 				//u8185 is different from other products.
@@ -594,7 +593,7 @@ static struct wifi_platform_data bcm_wifi_control = {
 };
 
 static struct platform_device bcm_wifi_device = {
-        .name           = "bcmdhd_wlan",	/*bcm4330 wlan device*/
+        .name           = "bcm4330_wlan",	/*bcm4330 wlan device*/
         .id             = 1,
         .num_resources  = 0,
         .resource       = NULL,

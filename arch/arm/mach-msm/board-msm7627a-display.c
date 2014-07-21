@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -797,7 +797,6 @@ static struct platform_device *evb_fb_devices[] __initdata = {
 static struct platform_device *skud_fb_devices[] __initdata = {
 	&msm_fb_device,
 	&mipi_dsi_hx8389b_panel_device,
-	&mipi_dsi_NT35510_panel_device,
 	&mipi_dsi_NT35590_panel_device,
 };
 
@@ -1558,7 +1557,7 @@ static struct mipi_dsi_platform_data mipi_dsi_pdata = {
 	.dsi_client_reset       = msm_fb_dsi_client_reset,
 	.get_lane_config	= msm_fb_get_lane_config,
 	.splash_is_enabled	= mipi_dsi_splash_is_enabled,
-	.dlane_swap		= 0x1, //Needed for u8815
+	.dlane_swap		= 0x0,
 };
 
 static char mipi_dsi_splash_is_enabled(void)
@@ -1595,10 +1594,6 @@ void msm7x27a_set_display_params(char *prim_panel)
 			strnlen("mipi_video_nt35510_wvga",
 				PANEL_NAME_MAX_LEN)))
 			disable_splash = 1;
-		else if (!(machine_is_msm7627a_evb() || machine_is_msm8625_evb()
-					|| machine_is_msm8625_evt()))
-			disable_splash = 1;
-
 	}
 
 	if (machine_is_msm8625q_evbd() || machine_is_msm8625q_skud())

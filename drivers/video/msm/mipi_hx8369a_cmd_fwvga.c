@@ -164,9 +164,8 @@ static struct sequence hx8369a_fwvga_lcd_init_table[] =
 	{0xFF,TYPE_PARAMETER,0},
 	{0x00,TYPE_PARAMETER,0},
 	{0x00,TYPE_PARAMETER,0},
-	/* optimize display performance, 854 * 15/16 == 320h */
-	{0x03,TYPE_PARAMETER,0},
-	{0x20,TYPE_PARAMETER,0},
+	{0x00,TYPE_PARAMETER,0},
+	{0x00,TYPE_PARAMETER,0},
 	{0x03,TYPE_PARAMETER,0},
 	{0x03,TYPE_PARAMETER,0},
 	{0x00,TYPE_PARAMETER,0},

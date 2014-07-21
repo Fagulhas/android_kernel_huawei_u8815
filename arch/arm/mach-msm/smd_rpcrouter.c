@@ -541,7 +541,6 @@ static void rpcrouter_register_board_dev(struct rr_server *server)
 			D("%s: registering device %x\n",
 			  __func__, board_info->dev->prog);
 			list_del(&board_info->list);
-
 			/* fix the BUG "BUG: scheduling while atomic:" */
 #ifdef CONFIG_HUAWEI_KERNEL
 			spin_unlock_irqrestore(&rpc_board_dev_list_lock, flags);
@@ -2467,6 +2466,7 @@ void msm_rpcrouter_xprt_notify(struct rpcrouter_xprt *xprt, unsigned event)
 {
 	struct rpcrouter_xprt_info *xprt_info;
 	struct rpcrouter_xprt_work *xprt_work;
+	/* merge msm kernel 3.4 patch 902de08f6670ddba147609e8b9f895dadf2275d9 */
 	unsigned long flags;
 
 	/* Workqueue is created in init function which works for all existing
@@ -2499,9 +2499,7 @@ void msm_rpcrouter_xprt_notify(struct rpcrouter_xprt *xprt, unsigned event)
 
 	xprt_info = xprt->priv;
 	if (xprt_info) {
-
 		/* merge msm kernel 3.4 patch 902de08f6670ddba147609e8b9f895dadf2275d9 */
-
 		spin_lock_irqsave(&xprt_info->lock, flags);
 		/* Check read_avail even for OPEN event to handle missed
 		   DATA events while processing the OPEN event*/
@@ -2509,7 +2507,6 @@ void msm_rpcrouter_xprt_notify(struct rpcrouter_xprt *xprt, unsigned event)
 			wake_lock(&xprt_info->wakelock);
 		wake_up(&xprt_info->read_wait);
 		spin_unlock_irqrestore(&xprt_info->lock, flags);
-
 		#ifdef CONFIG_HUAWEI_RPC_CRASH_DEBUG
 		printk(KERN_ERR "%s: Wakeup event - read_avail: %d, need_len %d\n",
 		                  __func__, xprt->read_avail(), xprt_info->need_len);

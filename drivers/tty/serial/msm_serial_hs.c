@@ -1236,12 +1236,11 @@ static void msm_hs_enable_ms_locked(struct uart_port *uport)
 
 }
 
-static void msm_hs_flush_buffer_locked(struct uart_port *uport)
+static void msm_hs_flush_buffer(struct uart_port *uport)
 {
 	struct msm_hs_port *msm_uport = UARTDM_TO_MSM(uport);
 
-	if (msm_uport->tx.dma_in_flight)
-		msm_uport->tty_flush_receive = true;
+	msm_uport->tty_flush_receive = true;
 }
 
 /*
@@ -2154,7 +2153,7 @@ static void __exit msm_serial_hs_exit(void)
 }
 
 #if 0
-#if (defined(CONFIG_HUAWEI_BT_WCN2243) || (!defined(CONFIG_HUAWEI_KERNEL)))
+#if (defined(HUAWEI_BT_BLUEZ_VER30) || (!defined(CONFIG_HUAWEI_KERNEL)))
 static int msm_hs_runtime_idle(struct device *dev)
 {
 	/*
@@ -2197,7 +2196,7 @@ static struct platform_driver msm_serial_hs_platform_driver = {
 		.name = "msm_serial_hs",
 /*deactive pm */
 #if 0
-#if (defined(CONFIG_HUAWEI_BT_WCN2243) || (!defined(CONFIG_HUAWEI_KERNEL)))
+#if (defined(HUAWEI_BT_BLUEZ_VER30) || (!defined(CONFIG_HUAWEI_KERNEL)))
 		.pm   = &msm_hs_dev_pm_ops,
 #endif
 #endif
@@ -2228,7 +2227,7 @@ static struct uart_ops msm_hs_ops = {
 	.config_port = msm_hs_config_port,
 	.release_port = msm_hs_release_port,
 	.request_port = msm_hs_request_port,
-	.flush_buffer = msm_hs_flush_buffer_locked,
+	.flush_buffer = msm_hs_flush_buffer,
 };
 
 module_init(msm_serial_hs_init);

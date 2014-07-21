@@ -290,10 +290,6 @@ config FB_HUAWEI_MIPI_DSI_HX8369B
 	bool "support MIPI HX8369B"
 	select FB_MSM_MIPI_DSI
 	default n
-config FB_HUAWEI_MIPI_DSI_OTM9608A_QHD
-	bool "support MIPI OTM9608A QHD"
-	select FB_MSM_MIPI_DSI
-	default n
 config FB_HUAWEI_LCDC_HX8357B
 	bool "support LCDC HX8357B"
 	select FB_MSM_LCDC_PANEL
