@@ -90,6 +90,9 @@ static ssize_t  buf_vkey_size=0;
 #endif
 
 #define PMEM_KERNEL_EBI1_SIZE	0x3A000
+
+#define CYTTSP4_VIRTUAL_KEYS
+
 #define MSM_PMEM_AUDIO_SIZE	0xF0000
 #define BOOTLOADER_BASE_ADDR	0x10000
 
@@ -562,7 +565,7 @@ static struct msm_pm_platform_data
 					.latency = 2,
 					.residency = 10,
 	},
-#if 0
+
 	/* picked latency & redisdency values from 7x30 */
 	[MSM_PM_MODE(1, MSM_PM_SLEEP_MODE_POWER_COLLAPSE_STANDALONE)] = {
 					.idle_supported = 1,
@@ -619,7 +622,7 @@ static struct msm_pm_platform_data
 					.latency = 2,
 					.residency = 10,
 	},
-#endif
+
 };
 
 static struct msm_pm_boot_platform_data msm_pm_8625_boot_pdata __initdata = {
@@ -1632,7 +1635,7 @@ static void __init msm7x2x_init(void)
 #ifndef CONFIG_HUAWEI_CAMERA
     msm7x27a_cfg_smsc911x();
 #endif
-#if (defined(CONFIG_HUAWEI_BT_BCM43XX) && defined(CONFIG_HUAWEI_KERNEL))
+#if (defined(HUAWEI_BT_BTLA_VER30) && defined(CONFIG_HUAWEI_KERNEL))
     /*before bt probe, config the bt_wake_msm gpio*/
     bt_wake_msm_config();
 #endif
@@ -1756,16 +1759,6 @@ MACHINE_START(MSM8625_SURF, "QCT MSM8625 SURF")
 	.timer          = &msm_timer,
 	.init_early     = msm7x2x_init_early,
 	.handle_irq	= gic_handle_irq,
-MACHINE_END
-MACHINE_START(MSM7X27A_U8815, "MSM7x27a U8815 BOARD")
-    .atag_offset    = PHYS_OFFSET + 0x100,
-    .map_io         = msm_common_io_init,
-    .reserve        = msm7x27a_reserve,
-    .init_irq       = msm_init_irq,
-    .init_machine   = msm7x2x_init,
-    .timer          = &msm_timer,
-    .init_early     = msm7x2x_init_early,
-    .handle_irq     = vic_handle_irq,
 MACHINE_END
 MACHINE_START(MSM8X25_U8951, "MSM8x25 U8951 BOARD")
 	.atag_offset    = PHYS_OFFSET + 0x100,

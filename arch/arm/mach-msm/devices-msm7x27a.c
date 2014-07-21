@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -2286,7 +2286,7 @@ void __init msm_common_io_init(void)
 
 void __init msm8625_init_irq(void)
 {
-	//msm_gic_irq_extn_init();
+	msm_gic_irq_extn_init();
 	gic_init(0, GIC_PPI_START, MSM_QGIC_DIST_BASE,
 			(void *)MSM_QGIC_CPU_BASE);
 }

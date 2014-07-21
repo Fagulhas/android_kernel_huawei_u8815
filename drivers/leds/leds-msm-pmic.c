@@ -1,7 +1,7 @@
 /*
  * leds-msm-pmic.c - MSM PMIC LEDs driver.
  *
- * Copyright (c) 2009, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2009, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -36,15 +36,16 @@ static void msm_keypad_bl_led_set(struct led_classdev *led_cdev,
 {
 #ifdef CONFIG_HUAWEI_LEDS_PMIC
     int ret = 0;
-	    if(machine_is_msm7x27a_U8815())
-	        ret = pmic_secure_mpp_config_i_sink(PM_MPP_7, PM_MPP__I_SINK__LEVEL_5mA, \
-	            (!!value) ? PM_MPP__I_SINK__SWITCH_ENA : PM_MPP__I_SINK__SWITCH_DIS);
-	    else
-	    {
-	        pmapp_button_backlight_init();
+	/* remove pwm in G520U*/
+	if(machine_is_msm8x25_G520U())
+      ret = pmic_secure_mpp_config_i_sink(PM_MPP_8, PM_MPP__I_SINK__LEVEL_5mA, \
+            	(!!value) ? PM_MPP__I_SINK__SWITCH_ENA : PM_MPP__I_SINK__SWITCH_DIS);
+	else
+	{
+		pmapp_button_backlight_init();
 
-	        ret = pmapp_button_backlight_set_brightness(value);
-	    }
+		ret = pmapp_button_backlight_set_brightness(value);
+	}
     if (ret)
 		dev_err(led_cdev->dev, "can't set keypad backlight\n");
 #else
@@ -75,7 +76,7 @@ static int msm_pmic_led_probe(struct platform_device *pdev)
 	dev_err(&pdev->dev, "unable to register led class driver\n");
 	return rc;
 	}
-    if(!machine_is_msm7x27a_U8815())
+    if(!machine_is_msm8x25_G520U())
         pmapp_button_backlight_init();
     msm_keypad_bl_led_set(&msm_kp_bl_led, LED_OFF);
     return rc;

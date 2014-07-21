@@ -207,7 +207,7 @@ struct bt_device bt_device_array[] =
 /* get bt device model by board id */
 hw_bt_device_model get_hw_bt_device_model(void)
 {
-    if(machine_is_msm8x25_C8950D() || machine_is_msm7x27a_U8815())
+    if(machine_is_msm8x25_C8950D())
     {
         return BT_BCM4330;
     }
@@ -342,16 +342,8 @@ hw_lcd_ctrl_bl_type get_hw_lcd_ctrl_bl_type(void)
 {
     hw_lcd_ctrl_bl_type ctrl_bl_type = CTRL_BL_BY_UNKNOW;
 
-	/*control backlight by MSM pwm*/
-	if (machine_is_msm7x27a_U8815())
-	{
-		ctrl_bl_type = CTRL_BL_BY_MSM;
-	}
-	/*control backlight by LCD output pwm*/
-	else
-	{
-		ctrl_bl_type = CTRL_BL_BY_LCD;
-	}
+	ctrl_bl_type = CTRL_BL_BY_LCD;
+
     return ctrl_bl_type;
 }
 /*
@@ -363,11 +355,7 @@ lcd_type get_hw_lcd_resolution_type(void)
 	/* when sub boardid equals HW_VER_SUB_V1 G520 support qhd */
 	hw_product_sub_type product_sub_type = get_hw_sub_board_id();
 
-    if ( machine_is_msm7x27a_U8815())
-	{
-		lcd_resolution = LCD_IS_WVGA;
-	}
-	else if ( machine_is_msm8x25_C8950D()
+	if( machine_is_msm8x25_C8950D()
         || machine_is_msm8x25_G610C()
 		|| (machine_is_msm8x25_G520U() && HW_VER_SUB_V1 == product_sub_type) )
 	{
@@ -420,31 +408,6 @@ lcd_panel_type get_lcd_panel_type(void)
 				break;
 		}
     }
-
-	else if( machine_is_msm7x27a_U8815() )
-
-	{
-		switch (lcd_id)
-		{
-			case LCD_HW_ID0:
-				hw_lcd_panel = MIPI_CMD_RSP61408_CHIMEI_WVGA;
-				break;
-			case LCD_HW_ID1:
-				hw_lcd_panel = MIPI_CMD_HX8369A_TIANMA_WVGA;
-				break;
-			case LCD_HW_ID4:
-				hw_lcd_panel = MIPI_CMD_RSP61408_BYD_WVGA;
-				break;
-			case LCD_HW_ID5:
-				hw_lcd_panel = MIPI_CMD_RSP61408_TRULY_WVGA;
-				break;
-			default:
-				/*no mipi LCD lead to block, so default lcd RGB */
-				hw_lcd_panel = LCD_HX8357B_TIANMA_HVGA;
-				break;
-		}
-	}
-
 	else
 	{
 		switch (lcd_id)
@@ -563,10 +526,6 @@ compass_gs_position_type  get_compass_gs_position(void)
 
 	{
 		compass_gs_position=COMPASS_NONE_GS_BOTTOM;
-	}
-    else if ( machine_is_msm7x27a_U8815() )
-	{
-		compass_gs_position=COMPASS_TOP_GS_TOP;
 	}
 	return compass_gs_position;
 }
@@ -895,7 +854,7 @@ void set_st303_gs_support(bool status)
 */
 bool rgb_led_is_supported(void)
 {
-	bool ret = true;
+	bool ret = false;
 
 	return ret;
 }
@@ -1015,7 +974,7 @@ char *get_compass_gs_position_name(void)
  */
 hw_wifi_device_type get_hw_wifi_device_type(void)
 {
-  if ( machine_is_msm8x25_C8950D() || machine_is_msm7x27a_U8815() )
+  if ( machine_is_msm8x25_C8950D())
   {
       return WIFI_BROADCOM;
   }
@@ -1034,7 +993,7 @@ hw_wifi_device_type get_hw_wifi_device_type(void)
  */
 tp_type get_touch_type(void)
 {
-	if( machine_is_msm8x25_C8950D() || machine_is_msm7x27a_U8815() )
+	if( machine_is_msm8x25_C8950D() )
 	{
 		return TP_COF;
 	}
@@ -1060,7 +1019,7 @@ tp_update_type is_need_update_fw(void)
  */
 hw_wifi_device_model get_hw_wifi_device_model(void)
 {
-   if(machine_is_msm8x25_C8950D() || machine_is_msm7x27a_U8815() )
+   if(machine_is_msm8x25_C8950D())
   {
       return WIFI_BROADCOM_4330;
   }
@@ -1082,7 +1041,7 @@ hw_ds_type get_hw_ds_type(void)
 {
     hw_ds_type ret = HW_NONES;
 
-    if( machine_is_msm8x25_C8950D() || machine_is_msm7x27a_U8815() )
+    if( machine_is_msm8x25_C8950D() )
     {
         ret = HW_NODS;
     }
@@ -1121,10 +1080,6 @@ hw_bt_wakeup_gpio_type get_hw_bt_wakeup_gpio_type(void)
     if (machine_is_msm8x25_C8950D() )
     {
         bt_wakeup_gpio_type = HW_BT_WAKEUP_GPIO_IS_27;
-    }
-    else if (machine_is_msm7x27a_U8815() )
-    {
-        bt_wakeup_gpio_type = HW_BT_WAKEUP_GPIO_IS_83;
     }
     	
     printk(KERN_INFO "the bt_wakeup_gpio_type is %d\n", bt_wakeup_gpio_type);
@@ -1237,7 +1192,7 @@ audio_property_type get_audio_mic_type(void)
 audio_property_type get_audio_fir_enabled(void)
 {
 
-    if(machine_is_msm8x25_C8950D() || machine_is_msm7x27a_U8815() )
+    if(machine_is_msm8x25_C8950D())
 
     {
         return FIR_DISABLE;
@@ -1249,7 +1204,7 @@ audio_property_type get_audio_fir_enabled(void)
 }
 audio_property_type get_audio_fm_type(void)
 {
-   if ( machine_is_msm8x25_C8950D() || machine_is_msm7x27a_U8815() )
+   if ( machine_is_msm8x25_C8950D() )
 
    {
        return FM_BROADCOM;

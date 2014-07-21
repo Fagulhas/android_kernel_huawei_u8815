@@ -593,9 +593,8 @@ static void msm_pm_config_hw_after_power_up(void)
 			/*
 			 * Program the top csr to put the core1 into GDFS.
 			 */
-
-			msm_pm_configure_top_csr();
 			#endif
+			msm_pm_configure_top_csr();
 		}
 	} else {
 		__raw_writel(0, APPS_PWRDOWN);
