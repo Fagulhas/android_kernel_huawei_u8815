@@ -1729,7 +1729,7 @@ dhd_arp_get_arp_hostip_table(dhd_pub_t *dhd, void *buf, int buflen, int idx)
  * Called  by ipv6 event handler when interface comes up/goes down
  */
 int
-dhd_ndo_enable(dhd_pub_t *dhd, int ndo_enable)
+dhd_ndo_enable(dhd_pub_t * dhd, int ndo_enable)
 {
 	char iovbuf[DHD_IOVAR_BUF_SIZE];
 	int retcode;
@@ -1754,7 +1754,7 @@ dhd_ndo_enable(dhd_pub_t *dhd, int ndo_enable)
  * Called  by ipv6 event handler when interface comes up
  */
 int
-dhd_ndo_add_ip(dhd_pub_t *dhd, char *ipv6addr, int idx)
+dhd_ndo_add_ip(dhd_pub_t *dhd, char* ipv6addr, int idx)
 {
 	int iov_len = 0;
 	char iovbuf[DHD_IOVAR_BUF_SIZE];

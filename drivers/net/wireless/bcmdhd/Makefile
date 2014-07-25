@@ -5,22 +5,22 @@
 #
 #
 
-DHDCFLAGS = -Wall -Wstrict-prototypes -Dlinux -DBCMDRIVER                     \
+DHDCFLAGS = -Wall -Wstrict-prototypes -Dlinux -DBCMDRIVER               \
 	-DBCMDONGLEHOST -DUNRELEASEDCHIP -DBCMDMA32 -DBCMFILEIMAGE            \
 	-DDHDTHREAD -DDHD_DEBUG -DSDTEST -DBDC                                \
 	-DDHD_BCMEVENTS -DSHOW_EVENTS -DPROP_TXSTATUS -DBCMDBG                \
 	-DCUSTOMER_HW2 -DOOB_INTR_ONLY -DHW_OOB                               \
 	-DMMC_SDIO_ABORT -DBCMSDIO -DBCMLXSDMMC -DBCMPLATFORM_BUS -DWLP2P     \
 	-DWIFI_ACT_FRAME -DARP_OFFLOAD_SUPPORT                                \
-	-DKEEP_ALIVE -DPKT_FILTER_SUPPORT       						      \
+	-DKEEP_ALIVE -DPKT_FILTER_SUPPORT             \
 	-DEMBEDDED_PLATFORM -DENABLE_INSMOD_NO_FW_LOAD -DPNO_SUPPORT          \
 	-DDHD_USE_IDLECOUNT -DSET_RANDOM_MAC_SOFTAP -DROAM_ENABLE -DVSDB      \
 	-DWL_CFG80211_VSDB_PRIORITIZE_SCAN_REQUEST                            \
-	-DESCAN_RESULT_PATCH -DSDIO_CRC_ERROR_FIX                             \
-	-DDHD_DONOT_FORWARD_BCMEVENT_AS_NETWORK_PKT -DRXFRAME_THREAD          \
-	-DSUPPORT_PM2_ONLY -DWLTDLS                                           \
-	-DMIRACAST_AMPDU_SIZE=8                                               \
-	-Idrivers/net/wireless/bcmdhd -Idrivers/net/wireless/bcmdhd/include   \
+	-DESCAN_RESULT_PATCH -DSDIO_CRC_ERROR_FIX \
+	-DDHD_DONOT_FORWARD_BCMEVENT_AS_NETWORK_PKT -DRXFRAME_THREAD	        \
+	-DSUPPORT_PM2_ONLY -DWLTDLS     \
+	-DMIRACAST_AMPDU_SIZE=8		\
+	-Idrivers/net/wireless/bcmdhd	-Idrivers/net/wireless/bcmdhd/include   \
 	-Idrivers/net/wireless/bcmdhd/common/include
 
 ifneq ($(CONFIG_HUAWEI_KERNEL),)
@@ -32,10 +32,9 @@ DHDCFLAGS += -DCUSTOM_SDCC_WIFI_SLOT=2	\
 endif
 
 DHDOFILES = aiutils.o bcmsdh_sdmmc_linux.o dhd_linux.o siutils.o bcmutils.o   \
-	dhd_linux_sched.o dhd_sdio.o bcmwifi_channels.o bcmevent.o hndpmu.o   \
-	bcmsdh.o dhd_cdc.o bcmsdh_linux.o dhd_common.o dhd_wlfc.o dhd_ip.o    \
-	linux_osl.o bcmsdh_sdmmc.o dhd_custom_gpio.o sbutils.o wldev_common.o \
-	wl_android.o dhd_pno.o
+	dhd_linux_sched.o dhd_pno.o dhd_sdio.o bcmwifi_channels.o bcmevent.o hndpmu.o   \
+	bcmsdh.o dhd_cdc.o bcmsdh_linux.o dhd_common.o dhd_wlfc.o dhd_ip.o linux_osl.o \
+	bcmsdh_sdmmc.o dhd_custom_gpio.o sbutils.o wldev_common.o wl_android.o
 
 obj-$(CONFIG_BCMDHD) += dhd.o
 dhd-objs += $(DHDOFILES)
@@ -80,7 +79,6 @@ DHDCFLAGS += -DPROP_TXSTATUS_VSDB
 DHDCFLAGS += -DCUSTOM_MAX_TXGLOM_SIZE=32
 DHDCFLAGS += -DREPEAT_READFRAME
 DHDCFLAGS += -DROAM_AP_ENV_DETECTION
-DHDCFLAGS += -DWL11U
 else
 DHDCFLAGS += -DCUSTOM_SDIO_F2_BLKSIZE=128
 endif
